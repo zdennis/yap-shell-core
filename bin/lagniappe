@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+require 'pry'
+
+$LOAD_PATH << File.dirname(__FILE__) + '/../lib'
+
+loop do
+  load "lagniappe.rb"
+  load "lagniappe/shell.rb"
+  begin
+    Lagniappe.run_console
+  rescue StandardError => ex
+    puts ex.message
+    puts ex.backtrace
+  end
+end
