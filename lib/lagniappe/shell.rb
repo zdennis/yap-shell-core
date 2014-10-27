@@ -54,7 +54,6 @@ module Lagniappe
 
     def build_childprocess
       proc = ChildProcess.build("bash", "-l", "-O", "expand_aliases")
-      # enable read/write
       proc.duplex = true
       proc.io.stdout = proc.io.stderr = @w
       proc
@@ -133,22 +132,23 @@ module Lagniappe
 
         shell = @shells.first
         commands.reverse.map.with_index do |command, i|
+          last_item = (commands.length - 1) == i
           command = command.flatten.join " "
           exit if command == "exit"
 
           ruby_command = command.scan(/^\!(.*)/).flatten.first
 
-          pipe_out, pipe_in = if i == 0
-            ["fifo-test-#{i*2}", "fifo-test-#{i*2+1}"]
-          elsif i == commands.length - 1
+          pipe_out, pipe_in = if i == last_item
             [pipes.last.pipe_in, nil]
+          elsif i == 0
+            ["fifo-test-#{i*2}", "fifo-test-#{i*2+1}"]
           else
             [pipes.last.pipe_in, "fifo-test-#{i+1}"]
           end
           pipes << OpenStruct.new(pipe_in: pipe_in, pipe_out: pipe_out)
           puts pipes.last.inspect if ENV["DEBUG"]
 
-          if pipe_in
+          if pipe_in && !last_item
             puts "Pipe: #{pipe_in}" if ENV["DEBUG"]
             File.mkfifo pipe_in
             command << " < #{pipe_in}"
