@@ -1,6 +1,8 @@
 require 'shellwords'
 require 'readline'
 require 'term/ansicolor'
+require 'mkfifo'
+require 'ostruct'
 
 module Lagniappe
   def self.run_console
@@ -41,26 +43,7 @@ module Lagniappe
     end
 
     def puts(str)
-      @childprocess.io.stdin.puts "#{str} && echo ."
-
-      data = @r.readpartial 1
-      loop do
-        max_retry = 5
-        tries = 1
-        begin
-          data << @r.read_nonblock(8192)
-        rescue Errno::EWOULDBLOCK => ex
-          if ((tries+=1) < max_retry)
-            sleep 0.1
-            retry
-          else
-            break
-          end
-        end
-      end
-
-      data = data[0..-3]
-      data
+      @childprocess.io.stdin.puts "#{str}"
     end
 
     def wait
@@ -91,8 +74,42 @@ module Lagniappe
       @shells ||= n.times.map{ Shell.new }
     end
 
+    def parse_commands(line)
+      scope = []
+      words = []
+      str = ''
+
+      line.each_char.with_index do |ch, i|
+        popped = false
+        if scope.last == ch
+          scope.pop
+          popped = true
+        end
+
+        if (scope.empty? && ch == "|") || (i == line.length - 1)
+          str << ch unless ch == "|"
+          words << str.strip
+          str = ''
+        else
+          if %w(' ").include?(ch) && !popped
+            scope << ch
+          end
+          str << ch
+        end
+      end
+      words.map { |f| f[0] == "!" ? [f] : f.shellsplit }
+    end
+
     def run
       preload_shells
+
+      at_exit do
+        Dir["fifo-test-*"].each do |f|
+          (FileUtils.rm f rescue nil)
+        end
+      end
+
+      STDOUT.sync = true
 
       loop do
         line = Readline.readline("#{world.prompt}", true)
@@ -111,36 +128,76 @@ module Lagniappe
           next
         end
 
-        commands = split_on_pipes(line)
-
-        placeholder_in = $stdin
-        placeholder_out = $stdout
-        pipe = []
+        commands = parse_commands(line)
+        pipes = []
 
         shell = @shells.first
-        commands.each_with_index do |command, index|
-          program, *arguments = command
-          program = program.shellescape
-          arguments.shelljoin.gsub! "\\$", "$"
+        commands.reverse.map.with_index do |command, i|
+          command = command.flatten.join " "
+          exit if command == "exit"
 
-          if builtin?(program)
-            call_builtin(program, *arguments)
+          ruby_command = command.scan(/^\!(.*)/).flatten.first
 
+          pipe_out, pipe_in = if i == 0
+            ["fifo-test-#{i*2}", "fifo-test-#{i*2+1}"]
+          elsif i == commands.length - 1
+            [pipes.last.pipe_in, nil]
           else
-            if index+1 < commands.size
-              pipe = IO.pipe
-              placeholder_out = pipe.last
-            else
-              placeholder_out = $stdout
-            end
-
-            spawn_program(shell, program, *arguments, placeholder_out, placeholder_in)
-
-            placeholder_out.close unless placeholder_out == $stdout
-            placeholder_in.close unless placeholder_in == $stdin
-            placeholder_in = pipe.first
+            [pipes.last.pipe_in, "fifo-test-#{i+1}"]
           end
+          pipes << OpenStruct.new(pipe_in: pipe_in, pipe_out: pipe_out)
+          puts pipes.last.inspect if ENV["DEBUG"]
+
+          if pipe_in
+            puts "Pipe: #{pipe_in}" if ENV["DEBUG"]
+            File.mkfifo pipe_in
+            command << " < #{pipe_in}"
+          end
+
+          if pipe_out
+            unless File.exists?(pipe_out)
+              puts "Pipe: #{pipe_out}" if ENV["DEBUG"]
+              File.mkfifo pipe_out
+            end
+            command << " > #{pipe_out}"
+          end
+
+          if ruby_command
+            puts "ruby: #{ruby_command}" if ENV["DEBUG"]
+            fork {
+              f = File.open(pipe_in)
+              contents = f.readpartial(8192)
+              str = contents.send :eval, ruby_command
+              f.close
+
+              f2 = File.open(pipe_out, "w")
+              f2.write str
+              f2.close
+
+              exit!
+            }
+
+          elsif pipe_in and pipe_out
+            command << " &"
+          end
+
+          unless ruby_command
+            puts command if ENV["DEBUG"]
+          end
+
+          puts if ENV["DEBUG"]
+
+          shell.puts command unless ruby_command
+          command
         end
+
+        pid = fork {
+          f3 = File.open(pipes.first.pipe_out)
+          puts str = f3.read
+          f3.close
+        }
+
+        Process.wait pid
       end
     end
 
@@ -148,51 +205,6 @@ module Lagniappe
 
     def builtin?(program)
       builtins.has_key?(program)
-    end
-
-    def spawn_program(shell, program, *arguments, placeholder_out, placeholder_in)
-      puts "Spawning: #{program.inspect} #{arguments.inspect}" #if ENV["DEBUG"]
-      if $stdin != placeholder_in
-        f = Tempfile.new "foo"
-        s = placeholder_in.read
-        f.write s
-        f.close
-        placeholder_out.write shell.puts("#{program} #{arguments.join(' ')} < #{f.path}")
-      else
-        placeholder_out.write shell.puts("#{program} #{arguments.join(' ')}")
-      end
-      # fork {
-      #   unless placeholder_out == $stdout
-      #     $stdout.reopen(placeholder_out)
-      #     placeholder_out.close
-      #   end
-      #
-      #   unless placeholder_in == $stdin
-      #     $stdin.reopen(placeholder_in)
-      #     placeholder_in.close
-      #   end
-      #
-      #   # puts program.inspect
-      #   # puts '-', arguments.inspect
-      #   #cmd = %|bash -ic "source ~/.bashrc &&  shopt -s expand_aliases && #{program} #{arguments.join(' ')}"|
-      #   # puts cmd
-      #   puts shell.puts "#{program} #{arguments.join(' ')}"
-      #   exit 0
-      # }
-      # shell
-    end
-
-    def split_on_pipes(line)
-      Shellwords.split(line).reduce([[]]) do |acc,n|
-        if n == "|" then
-          acc << []
-        else
-          acc.last << n.strip
-        end
-        acc
-      end
-      #
-      # line.scan( /([^"'|]+)|["']([^"']*)["']/ ).flatten.compact
     end
 
     def call_builtin(program, *arguments)
