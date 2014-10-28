@@ -168,12 +168,6 @@ module Lagniappe
             end
             retry
           end
-            # puts shell.pty_master.readpartial(10_000)
-            # puts "no master"
-            # f3 = File.open(pipes.first.pipe_out)
-            # puts str = f3.read
-            # f3.close
-          # end
         }
 
         Process.wait pid
