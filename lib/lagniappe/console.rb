@@ -110,7 +110,7 @@ module Lagniappe
 
           if ruby_command
             puts "ruby: #{ruby_command}" if ENV["DEBUG"]
-            fork {
+            Thread.new {
               exit_code = 0
 
               begin
@@ -131,8 +131,8 @@ module Lagniappe
               f2.write str
               f2.close
 
+              # Make up an exit code
               shell.stdin.puts exit_code
-              exit! exit_code
             }
 
           elsif pipe_in and pipe_out
