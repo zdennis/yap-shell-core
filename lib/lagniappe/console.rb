@@ -93,14 +93,14 @@ module Lagniappe
 
           if pipe_in && !last_item
             puts "Pipe: #{pipe_in}" if ENV["DEBUG"]
-            File.mkfifo pipe_in
+            File.mkfifo pipe_in unless File.exists?(pipe_in)
             command << " < #{pipe_in}"
           end
 
           if pipe_out.is_a?(String)
             unless File.exists?(pipe_out)
               puts "Pipe: #{pipe_out}" if ENV["DEBUG"]
-              File.mkfifo pipe_out
+              File.mkfifo pipe_out  unless File.exists?(pipe_out)
             end
             command << " > #{pipe_out}"
           elsif pipe_out.is_a?(IO)
@@ -111,20 +111,32 @@ module Lagniappe
           if ruby_command
             puts "ruby: #{ruby_command}" if ENV["DEBUG"]
             fork {
-              f = File.open(pipe_in)
-              contents = f.readpartial(8192)
-              str = contents.send :eval, ruby_command
-              f.close
+              exit_code = 0
+
+              begin
+                f = File.open(pipe_in)
+                contents = f.readpartial(8192)
+                str = contents.send :eval, ruby_command
+                f.close
+              rescue Exception => ex
+                str = <<-EOT.gsub(/^\s*\S/, '')
+                  |Failed processing ruby: #{ruby_command}
+                  |#{ex}
+                  |#{ex.backtrace.join("\n")}
+                EOT
+                exit_code = 1
+              end
 
               f2 = File.open(pipe_out, "w")
               f2.write str
               f2.close
 
-              exit!
+              shell.stdin.puts exit_code
+              exit! exit_code
             }
 
           elsif pipe_in and pipe_out
-            command << " &"
+            command = "( #{command} ; echo $? ) &"
           end
 
           unless ruby_command
@@ -138,7 +150,25 @@ module Lagniappe
         end
 
         pid = fork {
-            puts shell.pty_master.readpartial(10_000)
+          status_code = nil
+          begin
+            loop do
+              puts shell.pty_master.read_nonblock(8192)
+            end
+          rescue IO::EAGAINWaitReadable
+            if status_code
+              status_code = nil
+              exit!
+            else
+              output = (shell.stdout.read_nonblock(8192) rescue nil)
+              if output
+                status_code = output.chomp.to_i
+                puts "exited with #{status_code}"
+              end
+            end
+            retry
+          end
+            # puts shell.pty_master.readpartial(10_000)
             # puts "no master"
             # f3 = File.open(pipes.first.pipe_out)
             # puts str = f3.read

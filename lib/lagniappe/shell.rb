@@ -20,12 +20,16 @@ module Lagniappe
       @pty_master, @pty_slave = PTY.open
     end
 
+    def stdin
+      @w
+    end
+
     def stdout
-      @childprocess.io.stdout
+      @r
     end
 
     def stderr
-      @childprocess.io.stderr
+      @r
     end
 
     def puts(str)
