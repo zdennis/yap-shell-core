@@ -3,6 +3,7 @@ require 'readline'
 require 'term/ansicolor'
 require 'mkfifo'
 require 'ostruct'
+require 'pty'
 
 module Lagniappe
   def self.run_console
@@ -23,11 +24,19 @@ module Lagniappe
 
   require 'childprocess'
   class Shell
+    attr_reader :pty_master, :pty_slave
+
     def initialize
       @r, @w = IO.pipe
       @childprocess = build_childprocess
       @childprocess.start
       @available = true
+    end
+
+    def open_pty
+      @pty_master.close if @pty_master
+      @pty_slave.close  if @pty_slave
+      @pty_master, @pty_slave = PTY.open
     end
 
     def available?
@@ -131,6 +140,7 @@ module Lagniappe
         pipes = []
 
         shell = @shells.first
+        shell.open_pty
         commands.reverse.map.with_index do |command, i|
           last_item = (commands.length - 1) == i
           command = command.flatten.join " "
@@ -138,10 +148,13 @@ module Lagniappe
 
           ruby_command = command.scan(/^\!(.*)/).flatten.first
 
-          pipe_out, pipe_in = if i == last_item
+          pipe_out, pipe_in = if commands.length == 1
+            [shell.pty_slave.path, shell.pty_master]
+          elsif last_item
             [pipes.last.pipe_in, nil]
           elsif i == 0
-            ["fifo-test-#{i*2}", "fifo-test-#{i*2+1}"]
+            [shell.pty_slave.path, "fifo-test-#{i*2+1}"]
+            # ["fifo-test-#{i*2}", "fifo-test-#{i*2+1}"]
           else
             [pipes.last.pipe_in, "fifo-test-#{i+1}"]
           end
@@ -154,12 +167,15 @@ module Lagniappe
             command << " < #{pipe_in}"
           end
 
-          if pipe_out
+          if pipe_out.is_a?(String)
             unless File.exists?(pipe_out)
               puts "Pipe: #{pipe_out}" if ENV["DEBUG"]
               File.mkfifo pipe_out
             end
             command << " > #{pipe_out}"
+          elsif pipe_out.is_a?(IO)
+            puts "IO Pipe: #{pipe_out}" if ENV["DEBUG"]
+            command << " > #{pipe_out.path}"
           end
 
           if ruby_command
@@ -192,9 +208,12 @@ module Lagniappe
         end
 
         pid = fork {
-          f3 = File.open(pipes.first.pipe_out)
-          puts str = f3.read
-          f3.close
+            puts shell.pty_master.readpartial(10_000)
+            # puts "no master"
+            # f3 = File.open(pipes.first.pipe_out)
+            # puts str = f3.read
+            # f3.close
+          # end
         }
 
         Process.wait pid
