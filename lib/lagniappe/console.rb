@@ -115,7 +115,7 @@ module Lagniappe
 
               begin
                 f = File.open(pipe_in)
-                contents = f.readpartial(8192)
+                contents = f.read
                 str = contents.send :eval, ruby_command
                 f.close
               rescue Exception => ex
