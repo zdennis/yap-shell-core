@@ -65,13 +65,6 @@ module Lagniappe
             puts shell.pty_master.read_nonblock(8192)
           end
         rescue IO::EAGAINWaitReadable
-          # if should_exit
-          #   #puts "exited with #{status_code}"
-          #   puts "ENQ #{status_code}"
-          #   Console.queue.enq status_code
-          #   status_code = should_exit = nil
-          #   retry
-          # els
           if output = (shell.stdout.read_nonblock(8192) rescue nil)
             status_code = output.chomp
             Console.queue.enq status_code
@@ -87,18 +80,6 @@ module Lagniappe
         line = Readline.readline("#{world.prompt}", true)
         line.strip!
         next if line == ""
-
-        # if line =~ /^!(.*)/ || line =~ /^(\w+)!/
-        #   command = $1
-        #
-        #   if command == "reload"
-        #     break
-        #   else
-        #     world.instance_eval command
-        #   end
-        #
-        #   next
-        # end
 
         commands = parse_commands(line)
         pipes = []
