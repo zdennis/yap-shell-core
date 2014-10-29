@@ -186,6 +186,7 @@ module Lagniappe
 
         loop do
           v = Console.queue.deq
+          puts "DEQ'd #{v}" if ENV["DEBUG"]
           a, b = v.scan(/^(\d+)\/(\d+)/).flatten.map(&:to_i)
           break if a == b # last command in chain
         end
