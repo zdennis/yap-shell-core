@@ -1,5 +1,11 @@
+require 'thread'
+
 module Lagniappe
   class Console
+    def self.queue
+      @queue ||= Queue.new
+    end
+
     attr_reader :world
 
     def initialize(io_in:$stdin, prompt:"> ")
@@ -49,28 +55,54 @@ module Lagniappe
 
       STDOUT.sync = true
 
+      shell = @shells.first
+      shell.open_pty
+
+      t = Thread.new do
+        status_code = nil
+        begin
+          loop do
+            puts shell.pty_master.read_nonblock(8192)
+          end
+        rescue IO::EAGAINWaitReadable
+          # if should_exit
+          #   #puts "exited with #{status_code}"
+          #   puts "ENQ #{status_code}"
+          #   Console.queue.enq status_code
+          #   status_code = should_exit = nil
+          #   retry
+          # els
+          if output = (shell.stdout.read_nonblock(8192) rescue nil)
+            status_code = output.chomp
+            Console.queue.enq status_code
+            status_code = should_exit = nil
+            retry
+          else
+            retry
+          end
+        end
+      end
+
       loop do
         line = Readline.readline("#{world.prompt}", true)
         line.strip!
         next if line == ""
 
-        if line =~ /^!(.*)/ || line =~ /^(\w+)!/
-          command = $1
-
-          if command == "reload"
-            break
-          else
-            world.instance_eval command
-          end
-
-          next
-        end
+        # if line =~ /^!(.*)/ || line =~ /^(\w+)!/
+        #   command = $1
+        #
+        #   if command == "reload"
+        #     break
+        #   else
+        #     world.instance_eval command
+        #   end
+        #
+        #   next
+        # end
 
         commands = parse_commands(line)
         pipes = []
 
-        shell = @shells.first
-        shell.open_pty
         commands.reverse.map.with_index do |command, i|
           last_item = (commands.length - 1) == i
           command = command.flatten.join " "
@@ -109,13 +141,14 @@ module Lagniappe
           end
 
           if ruby_command
-            puts "ruby: #{ruby_command}" if ENV["DEBUG"]
+            puts "ruby: #{ruby_command} < #{pipe_in} > #{pipe_out}" if ENV["DEBUG"]
             Thread.new {
               exit_code = 0
 
               begin
                 f = File.open(pipe_in)
                 contents = f.read
+                puts "READ: #{contents.length} bytes from #{pipe_in}" if ENV["DEBUG"]
                 str = contents.send :eval, ruby_command
                 f.close
               rescue Exception => ex
@@ -128,15 +161,17 @@ module Lagniappe
               end
 
               f2 = File.open(pipe_out, "w")
+              f2.sync = true
+              puts "WRITING #{str.length} bytes TO #{pipe_out}" if ENV["DEBUG"]
               f2.write str
               f2.close
 
               # Make up an exit code
-              shell.stdin.puts exit_code
+              shell.stdin.puts "#{commands.length - i}/#{commands.length}:#{exit_code}"
             }
 
           elsif pipe_in and pipe_out
-            command = "( #{command} ; echo $? ) &"
+            command = "( #{command} ; echo \"#{commands.length - i}/#{commands.length}:$?\" ) &"
           end
 
           unless ruby_command
@@ -149,28 +184,11 @@ module Lagniappe
           command
         end
 
-        pid = fork {
-          status_code = nil
-          begin
-            loop do
-              puts shell.pty_master.read_nonblock(8192)
-            end
-          rescue IO::EAGAINWaitReadable
-            if status_code
-              status_code = nil
-              exit!
-            else
-              output = (shell.stdout.read_nonblock(8192) rescue nil)
-              if output
-                status_code = output.chomp.to_i
-                puts "exited with #{status_code}"
-              end
-            end
-            retry
-          end
-        }
-
-        Process.wait pid
+        loop do
+          v = Console.queue.deq
+          a, b = v.scan(/^(\d+)\/(\d+)/).flatten.map(&:to_i)
+          break if a == b # last command in chain
+        end
       end
     end
 
