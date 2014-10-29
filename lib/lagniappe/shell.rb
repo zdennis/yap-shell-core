@@ -18,6 +18,8 @@ module Lagniappe
       @pty_master.close if @pty_master
       @pty_slave.close  if @pty_slave
       @pty_master, @pty_slave = PTY.open
+      @pty_master.sync = true
+      @pty_slave.sync = true
     end
 
     def stdin
@@ -44,6 +46,8 @@ module Lagniappe
 
     def build_childprocess
       @r, @w = IO.pipe
+      @r.sync = true
+      @w.sync = true
       @childprocess = ChildProcess.build("bash", "-l", "-O", "expand_aliases")
       @childprocess.duplex = true
       @childprocess.io.stdout = @childprocess.io.stderr = @w
