@@ -126,11 +126,21 @@ module Lagniappe
             Thread.new {
               exit_code = 0
 
+              f = nil
+              str = ""
               begin
                 f = File.open(pipe_in)
                 contents = f.read
                 puts "READ: #{contents.length} bytes from #{pipe_in}" if ENV["DEBUG"]
-                str = contents.send :eval, ruby_command
+                world.contents = contents
+
+                method = ruby_command.scan(/^(\w+[!?=]*)/).flatten.first
+                obj = if world.respond_to?(method)
+                  world
+                elsif contents.respond_to?(method)
+                  contents
+                end
+                str = obj.send :eval, ruby_command
                 f.close
               rescue Exception => ex
                 str = <<-EOT.gsub(/^\s*\S/, '')
@@ -139,12 +149,17 @@ module Lagniappe
                   |#{ex.backtrace.join("\n")}
                 EOT
                 exit_code = 1
+              ensure
+                f.close if f && !f.closed?
               end
 
               f2 = File.open(pipe_out, "w")
               f2.sync = true
-              puts "WRITING #{str.length} bytes TO #{pipe_out}" if ENV["DEBUG"]
+              # The next line  causes issues sometimes?
+              # puts "WRITING #{str.length} bytes" if ENV["DEBUG"]
+              f2.flush
               f2.write str
+
               f2.close
 
               # Make up an exit code
