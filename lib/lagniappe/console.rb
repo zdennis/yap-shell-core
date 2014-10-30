@@ -44,8 +44,14 @@ module Lagniappe
           words << str.strip
           str = ''
         else
-          if %w(' ").include?(ch) && !popped
-            scope << ch
+          if !popped
+            if %w(' ").include?(ch)
+              scope << ch
+            elsif ch == "{"
+              scope << "}"
+            elsif ch == "["
+              scope << "]"
+            end
           end
           str << ch
         end
