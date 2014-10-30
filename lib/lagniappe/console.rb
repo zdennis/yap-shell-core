@@ -121,6 +121,7 @@ module Lagniappe
             command << " > #{pipe_out.path}"
           end
 
+          world = self.world
           if ruby_command
             puts "ruby: #{ruby_command} < #{pipe_in} > #{pipe_out}" if ENV["DEBUG"]
             Thread.new {
@@ -129,19 +130,29 @@ module Lagniappe
               f = nil
               str = ""
               begin
-                f = File.open(pipe_in)
-                contents = f.read
+                contents = if pipe_in.is_a?(String)
+                  f = File.open(pipe_in)
+                  f.read
+                else
+                  ""
+                end
                 puts "READ: #{contents.length} bytes from #{pipe_in}" if ENV["DEBUG"]
                 world.contents = contents
 
-                method = ruby_command.scan(/^(\w+[!?=]*)/).flatten.first
+                method = ruby_command.scan(/^(\w+(?:[!?]|\s*=)?)/).flatten.first.gsub(/\s/, '')
+                puts "method: #{method}" if ENV["DEBUG"]
                 obj = if world.respond_to?(method)
                   world
                 elsif contents.respond_to?(method)
                   contents
+                else
+                  world
                 end
-                str = obj.send :eval, ruby_command
-                f.close
+
+                ruby_command = "self.#{ruby_command}"
+
+                puts "Evaluating #{ruby_command} on #{obj.inspect}" if ENV["DEBUG"]
+                str = obj.instance_eval ruby_command
               rescue Exception => ex
                 str = <<-EOT.gsub(/^\s*\S/, '')
                   |Failed processing ruby: #{ruby_command}
