@@ -1,4 +1,5 @@
 require 'thread'
+require 'yaml'
 
 module Lagniappe
   class Console
@@ -16,6 +17,14 @@ module Lagniappe
 
     def preload_shells(n=1)
       @shells ||= n.times.map{ Shell.new }
+      return unless File.exists?(history_file)
+      (YAML.load_file(history_file) || []).each do |item|
+        ::Readline::HISTORY.push item
+      end
+    end
+
+    def history_file
+      File.expand_path('~') + '/.lagniappe-history'
     end
 
     def parse_commands(line)
@@ -48,6 +57,8 @@ module Lagniappe
       preload_shells
 
       at_exit do
+        File.write history_file, ::Readline::HISTORY.to_a.to_yaml
+
         Dir["fifo-test-*"].each do |f|
           (FileUtils.rm f rescue nil)
         end
