@@ -6,6 +6,7 @@
 * get readline's history to work between start and restops
 * fix reload! so it works again
 * handle stderr
+* intelligently handle pipes that show up in ruby blocks, e.g. map{ |a,b| a }
 
 Others requests.
 
