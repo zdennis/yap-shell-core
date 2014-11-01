@@ -27,19 +27,19 @@ module Lagniappe
       File.expand_path('~') + '/.lagniappe-history'
     end
 
-    def parse_commands(line)
+    def parse_command(command)
       scope = []
       words = []
       str = ''
 
-      line.each_char.with_index do |ch, i|
+      command.each_char.with_index do |ch, i|
         popped = false
         if scope.last == ch
           scope.pop
           popped = true
         end
 
-        if (scope.empty? && ch == "|") || (i == line.length - 1)
+        if (scope.empty? && ch == "|") || (i == command.length - 1)
           str << ch unless ch == "|"
           words << str.strip
           str = ''
@@ -56,7 +56,21 @@ module Lagniappe
           str << ch
         end
       end
-      words.map { |f| f[0] == "!" ? [f] : f.shellsplit }
+
+      words
+    end
+
+    def parse_commands(line)
+      # command, heredoc = line.scan(/(.*?)(<<-?(\S+).*\3)?/m).flatten[0..1]
+      # *command_parts, heredoc, delimiter = line.scan(/(<<-?(\S+).*\2\s*$)|(\S+)/m)
+      #command = command_parts.join
+      command = line.split(/\s*<<-?(\S+).*\1$/m).first
+      heredoc = line[command.length..-1] if command.length < line.length
+
+      words = parse_command command
+      words.map { |f| f[0] == "!" ? [f] : f.shellsplit }.tap do |arr|
+        arr.last << heredoc if heredoc
+      end
     end
 
     def run
@@ -94,10 +108,31 @@ module Lagniappe
       end
 
       loop do
+        # print "\033[s\033[100;0H #{Time.now}\033[u"
         line = Readline.readline("#{world.prompt}", true)
         line.strip!
         next if line == ""
 
+        if line =~ /<<(-)?(\S+)/
+          puts "Beginning heredoc"
+          # heredoc
+          line << "\n"
+          allow_whitespace = !!$1
+          end_marker = $2
+          loop do
+            print "> "
+            str = gets
+            line << str
+            if str.to_s =~ /^#{Regexp.escape(end_marker)}/
+              puts "BREAK"
+              break
+            end
+          end
+        else
+          puts "No heredoc"
+        end
+
+        puts "line is now #{line.inspect}"
         commands = parse_commands(line)
         pipes = []
 
