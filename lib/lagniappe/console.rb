@@ -62,24 +62,46 @@ module Lagniappe
       end
 
       @repl.loop_on_input do |commands|
+        pipeline = CommandPipeline.new(shell:shell, commands:commands.reverse)
+        cmds = pipeline.each.with_index do |(command, stdin, stdout, stderr), i|
+          [stdin,stdout,stderr].each do |fifo|
+            File.mkfifo(fifo) if fifo and !File.exists?(fifo)
+          end
+          command_str = command.prepare shell:shell, stdin:stdin, stdout:stdout, stderr:stderr
+          cmd = "( #{command_str} ; echo \"#{pipeline.length - i}/#{pipeline.length}:$?\" ) &"
+
+          puts "Executing #{self.class.name}: #{cmd.inspect}" if ENV["DEBUG"]
+          shell.puts cmd
+        end
+
+        loop do
+          v = Console.queue.deq
+          puts "DEQ'd #{v}" if ENV["DEBUG"]
+          if v =~ /^(\d+)\/(\d+)/
+            a, b = $1.to_i, $2.to_i
+            break if a == b # last command in chain
+          end
+        end
+
+        next
+
+
         pipes = []
 
         commands.reverse.map.with_index do |command, i|
           last_item = (commands.length - 1) == i
-          puts command.to_executable_str
-          # binding.pry
-          command = command.to_executable_str #command.flatten.join " "
-          exit if command == "exit"
+          command_str = command.to_executable_str
 
-          ruby_command = command.scan(/^\!(.*)/).flatten.first
+          command.execute_in(shell: shell)
 
-          pipe_out, pipe_in = if commands.length == 1
+          exit if command_str == "exit"
+
+          pipe_out, pipe_in = if last_item
             [shell.pty_slave.path, shell.pty_master]
           elsif last_item
             [pipes.last.pipe_in, nil]
           elsif i == 0
             [shell.pty_slave.path, "fifo-test-#{i*2+1}"]
-            # ["fifo-test-#{i*2}", "fifo-test-#{i*2+1}"]
           else
             [pipes.last.pipe_in, "fifo-test-#{i+1}"]
           end
@@ -89,7 +111,7 @@ module Lagniappe
           if pipe_in && !last_item
             puts "Pipe: #{pipe_in}" if ENV["DEBUG"]
             File.mkfifo pipe_in unless File.exists?(pipe_in)
-            command << " < #{pipe_in}"
+            command_str << " < #{pipe_in}"
           end
 
           if pipe_out.is_a?(String)
@@ -97,10 +119,10 @@ module Lagniappe
               puts "Pipe: #{pipe_out}" if ENV["DEBUG"]
               File.mkfifo pipe_out  unless File.exists?(pipe_out)
             end
-            command << " > #{pipe_out}"
+            command_str << " > #{pipe_out}"
           elsif pipe_out.is_a?(IO)
             puts "IO Pipe: #{pipe_out}" if ENV["DEBUG"]
-            command << " > #{pipe_out.path}"
+            command_str << " > #{pipe_out.path}"
           end
 
           world = self.world
@@ -160,17 +182,17 @@ module Lagniappe
             }
 
           elsif pipe_in and pipe_out
-            command = "( #{command} ; echo \"#{commands.length - i}/#{commands.length}:$?\" ) &"
+            command_str = "( #{command} ; echo \"#{commands.length - i}/#{commands.length}:$?\" ) &"
           end
 
           unless ruby_command
-            puts command if ENV["DEBUG"]
+            puts command_str if ENV["DEBUG"]
           end
 
           puts if ENV["DEBUG"]
 
-          shell.puts command unless ruby_command
-          command
+          shell.puts command_str unless ruby_command
+          command_str
         end
 
         loop do
