@@ -4,8 +4,9 @@ module Lagniappe
   class CommandFactory
     def self.build_command_for(command_str)
       case command_str
-      when /^\!(.*)/ then RubyCommand.new(str:$1)
-      else            ShellCommand.new(str:command_str)
+      when /^\!(.*)/      then RubyCommand.new(str:$1)
+      when BuiltinCommand then BuiltinCommand.new(str:command_str)
+      else                     ShellCommand.new(str:command_str)
       end
     end
   end
@@ -57,10 +58,41 @@ module Lagniappe
       @str = str
     end
 
-    def execution_context
-      raise NotImplementedError, ":execution_context must be implemented by including object."
+    def to_executable_str
+      raise NotImplementedError, ":to_executable_str must be implemented by including object."
     end
   end
+
+  class BuiltinCommand
+    include Command
+
+    def self.===(other)
+      self.builtins.keys.include?(other.to_sym) || super
+    end
+
+    def self.builtins
+      @builtins ||= {
+        exit: lambda { |code = 0| exit(code.to_i) },
+        # 'set' => lambda { |args|
+        #   key, value = args.split('=')
+        #   ENV[key] = value
+        # }
+      }
+    end
+
+    def execute
+      self.class.builtins[@str.to_sym].call || raise("Missing proc for builtin #{@str}")
+    end
+
+    def type
+      :BuiltinCommand
+    end
+
+    def to_executable_str
+      raise NotImplementedError, "#to_executable_str is not implemented on BuiltInCommand"
+    end
+  end
+
 
   class ShellCommand
     include Command

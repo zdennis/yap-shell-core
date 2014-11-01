@@ -23,7 +23,6 @@ module Lagniappe
     end
   end
 
-
   class ExecutionContext
     def self.register(context, command_type:)
       raise "context cannot be nil" if context.nil?
@@ -33,7 +32,7 @@ module Lagniappe
     end
 
     def self.execution_context_for(command)
-      @registrations[command.type]
+      @registrations[command.type] || raise("No execution context found for given #{command.type} command: #{command.inspect}")
     end
 
     def initialize(shell:, stdin:, stdout:, stderr:)
@@ -95,6 +94,16 @@ module Lagniappe
       else
         raise NotImplementedError, "on_execute block has been implemented!"
       end
+    end
+  end
+
+  class BuiltinCommandExecution < CommandExecution
+    on_execute do |command:, n:, of:|
+      command.execute
+
+      # Make up an exit code
+      result = ExecutionResult.new(status_code:exit_code, directory:Dir.pwd, n:n, of:of)
+      shell.stdin.puts result.to_shell_str
     end
   end
 
@@ -180,6 +189,9 @@ module Lagniappe
     end
   end
 
-  ExecutionContext.register ShellCommandExecution, command_type: :ShellCommand
-  ExecutionContext.register RubyCommandExecution, command_type: :RubyCommand
+
+  ExecutionContext.register BuiltinCommandExecution, command_type: :BuiltinCommand
+  ExecutionContext.register ShellCommandExecution,   command_type: :ShellCommand
+  ExecutionContext.register RubyCommandExecution,    command_type: :RubyCommand
+
 end

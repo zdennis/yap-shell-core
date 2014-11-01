@@ -87,28 +87,6 @@ module Lagniappe
         end
       end
     end
-
-    private
-
-    def builtin?(program)
-      builtins.has_key?(program)
-    end
-
-    def call_builtin(program, *arguments)
-      builtins[program].call(*arguments)
-    end
-
-    def builtins
-      {
-        'cd' => lambda { |dir = ENV["HOME"]| Dir.chdir(dir) },
-        'exit' => lambda { |code = 0| exit(code.to_i) },
-        'exec' => lambda { |*command| exec *command },
-        'set' => lambda { |args|
-          key, value = args.split('=')
-          ENV[key] = value
-        }
-      }
-    end
   end
 
 end
