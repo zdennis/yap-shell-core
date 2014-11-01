@@ -2,46 +2,84 @@ require 'thread'
 require 'yaml'
 
 module Lagniappe
-  class Console
-    def self.queue
-      @queue ||= Queue.new
+  class CommandChain
+    include Enumerable
+
+    def initialize
+      @chain = []
     end
 
-    attr_reader :world
-
-    def initialize(io_in:$stdin, prompt:"> ")
-      @io_in = io_in
-      @prompt = prompt
-      @world = World.new(prompt: prompt)
+    def each(&blk)
+      @chain.each(&blk)
     end
 
-    def preload_shells(n=1)
-      @shells ||= n.times.map{ Shell.new }
-      return unless File.exists?(history_file)
-      (YAML.load_file(history_file) || []).each do |item|
-        ::Readline::HISTORY.push item
+    def push(command)
+      @chain << command
+    end
+    alias_method :<<, :push
+  end
+
+  class CommandFactory
+    def self.build_command_for(str)
+      case str
+      when /^\!/ then RubyCommand.new(str)
+      else            ShellCommand.new(str)
       end
     end
+  end
 
-    def history_file
-      File.expand_path('~') + '/.lagniappe-history'
+  class ShellCommand
+    def initialize(body)
+      @body = body
     end
 
-    def parse_command(command)
+    def to_executable_str
+      @body.shellsplit.flatten.join " "
+    end
+  end
+
+  class RubyCommand
+    def initialize(body)
+      @body = body
+    end
+
+    def to_executable_str
+      @body
+    end
+  end
+
+  class Line
+    include Enumerable
+
+    attr_reader :body
+
+    def initialize(raw_line)
+      @raw_line = raw_line
+      @chain = parse_commands_into CommandChain.new
+    end
+
+    def each(&block)
+      @chain.each(&block)
+    end
+    alias_method :each_command, :each
+
+    private
+
+    def parse_commands_into(chain)
       scope = []
       words = []
       str = ''
 
-      command.each_char.with_index do |ch, i|
+      @raw_line.each_char.with_index do |ch, i|
         popped = false
         if scope.last == ch
           scope.pop
           popped = true
         end
 
-        if (scope.empty? && ch == "|") || (i == command.length - 1)
+        if (scope.empty? && ch == "|") || (i == @raw_line.length - 1)
           str << ch unless ch == "|"
-          words << str.strip
+          chain << CommandFactory.build_command_for(str.strip)
           str = ''
         else
           if !popped
@@ -57,9 +95,21 @@ module Lagniappe
         end
       end
 
-      words
+      chain
+    end
+  end
+
+  class Repl
+    def parse_input(line)
+      Line.new(line).each_command do |command|
+        puts "#{command.inspect}"
+      end
     end
 
+    private
+
+    # line is now "ls | grep e | !gsub /i/, \"I\" | !upcase | grep -v RB"
+    # WORDS: ["ls", "grep e", "!gsub /i/, \"I\"", "!upcase", "grep -v RB"]
     def parse_commands(line)
       # command, heredoc = line.scan(/(.*?)(<<-?(\S+).*\3)?/m).flatten[0..1]
       # *command_parts, heredoc, delimiter = line.scan(/(<<-?(\S+).*\2\s*$)|(\S+)/m)
@@ -67,10 +117,39 @@ module Lagniappe
       command = line.split(/\s*<<-?(\S+).*\1$/m).first
       heredoc = line[command.length..-1] if command.length < line.length
 
-      words = parse_command command
-      words.map { |f| f[0] == "!" ? [f] : f.shellsplit }.tap do |arr|
-        arr.last << heredoc if heredoc
+      # words = parse_command command
+
+      puts "WORDS: #{words.inspect}"
+      words.tap do |arr|
+        # arr.last << heredoc if heredoc
       end
+    end
+  end
+
+  class Console
+    def self.queue
+      @queue ||= Queue.new
+    end
+
+    attr_reader :world
+
+    def initialize(io_in:$stdin, prompt:"> ")
+      @io_in = io_in
+      @prompt = prompt
+      @repl = Repl.new
+      @world = World.new(prompt: prompt)
+    end
+
+    def preload_shells(n=1)
+      @shells ||= n.times.map{ Shell.new }
+      return unless File.exists?(history_file)
+      (YAML.load_file(history_file) || []).each do |item|
+        ::Readline::HISTORY.push item
+      end
+    end
+
+    def history_file
+      File.expand_path('~') + '/.lagniappe-history'
     end
 
     def run
@@ -133,12 +212,14 @@ module Lagniappe
         end
 
         puts "line is now #{line.inspect}"
-        commands = parse_commands(line)
+        commands = @repl.parse_input line
         pipes = []
 
         commands.reverse.map.with_index do |command, i|
           last_item = (commands.length - 1) == i
-          command = command.flatten.join " "
+          puts command.to_executable_str
+          # binding.pry
+          command = command.to_executable_str #command.flatten.join " "
           exit if command == "exit"
 
           ruby_command = command.scan(/^\!(.*)/).flatten.first
