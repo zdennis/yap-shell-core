@@ -61,18 +61,19 @@ module Lagniappe
         end
       end
 
-      @repl.loop_on_input do |commands|
-        pipeline = CommandPipeline.new(shell:shell, commands:commands.reverse)
-        cmds = pipeline.each.with_index do |(command, stdin, stdout, stderr), i|
-          [stdin,stdout,stderr].each do |fifo|
-            File.mkfifo(fifo) if fifo and !File.exists?(fifo)
-          end
-          command_str = command.prepare shell:shell, stdin:stdin, stdout:stdout, stderr:stderr
-          cmd = "( #{command_str} ; echo \"#{pipeline.length - i}/#{pipeline.length}:$?\" ) &"
+      context = ExecutionContext.new(
+        shell:  shell,
+        stdin:  nil,
+        stdout: shell.pty_slave.path,
+        stderr: shell.pty_slave.path
+      )
 
-          puts "Executing #{self.class.name}: #{cmd.inspect}" if ENV["DEBUG"]
-          shell.puts cmd
+      @repl.loop_on_input do |commands|
+        pipeline = CommandPipeline.new(commands:commands.reverse)
+        pipeline.each.with_index do |(command, stdin, stdout, stderr), i|
+          context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
         end
+        context.execute(world:@world)
 
         loop do
           v = Console.queue.deq

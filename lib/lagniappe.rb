@@ -7,10 +7,16 @@ module Lagniappe
 
   autoload :Repl,           "lagniappe/repl"
   autoload :Line,           "lagniappe/line"
+
   autoload :CommandChain,   "lagniappe/commands"
   autoload :CommandFactory, "lagniappe/commands"
   autoload :RubyCommand,    "lagniappe/commands"
   autoload :ShellCommand,   "lagniappe/commands"
+
+  autoload :ExecutionContext,     "lagniappe/execution"
+  autoload :CommandExecution,     "lagniappe/execution"
+  autoload :RubyCommandExecution, "lagniappe/execution"
+  autoload :ShellCommandExecution,"lagniappe/execution"
 
   def self.run_console
     Console.new.run
