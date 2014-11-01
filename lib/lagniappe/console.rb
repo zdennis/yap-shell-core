@@ -2,130 +2,6 @@ require 'thread'
 require 'yaml'
 
 module Lagniappe
-  class CommandChain
-    include Enumerable
-
-    def initialize
-      @chain = []
-    end
-
-    def each(&blk)
-      @chain.each(&blk)
-    end
-
-    def push(command)
-      @chain << command
-    end
-    alias_method :<<, :push
-  end
-
-  class CommandFactory
-    def self.build_command_for(str)
-      case str
-      when /^\!/ then RubyCommand.new(str)
-      else            ShellCommand.new(str)
-      end
-    end
-  end
-
-  class ShellCommand
-    def initialize(body)
-      @body = body
-    end
-
-    def to_executable_str
-      @body.shellsplit.flatten.join " "
-    end
-  end
-
-  class RubyCommand
-    def initialize(body)
-      @body = body
-    end
-
-    def to_executable_str
-      @body
-    end
-  end
-
-  class Line
-    include Enumerable
-
-    attr_reader :body
-
-    def initialize(raw_line)
-      @raw_line = raw_line
-      @chain = parse_commands_into CommandChain.new
-    end
-
-    def each(&block)
-      @chain.each(&block)
-    end
-    alias_method :each_command, :each
-
-    private
-
-    def parse_commands_into(chain)
-      scope = []
-      words = []
-      str = ''
-
-      @raw_line.each_char.with_index do |ch, i|
-        popped = false
-        if scope.last == ch
-          scope.pop
-          popped = true
-        end
-
-        if (scope.empty? && ch == "|") || (i == @raw_line.length - 1)
-          str << ch unless ch == "|"
-          chain << CommandFactory.build_command_for(str.strip)
-          str = ''
-        else
-          if !popped
-            if %w(' ").include?(ch)
-              scope << ch
-            elsif ch == "{"
-              scope << "}"
-            elsif ch == "["
-              scope << "]"
-            end
-          end
-          str << ch
-        end
-      end
-
-      chain
-    end
-  end
-
-  class Repl
-    def parse_input(line)
-      Line.new(line).each_command do |command|
-        puts "#{command.inspect}"
-      end
-    end
-
-    private
-
-    # line is now "ls | grep e | !gsub /i/, \"I\" | !upcase | grep -v RB"
-    # WORDS: ["ls", "grep e", "!gsub /i/, \"I\"", "!upcase", "grep -v RB"]
-    def parse_commands(line)
-      # command, heredoc = line.scan(/(.*?)(<<-?(\S+).*\3)?/m).flatten[0..1]
-      # *command_parts, heredoc, delimiter = line.scan(/(<<-?(\S+).*\2\s*$)|(\S+)/m)
-      #command = command_parts.join
-      command = line.split(/\s*<<-?(\S+).*\1$/m).first
-      heredoc = line[command.length..-1] if command.length < line.length
-
-      # words = parse_command command
-
-      puts "WORDS: #{words.inspect}"
-      words.tap do |arr|
-        # arr.last << heredoc if heredoc
-      end
-    end
-  end
-
   class Console
     def self.queue
       @queue ||= Queue.new
@@ -135,9 +11,8 @@ module Lagniappe
 
     def initialize(io_in:$stdin, prompt:"> ")
       @io_in = io_in
-      @prompt = prompt
-      @repl = Repl.new
       @world = World.new(prompt: prompt)
+      @repl = Repl.new(world:world)
     end
 
     def preload_shells(n=1)
@@ -186,33 +61,7 @@ module Lagniappe
         end
       end
 
-      loop do
-        # print "\033[s\033[100;0H #{Time.now}\033[u"
-        line = Readline.readline("#{world.prompt}", true)
-        line.strip!
-        next if line == ""
-
-        if line =~ /<<(-)?(\S+)/
-          puts "Beginning heredoc"
-          # heredoc
-          line << "\n"
-          allow_whitespace = !!$1
-          end_marker = $2
-          loop do
-            print "> "
-            str = gets
-            line << str
-            if str.to_s =~ /^#{Regexp.escape(end_marker)}/
-              puts "BREAK"
-              break
-            end
-          end
-        else
-          puts "No heredoc"
-        end
-
-        puts "line is now #{line.inspect}"
-        commands = @repl.parse_input line
+      @repl.loop_on_input do |commands|
         pipes = []
 
         commands.reverse.map.with_index do |command, i|
