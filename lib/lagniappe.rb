@@ -8,7 +8,6 @@ module Lagniappe
   autoload :Repl,           "lagniappe/repl"
   autoload :Line,           "lagniappe/line"
 
-  autoload :CommandChain,   "lagniappe/commands"
   autoload :CommandFactory, "lagniappe/commands"
   autoload :RubyCommand,    "lagniappe/commands"
   autoload :ShellCommand,   "lagniappe/commands"

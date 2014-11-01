@@ -10,12 +10,6 @@ module Lagniappe
     end
   end
 
-  class ExecutionContext
-  end
-
-  class CommandChain < Array
-  end
-
   class CommandPipeline
     def initialize(commands:)
       @commands = commands

@@ -6,7 +6,7 @@ module Lagniappe
 
     def initialize(raw_line)
       @raw_line = raw_line
-      @chain = parse_commands_into CommandChain.new
+      @chain = parse_commands_into Array.new
     end
 
     def commands
