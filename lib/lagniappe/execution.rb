@@ -1,4 +1,28 @@
 module Lagniappe
+  class ExecutionResult
+    def self.parse(message)
+      parts = message.scan /^(\d+)\/(\d+):(\d+):([^:]+)$/
+      if parts.any?
+        n, of, status_code, directory = parts.flatten
+        ExecutionResult.new status_code:status_code.to_i, directory:directory, n:n.to_i, of:of.to_i
+      end
+    end
+
+    attr_reader :status_code, :directory, :n, :of
+
+    def initialize(status_code:, directory:, n:, of:)
+      @status_code = status_code
+      @directory = directory
+      @n = n
+      @of = of
+    end
+
+    # Format: <command number>/<total commands to run>:<status code>
+    def to_shell_str
+      "#{@of - @n}/#{@of}:#{@status_code}:#{@directory}"
+    end
+  end
+
 
   class ExecutionContext
     def self.register(context, command_type:)
@@ -72,12 +96,6 @@ module Lagniappe
         raise NotImplementedError, "on_execute block has been implemented!"
       end
     end
-
-    private
-
-    def finished(command:, n:, of:)
-      shell.stdin.puts "#{of - n}/#{of}:#{exit_code}"
-    end
   end
 
   class ShellCommandExecution < CommandExecution
@@ -85,9 +103,10 @@ module Lagniappe
       cmd = "#{command.to_executable_str}"
       cmd << " < #{stdin}" if stdin
       cmd << " > #{stdout}" if stdout
-      # cmd << " 2> #{stderr}" if stderr
+      cmd << " 2> #{stderr}" if stderr
 
-      cmd2exec = "( #{cmd} ; echo \"#{of - n}/#{of}:$?\" ) &"
+      result = ExecutionResult.new(status_code:"$?", directory:"`pwd`", n:n, of:of)
+      cmd2exec = "( #{cmd} ; echo \"#{result.to_shell_str}\" ) &"
       puts "Executing: #{cmd2exec.inspect}" if ENV["DEBUG"]
       shell.puts cmd2exec
     end
@@ -123,10 +142,14 @@ module Lagniappe
             world
           end
 
-          ruby_command = "self.#{ruby_command}"
-
-          puts "Evaluating #{ruby_command} on #{obj.inspect}" if ENV["DEBUG"]
-          str = obj.instance_eval ruby_command
+          if ruby_command =~ /^[A-Z]|::/
+            puts "Evaluating #{ruby_command} globally" if ENV["DEBUG"]
+            str = eval ruby_command
+          else
+            ruby_command = "self.#{ruby_command}"
+            puts "Evaluating #{ruby_command} on #{obj.inspect}" if ENV["DEBUG"]
+            str = obj.instance_eval ruby_command
+          end
         rescue Exception => ex
           str = <<-EOT.gsub(/^\s*\S/, '')
             |Failed processing ruby: #{ruby_command}
@@ -149,7 +172,8 @@ module Lagniappe
         f2.close
 
         # Make up an exit code
-        shell.stdin.puts "#{of - n}/#{of}:#{exit_code}"
+        result = ExecutionResult.new(status_code:exit_code, directory:Dir.pwd, n:n, of:of)
+        shell.stdin.puts result.to_shell_str
       }
       t.abort_on_exception = true
       t

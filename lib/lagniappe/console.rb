@@ -76,11 +76,13 @@ module Lagniappe
         context.execute(world:@world)
 
         loop do
-          v = Console.queue.deq
-          puts "DEQ'd #{v}" if ENV["DEBUG"]
-          if v =~ /^(\d+)\/(\d+)/
-            a, b = $1.to_i, $2.to_i
-            break if a == b # last command in chain
+          message = Console.queue.deq
+          puts "DEQ'd #{message.inspect}" if ENV["DEBUG"]
+          result = ExecutionResult.parse message
+          if result
+            Dir.chdir result.directory
+            shell.puts "cd #{result.directory.shellescape}"
+            break if result.n == result.of
           end
         end
       end
