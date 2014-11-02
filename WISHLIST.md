@@ -7,6 +7,9 @@
 * fix reload! so it works again
 * handle stderr
 * intelligently handle pipes that show up in ruby blocks, e.g. map{ |a,b| a }
+* Fix shell builtins like pushd/popd. :(
+* Support user-requested background processes, e.g. "ls &"
+* You cannto load lagniappe if you are within lagniappe. Handle the error or let it happen.
 
 Others requests.
 
