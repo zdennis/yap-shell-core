@@ -47,7 +47,8 @@ module Lagniappe
         status_code = nil
         begin
           loop do
-            puts shell.pty_master.read_nonblock(8192)
+            $stdout.puts shell.pty_master.read_nonblock(8192)
+            $stdout.flush
           end
         rescue IO::EAGAINWaitReadable
           if output = (shell.stdout.read_nonblock(8192) rescue nil)
