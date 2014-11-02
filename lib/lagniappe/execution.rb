@@ -180,10 +180,16 @@ module Lagniappe
 
         # The next line  causes issues sometimes?
         # puts "WRITING #{str.length} bytes" if ENV["DEBUG"]
-        f2.flush
         f2.write str
+        f2.flush
 
         f2.close
+
+        # Pass current execution to give any other threads a chance
+        # to be scheduled before we send back our status code. This could
+        # probably use a more elaborate signal or message passing scheme,
+        # but that's for another day.
+        Thread.pass
 
         # Make up an exit code
         result = ExecutionResult.new(status_code:exit_code, directory:Dir.pwd, n:n, of:of)
