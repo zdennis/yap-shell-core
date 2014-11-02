@@ -53,6 +53,7 @@ module Lagniappe
         rescue IO::EAGAINWaitReadable
           if output = (shell.stdout.read_nonblock(8192) rescue nil)
             output.split("\n").each do |line|
+              puts "ENQ: #{line.inspect}" if ENV["DEBUG"]
               Console.queue.enq line
             end
             status_code = should_exit = nil
@@ -78,14 +79,16 @@ module Lagniappe
         end
         context.execute(world:@world)
 
+        messages = []
         loop do
           message = Console.queue.deq
+          messages << message
           puts "DEQ'd #{message.inspect}" if ENV["DEBUG"]
           result = ExecutionResult.parse message
           if result
             Dir.chdir result.directory
             shell.puts "cd #{result.directory.shellescape}"
-            break if result.n == result.of
+            break if messages.length == result.of
           end
         end
       end
