@@ -104,7 +104,7 @@ module Lagniappe
     end
 
     def to_executable_str
-      str.shellsplit.flatten.join " "
+      str.shellescape.shellsplit.flatten.join " "
     end
   end
 
