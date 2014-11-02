@@ -51,8 +51,9 @@ module Lagniappe
           end
         rescue IO::EAGAINWaitReadable
           if output = (shell.stdout.read_nonblock(8192) rescue nil)
-            status_code = output.chomp
-            Console.queue.enq status_code
+            output.split("\n").each do |line|
+              Console.queue.enq line
+            end
             status_code = should_exit = nil
             retry
           else
@@ -60,6 +61,7 @@ module Lagniappe
           end
         end
       end
+      t.abort_on_exception = true
 
       context = ExecutionContext.new(
         shell:  shell,
