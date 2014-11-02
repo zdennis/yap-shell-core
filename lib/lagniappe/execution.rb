@@ -92,7 +92,7 @@ module Lagniappe
       if self.class.on_execute
         self.instance_exec(command:command, n:n, of:of, &self.class.on_execute)
       else
-        raise NotImplementedError, "on_execute block has been implemented!"
+        raise NotImplementedError, "on_execute block hasn't been implemented!"
       end
     end
   end
