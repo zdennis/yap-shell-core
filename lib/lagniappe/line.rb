@@ -1,22 +1,17 @@
 module Lagniappe
   class Line
-    include Enumerable
+    attr_reader :body, :heredoc
 
-    attr_reader :body
-
-    def initialize(raw_line)
+    def initialize(raw_line, heredoc:heredoc)
       @raw_line = raw_line
+      @heredoc = heredoc
       @chain = parse_commands_into Array.new
+      @chain.last.heredoc = heredoc
     end
 
     def commands
       @chain
     end
-
-    def each(&block)
-      @chain.each(&block)
-    end
-    alias_method :each_command, :each
 
     private
 

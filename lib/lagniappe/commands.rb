@@ -53,9 +53,11 @@ module Lagniappe
 
   module Command
     attr_reader :str
+    attr_accessor :heredoc
 
-    def initialize(str: str)
+    def initialize(str: str, heredoc:heredoc)
       @str = str
+      @heredoc = heredoc
     end
 
     def to_executable_str

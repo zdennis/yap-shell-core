@@ -113,9 +113,14 @@ module Lagniappe
       cmd << " < #{stdin}" if stdin
       cmd << " > #{stdout}" if stdout
       cmd << " 2> #{stderr}" if stderr
+      if command.heredoc
+        cmd << " #{command.heredoc}"
+      else
+        cmd << " ; "
+      end
 
       result = ExecutionResult.new(status_code:"$?", directory:"`pwd`", n:n, of:of)
-      cmd2exec = "( #{cmd} ; echo \"#{result.to_shell_str}\" ) &"
+      cmd2exec = "( #{cmd} echo \"#{result.to_shell_str}\" ) &"
       puts "Executing: #{cmd2exec.inspect}" if ENV["DEBUG"]
       shell.puts cmd2exec
     end
