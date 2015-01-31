@@ -6,6 +6,7 @@ module Lagniappe
       case command_str
       when /^\!(.*)/      then RubyCommand.new(str:$1)
       when BuiltinCommand then BuiltinCommand.new(str:command_str)
+      when FileSystemCommand  then FileSystemCommand.new(str:command_str)
       else                     ShellCommand.new(str:command_str)
       end
     end
@@ -95,6 +96,29 @@ module Lagniappe
     end
   end
 
+  class FileSystemCommand
+    include Command
+
+    def self.===(other)
+      command = other.split(/\s+/).detect{ |f| !f.include?("=") }
+
+      # Check to see if the user gave us a valid path to execute
+      return true if File.executable?(command)
+
+      # See if the command exists anywhere on the path
+      ENV["PATH"].split(":").detect do |path|
+        File.executable?(File.join(path, command))
+      end
+    end
+
+    def type
+      :FileSystemCommand
+    end
+
+    def to_executable_str
+      str
+    end
+  end
 
   class ShellCommand
     include Command

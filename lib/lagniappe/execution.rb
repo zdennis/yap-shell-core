@@ -1,10 +1,13 @@
 module Lagniappe
   class ExecutionResult
     def self.parse(message)
-      parts = message.scan /^(\d+)\/(\d+):(\d+):([^:]+)$/
+      parts = message.scan /^(\d+)\/(\d+):(\d*):([^:]+)$/
       if parts.any?
+        # if status_code is nil it may be due to a process exiting due to
+        # a signal error.
         n, of, status_code, directory = parts.flatten
-        ExecutionResult.new status_code:status_code.to_i, directory:directory, n:n.to_i, of:of.to_i
+        status_code = status_code.to_i if status_code
+        ExecutionResult.new status_code:status_code, directory:directory, n:n.to_i, of:of.to_i
       end
     end
 
@@ -63,7 +66,6 @@ module Lagniappe
             stderr: stderr,
             world:  world
           ).execute(command:command, n:i, of:@command_queue.length)
-        else
         end
       end
 
@@ -103,6 +105,18 @@ module Lagniappe
 
       # Make up an exit code
       result = ExecutionResult.new(status_code:exit_code, directory:Dir.pwd, n:n, of:of)
+      shell.stdin.puts result.to_shell_str
+    end
+  end
+
+  class FileSystemCommandExecution < CommandExecution
+    on_execute do |command:, n:, of:|
+      pid = fork do
+        Kernel.exec command.to_executable_str
+      end
+      Process.waitpid(pid)
+      exitstatus = $?.exitstatus
+      result = ExecutionResult.new(status_code:exitstatus, directory:Dir.pwd, n:n, of:of)
       shell.stdin.puts result.to_shell_str
     end
   end
@@ -202,6 +216,7 @@ module Lagniappe
 
 
   ExecutionContext.register BuiltinCommandExecution, command_type: :BuiltinCommand
+  ExecutionContext.register FileSystemCommandExecution,  command_type: :FileSystemCommand
   ExecutionContext.register ShellCommandExecution,   command_type: :ShellCommand
   ExecutionContext.register RubyCommandExecution,    command_type: :RubyCommand
 
