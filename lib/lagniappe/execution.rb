@@ -111,11 +111,17 @@ module Lagniappe
 
   class FileSystemCommandExecution < CommandExecution
     on_execute do |command:, n:, of:|
-      pid = fork do
-        Kernel.exec command.to_executable_str
+      begin
+        pid = fork do
+          Kernel.exec command.to_executable_str
+        end
+        Process.waitpid(pid)
+      rescue Interrupt
+        # don't propagate.
       end
-      Process.waitpid(pid)
-      exitstatus = $?.exitstatus
+
+      # if Interrupt was raised $? is nil.
+      exitstatus = $? ? $?.exitstatus : nil
       result = ExecutionResult.new(status_code:exitstatus, directory:Dir.pwd, n:n, of:of)
       shell.stdin.puts result.to_shell_str
     end
