@@ -48,6 +48,10 @@ module Lagniappe
       @command_queue << [command, stdin, stdout, stderr]
     end
 
+    def clear_commands
+      @command_queue.clear
+    end
+
     def execute(world:)
       @command_queue.each_with_index do |(command, stdin, stdout, stderr), i|
         stdin  = @stdin  if stdin  == :stdin
@@ -69,7 +73,7 @@ module Lagniappe
         end
       end
 
-      @command_queue.clear
+      clear_commands
     end
   end
 
