@@ -51,6 +51,7 @@ module Lagniappe
       @childprocess = ChildProcess.build("bash", "-l", "-O", "expand_aliases")
       @childprocess.duplex = true
       @childprocess.io.stdout = @childprocess.io.stderr = @w
+      @childprocess.leader = true
       @childprocess.start
       @childprocess
     end

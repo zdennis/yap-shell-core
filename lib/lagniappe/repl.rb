@@ -7,8 +7,14 @@ module Lagniappe
     def loop_on_input(&blk)
       loop do
         heredoc = nil
-        input = Readline.readline("#{@world.prompt}", true)
-        next if input == ""
+
+        begin
+          input = Readline.readline("#{@world.prompt}", true)
+          next if input == ""
+        rescue Interrupt
+          puts "^C"
+          next
+        end
 
         arr = input.scan(/^(.*?)(<<(-)?(\S+)\s*)?$/).flatten
         statements, heredoc_start, heredoc_allow_whitespace, heredoc_end_marker = arr
