@@ -1,7 +1,12 @@
 #!/usr/bin/env ruby
 require 'pry'
 
-$LOAD_PATH << File.dirname(__FILE__) + '/../lib'
+file = __FILE__
+if File.symlink?(file)
+  file = File.readlink(file)
+end
+
+$LOAD_PATH << File.dirname(file) + '/../lib'
 
 # loop do
   load "lagniappe.rb"
