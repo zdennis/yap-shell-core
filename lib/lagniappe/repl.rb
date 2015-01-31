@@ -11,22 +11,23 @@ module Lagniappe
         begin
           input = Readline.readline("#{@world.prompt}", true)
           next if input == ""
+
+          arr = input.scan(/^(.*?)(<<(-)?(\S+)\s*)?$/).flatten
+          statements, heredoc_start, heredoc_allow_whitespace, heredoc_end_marker = arr
+
+          if heredoc_start
+            heredoc = process_heredoc start:heredoc_start, marker: heredoc_end_marker
+          else
+            # arr = input.scan().flatten
+          end
+
+          line = Line.new(statements, heredoc:heredoc)
+          yield line.commands if block_given?
         rescue Interrupt
           puts "^C"
           next
         end
 
-        arr = input.scan(/^(.*?)(<<(-)?(\S+)\s*)?$/).flatten
-        statements, heredoc_start, heredoc_allow_whitespace, heredoc_end_marker = arr
-
-        if heredoc_start
-          heredoc = process_heredoc start:heredoc_start, marker: heredoc_end_marker
-        else
-          # arr = input.scan().flatten
-        end
-
-        line = Line.new(statements, heredoc:heredoc)
-        yield line.commands if block_given?
       end
     end
 

@@ -82,14 +82,18 @@ module Lagniappe
 
         messages = []
         loop do
-          message = Console.queue.deq
-          messages << message
-          puts "DEQ'd #{message.inspect}" if ENV["DEBUG"]
-          result = ExecutionResult.parse message
-          if result
-            Dir.chdir result.directory
-            shell.puts "cd #{result.directory.shellescape}"
-            break if messages.length == result.of
+          begin
+            message = Console.queue.deq
+            messages << message
+            puts "DEQ'd #{message.inspect}" if ENV["DEBUG"]
+            result = ExecutionResult.parse message
+            if result
+              Dir.chdir result.directory
+              shell.puts "cd #{result.directory.shellescape}"
+              break if messages.length == result.of
+            end
+          rescue Interrupt
+            shell.interrupt!
           end
         end
       end

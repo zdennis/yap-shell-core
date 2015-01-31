@@ -34,6 +34,15 @@ module Lagniappe
       @r
     end
 
+    # Sends a INT signal to the child process of our child process.
+    # Killing the child process itself will result in pipe errors. 
+    def interrupt!
+      pids = `ps -o pid -g #{@childprocess.pid}`.split("\n")
+      pid = pids[-1]
+      $stdout.puts "Killing: #{pid}" if ENV["DEBUG"]
+      `kill -INT #{pid}`
+    end
+
     def puts(str)
       @childprocess.io.stdin.puts "#{str}"
     end
