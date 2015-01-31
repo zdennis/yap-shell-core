@@ -47,7 +47,7 @@ module Lagniappe
         status_code = nil
         begin
           loop do
-            $stdout.puts shell.pty_master.read_nonblock(8192)
+            $stdout.print shell.pty_master.read_nonblock(8192)
             $stdout.flush
           end
         rescue IO::EAGAINWaitReadable
@@ -77,6 +77,7 @@ module Lagniappe
         pipeline.each.with_index do |(command, stdin, stdout, stderr), i|
           context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
         end
+
         context.execute(world:@world)
 
         messages = []
