@@ -76,8 +76,12 @@ module Lagniappe
           case result
           when :resume
             execution_context = @suspended_execution_contexts.pop
-            puts "fg: No such job" unless execution_context
-            execution_context.resume
+            if execution_context
+              execution_context.resume
+            else
+              puts "fg: No such job"
+              next
+            end
           end
 
           if execution_context.suspended?
@@ -133,15 +137,25 @@ module Lagniappe
   end
 
   class FileSystemCommandExecution < CommandExecution
-    on_execute do |command:, n:, of:|
+    on_execute do |command:, n:, of:, resume_blk:nil|
       begin
-        pid = fork do
-          Kernel.exec command.to_executable_str
+        if resume_blk
+          pid = resume_blk.call
+        else
+          pid = fork do
+            # Start a new process gruop as the session leader. Now we are
+            # responsible for sending signals that would have otherwise
+            # been propagated to the process, e.g. SIGINT, SIGSTOP, SIGCONT, etc.
+            Process.setsid
+            Kernel.exec command.to_executable_str
+          end
         end
         Process.waitpid(pid)
       rescue Interrupt
-        # don't propagate.
+        Process.kill "SIGINT", pid
+
       rescue SuspendSignalError
+        Process.kill "SIGSTOP", pid
         # The Process started above with the PID +pid+ is a child process
         # so it has also received the suspend/SIGTSTP signal.
         suspended(command:command, n:n, of:of, pid: pid)
@@ -154,28 +168,20 @@ module Lagniappe
     end
 
     def resume
-      suspended = @suspended
+      args = @suspended
       @suspended = nil
-      if suspended
-        begin
-          Process.kill "SIGCONT", suspended[:pid]
-          Process.wait suspended[:pid]
-        rescue Interrupt
-          # don't propagate.
-        rescue SuspendSignalError
-          # The Process started above with the PID +pid+ is a child process
-          # so it has also received the suspend/SIGTSTP signal.
-          suspended(suspended)
-        end
 
-        # if a signal killed or stopped the process (such as SIGINT or SIGTSTP) $? is nil.
-        exitstatus = $? ? $?.exitstatus : nil
-        result = ExecutionResult.new(status_code:exitstatus, directory:Dir.pwd, n:suspended[:n], of:suspended[:of])
-        shell.stdin.puts result.to_shell_str
+      puts "Resuming: #{args[:pid]}" if ENV["DEBUG"]
+      resume_blk = lambda do
+        Process.kill "SIGCONT", args[:pid]
+        args[:pid]
       end
+
+      self.instance_exec command:args[:command], n:args[:n], of:args[:of], resume_blk:resume_blk, &self.class.on_execute
     end
 
     def suspended(command:, n:, of:, pid:)
+      puts "Suspending: #{pid}" if ENV["DEBUG"]
       @suspended = {
         command: command,
         n: n,
