@@ -76,6 +76,7 @@ module Lagniappe
     def self.builtins
       @builtins ||= {
         exit: lambda { |code = 0| exit(code.to_i) },
+        fg: lambda{ :resume }
         # 'set' => lambda { |args|
         #   key, value = args.split('=')
         #   ENV[key] = value

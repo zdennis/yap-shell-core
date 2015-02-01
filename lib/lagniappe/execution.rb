@@ -42,6 +42,7 @@ module Lagniappe
       @shell = shell
       @stdin, @stdout, @stderr = stdin, stdout, stderr
       @command_queue = []
+      @suspended_execution_contexts = []
     end
 
     def add_command_to_run(command, stdin:, stdout:, stderr:)
@@ -61,16 +62,29 @@ module Lagniappe
         fifos = [stdin,stdout,stderr].select{ |fifo| fifo && !File.exists?(fifo) }
         fifos.each{ |fifo| File.mkfifo(fifo) }
 
-        execution_context = self.class.execution_context_for(command)
-        if execution_context
-          execution_context.new(
+        execution_context_factory = self.class.execution_context_for(command)
+        if execution_context_factory
+          execution_context = execution_context_factory.new(
             shell:  @shell,
             stdin:  stdin,
             stdout: stdout,
             stderr: stderr,
             world:  world
-          ).execute(command:command, n:i, of:@command_queue.length)
+          )
+
+          result = execution_context.execute(command:command, n:i, of:@command_queue.length)
+          case result
+          when :resume
+            execution_context = @suspended_execution_contexts.pop
+            puts "fg: No such job" unless execution_context
+            execution_context.resume
+          end
+
+          if execution_context.suspended?
+            @suspended_execution_contexts.push execution_context
+          end
         end
+
       end
 
       clear_commands
@@ -101,15 +115,20 @@ module Lagniappe
         raise NotImplementedError, "on_execute block hasn't been implemented!"
       end
     end
+
+    def suspended?
+      @suspended
+    end
   end
 
   class BuiltinCommandExecution < CommandExecution
     on_execute do |command:, n:, of:|
-      command.execute
+      command_result = command.execute
 
       # Make up an exit code
-      result = ExecutionResult.new(status_code:exit_code, directory:Dir.pwd, n:n, of:of)
+      result = ExecutionResult.new(status_code:0, directory:Dir.pwd, n:n, of:of)
       shell.stdin.puts result.to_shell_str
+      command_result
     end
   end
 
@@ -122,13 +141,49 @@ module Lagniappe
         Process.waitpid(pid)
       rescue Interrupt
         # don't propagate.
+      rescue SuspendSignalError
+        # The Process started above with the PID +pid+ is a child process
+        # so it has also received the suspend/SIGTSTP signal.
+        suspended(command:command, n:n, of:of, pid: pid)
       end
 
-      # if Interrupt was raised $? is nil.
+      # if a signal killed or stopped the process (such as SIGINT or SIGTSTP) $? is nil.
       exitstatus = $? ? $?.exitstatus : nil
       result = ExecutionResult.new(status_code:exitstatus, directory:Dir.pwd, n:n, of:of)
       shell.stdin.puts result.to_shell_str
     end
+
+    def resume
+      suspended = @suspended
+      @suspended = nil
+      if suspended
+        begin
+          Process.kill "SIGCONT", suspended[:pid]
+          Process.wait suspended[:pid]
+        rescue Interrupt
+          # don't propagate.
+        rescue SuspendSignalError
+          # The Process started above with the PID +pid+ is a child process
+          # so it has also received the suspend/SIGTSTP signal.
+          suspended(suspended)
+        end
+
+        # if a signal killed or stopped the process (such as SIGINT or SIGTSTP) $? is nil.
+        exitstatus = $? ? $?.exitstatus : nil
+        result = ExecutionResult.new(status_code:exitstatus, directory:Dir.pwd, n:suspended[:n], of:suspended[:of])
+        shell.stdin.puts result.to_shell_str
+      end
+    end
+
+    def suspended(command:, n:, of:, pid:)
+      @suspended = {
+        command: command,
+        n: n,
+        of: of,
+        pid: pid
+      }
+    end
+
   end
 
   class ShellCommandExecution < CommandExecution

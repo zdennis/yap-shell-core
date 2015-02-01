@@ -6,6 +6,13 @@ if File.symlink?(file)
   file = File.readlink(file)
 end
 
+class SuspendSignalError < StandardError
+end
+
+trap("SIGTSTP") do
+  raise SuspendSignalError
+end
+
 $LOAD_PATH << File.dirname(file) + '/../lib'
 
 # loop do

@@ -26,6 +26,11 @@ module Lagniappe
         rescue Interrupt
           puts "^C"
           next
+        rescue SuspendSignalError
+          # no-op since if we got here we're on the already at the top-level
+          # repl and there's nothing to suspend but ourself and we're not
+          # about to do that.
+          next
         end
 
       end
