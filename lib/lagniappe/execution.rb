@@ -138,6 +138,7 @@ module Lagniappe
 
   class FileSystemCommandExecution < CommandExecution
     on_execute do |command:, n:, of:, resume_blk:nil|
+      shell, stdin, stdout, stderr, world = @shell, @stdin, @stdout, @stderr, @world
       begin
         if resume_blk
           pid = resume_blk.call
@@ -146,11 +147,16 @@ module Lagniappe
             # Start a new process gruop as the session leader. Now we are
             # responsible for sending signals that would have otherwise
             # been propagated to the process, e.g. SIGINT, SIGSTOP, SIGCONT, etc.
+            if of > 1
+              $stdout.reopen stdout
+              $stderr.reopen stderr
+              $stdin.reopen stdin if stdin
+            end
             Process.setsid
             Kernel.exec command.to_executable_str
           end
         end
-        Process.waitpid(pid)
+        Process.waitpid(pid) unless of > 1
       rescue Interrupt
         Process.kill "SIGINT", pid
 
@@ -189,7 +195,6 @@ module Lagniappe
         pid: pid
       }
     end
-
   end
 
   class ShellCommandExecution < CommandExecution
