@@ -9,9 +9,9 @@ module Lagniappe
 
     attr_reader :world
 
-    def initialize(io_in:$stdin, prompt:"> ")
+    def initialize(io_in:$stdin, prompt:"> ", addons:[])
       @io_in = io_in
-      @world = World.new(prompt: prompt)
+      @world = World.new(prompt: prompt, addons:addons)
       @repl = Repl.new(world:world)
     end
 

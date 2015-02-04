@@ -6,11 +6,14 @@ module Lagniappe
     include Term::ANSIColor
     extend Forwardable
 
-    attr_accessor :prompt, :contents
+    attr_accessor :prompt, :contents, :addons
 
     def initialize(options)
       (options || {}).each do |k,v|
         self.send "#{k}=", v
+      end
+      addons.each do |addon|
+        self.instance_eval addon
       end
     end
 
