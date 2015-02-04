@@ -23,6 +23,8 @@ module Lagniappe
 
           line = Line.new(statements, heredoc:heredoc)
           yield line.commands if block_given?
+        rescue ::Lagniappe::CommandUnknownError => ex
+          puts "  CommandError: #{ex.message}"
         rescue Interrupt
           puts "^C"
           next

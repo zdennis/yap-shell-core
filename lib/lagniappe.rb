@@ -13,6 +13,8 @@ module Lagniappe
   autoload :FileSystemCommand,  "lagniappe/commands"
   autoload :RubyCommand,    "lagniappe/commands"
   autoload :ShellCommand,   "lagniappe/commands"
+  autoload :CommandError,   "lagniappe/commands"
+  autoload :CommandUnknownError,   "lagniappe/commands"
 
   autoload :ExecutionContext,     "lagniappe/execution"
   autoload :CommandExecution,     "lagniappe/execution"

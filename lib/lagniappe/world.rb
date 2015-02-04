@@ -1,10 +1,19 @@
 require 'term/ansicolor'
 require 'forwardable'
+require 'lagniappe/commands'
 
 module Lagniappe
   class World
     include Term::ANSIColor
     extend Forwardable
+
+    module AliasHelper
+      def set_alias(command, &action)
+        ::Lagniappe::BuiltinCommand.add command, &action
+      end
+    end
+
+    include AliasHelper
 
     attr_accessor :prompt, :contents, :addons
 

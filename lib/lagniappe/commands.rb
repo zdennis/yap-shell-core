@@ -1,13 +1,18 @@
 require 'ostruct'
 
 module Lagniappe
+  class CommandError < StandardError ; end
+  class CommandUnknownError < CommandError ; end
+
   class CommandFactory
     def self.build_command_for(command_str)
       case command_str
       when /^\!(.*)/      then RubyCommand.new(str:$1)
       when BuiltinCommand then BuiltinCommand.new(str:command_str)
       when FileSystemCommand  then FileSystemCommand.new(str:command_str)
-      else                     ShellCommand.new(str:command_str)
+      # else                     ShellCommand.new(str:command_str)
+      else
+        raise CommandUnknownError, "Don't know how to execute command: #{command_str}"
       end
     end
   end
@@ -70,13 +75,14 @@ module Lagniappe
     include Command
 
     def self.===(other)
-      self.builtins.keys.include?(other.to_sym) || super
+      self.builtins.keys.include?(other.split(' ').first.to_sym) || super
     end
 
     def self.builtins
       @builtins ||= {
         exit: lambda { |code = 0| exit(code.to_i) },
-        fg: lambda{ :resume }
+        fg: lambda{ :resume },
+        cd: lambda{ |path=ENV['HOME'], *_| Dir.chdir(path) }
         # 'set' => lambda { |args|
         #   key, value = args.split('=')
         #   ENV[key] = value
@@ -84,8 +90,13 @@ module Lagniappe
       }
     end
 
+    def self.add(command, &action)
+      builtins.merge!(command.to_sym => action)
+    end
+
     def execute
-      self.class.builtins[@str.to_sym].call || raise("Missing proc for builtin #{@str}")
+      command, *args = Shellwords.split(@str)
+      self.class.builtins[command.to_sym].call(*args) || raise("Missing proc for builtin #{@str}")
     end
 
     def type
