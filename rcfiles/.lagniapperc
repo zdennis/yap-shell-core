@@ -11,11 +11,26 @@ require 'term/ansicolor'
 
 self.prompt = -> do
   pwd = Dir.pwd.sub Regexp.new(ENV['HOME']), '~'
-  git_branch = `git cbranch 2>/dev/null`.chomp
+
+  git_current_branch = `git cbranch 2>/dev/null`.chomp
+  if git_current_branch.length > 0
+    git_current_branch += " "
+    git_dirty_not_cached = `git diff --shortstat`.length > 0
+    git_dirty_cached = `git diff --shortstat --cached`.length > 0
+
+    if git_dirty_not_cached || git_dirty_cached
+      git_branch = intense_cyan(git_current_branch)
+    else
+      git_branch = cyan(git_current_branch)
+    end
+  else
+    git_branch = ""
+  end
+
   arrow = '➜'
 
   # ~/source/playground/lagniappe master ➜
-  "#{dark(green('£'))} #{bright_yellow(pwd)} #{intense_cyan(git_branch)} #{red(arrow)} "
+  "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
 aliasdir_file = "#{ENV['HOME']}/.aliasdir"
