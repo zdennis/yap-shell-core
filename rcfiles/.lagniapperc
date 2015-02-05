@@ -1,0 +1,101 @@
+#!/usr/bin/ruby
+
+require 'chronic'
+require 'term/ansicolor'
+
+#
+# Configuring your prompt. This can be set to a static value or to a
+# Proc like object that responds to #call. If it responds to call it will
+# be used every time the prompt is to be re-drawn
+#
+
+self.prompt = -> do
+  pwd = Dir.pwd.sub Regexp.new(ENV['HOME']), '~'
+  git_branch = `git cbranch 2>/dev/null`.chomp
+  arrow = '➜'
+
+  # ~/source/playground/lagniappe master ➜
+  "#{dark(green('£'))} #{bright_yellow(pwd)} #{intense_cyan(git_branch)} #{red(arrow)} "
+end
+
+aliasdir_file = "#{ENV['HOME']}/.aliasdir"
+if File.exists?(aliasdir_file)
+  YAML.load_file(aliasdir_file).each_pair do |shortcut, target|
+    set_alias(shortcut){ Dir.chdir(target) }
+  end
+end
+
+::Lagniappe::BuiltinCommand.add(:howmuch) do |*args|
+  case args.first
+  when "time"
+    if history_item=CommandHistory.last_run_command
+      puts history_item.total_time_s
+    else
+      puts "Can't report on something you haven't done."
+    end
+  else
+    puts "How much what?"
+  end
+end
+
+class CommandHistoryImplementation
+  def initialize
+    @history = []
+  end
+
+  def push(item)
+    @history.push item
+  end
+
+  def last
+    @history.last
+  end
+
+  def last_run_command
+    @history.reverse.detect{ |item| item.finished? }
+  end
+
+  class Item
+    def initialize(command_str:command_str, started_at:Time.now)
+      @command_str = command_str
+      @started_at = started_at
+      @ended_at = nil
+    end
+
+    def finished!
+      @ended_at = Time.now
+    end
+
+    def finished?
+      !!@ended_at
+    end
+
+    def total_time_s
+      humanize(@ended_at - @started_at) if @ended_at && @started_at
+    end
+
+    private
+
+    def humanize secs
+      [[60, :seconds], [60, :minutes], [24, :hours], [1000, :days]].inject([]){ |s, (count, name)|
+        if secs > 0
+          secs, n = secs.divmod(count)
+          s.unshift "#{n} #{name}"
+        end
+        s
+      }.join(' ')
+    end
+  end
+
+end
+
+CommandHistory = CommandHistoryImplementation.new
+
+
+Lagniappe::ExecutionContext.on(:before_execute) do |context, command:|
+  CommandHistory.push CommandHistoryImplementation::Item.new(command_str: command.str, started_at: Time.now)
+end
+
+Lagniappe::ExecutionContext.on(:after_execute) do |context, command:|
+  CommandHistory.last.finished!
+end
