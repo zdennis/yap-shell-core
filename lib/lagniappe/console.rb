@@ -46,6 +46,8 @@ module Lagniappe
       t = Thread.new do
         status_code = nil
         begin
+          sleep 0.1
+
           loop do
             $stdout.print shell.pty_master.read_nonblock(8192)
             $stdout.flush
