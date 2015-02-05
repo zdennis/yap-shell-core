@@ -1,7 +1,26 @@
+require 'terminfo'
+
 module Lagniappe
   class Repl
     def initialize(world:)
       @world = world
+    end
+
+    require 'terminfo'
+    include Term::ANSIColor
+    def print_time(on:)
+      t = TermInfo.new("xterm-color", STDOUT)
+      # t.control "cud", 1
+      time_str = Time.now.strftime("%H:%M:%S")
+      h, w = t.screen_size
+      t.control "sc"
+      t.control "cub", w
+      if on == :previous_row
+        t.control "cuu", 1
+      end
+      t.control "cuf", w - time_str.length
+      t.write bright_black(time_str)
+      t.control "rc"
     end
 
     def loop_on_input(&blk)
@@ -9,7 +28,18 @@ module Lagniappe
         heredoc = nil
 
         begin
+          thr = Thread.new do
+            loop do
+              print_time on: :current_row
+              sleep 1
+            end
+          end
+          thr.abort_on_exception = true
+
           input = Readline.readline("#{@world.prompt}", true)
+          Thread.kill(thr)
+
+          print_time on: :previous_row
           next if input == ""
 
           arr = input.scan(/^(.*?)(<<(-)?(\S+)\s*)?$/).flatten
