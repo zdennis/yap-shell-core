@@ -27,6 +27,20 @@ module Lagniappe
   end
 
   class ExecutionContext
+    def self.on(event=nil, &blk)
+      @on_callbacks ||= Hash.new{ |h,k| h[k] = [] }
+      if event
+        @on_callbacks[event.to_sym].push blk
+      end
+      @on_callbacks
+    end
+
+    def self.fire(event, context, *args)
+      on[event.to_sym].each do |block|
+        block.call(context, *args)
+      end
+    end
+
     def self.register(context, command_type:)
       raise "context cannot be nil" if context.nil?
       @registrations ||= {}
@@ -72,7 +86,10 @@ module Lagniappe
             world:  world
           )
 
+          self.class.fire :before_execute, execution_context, command: command
           result = execution_context.execute(command:command, n:i, of:@command_queue.length)
+          self.class.fire :after_execute, execution_context, command: command
+
           case result
           when :resume
             execution_context = @suspended_execution_contexts.pop
