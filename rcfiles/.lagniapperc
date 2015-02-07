@@ -111,6 +111,17 @@ Lagniappe::ExecutionContext.on(:before_execute) do |context, command:|
   CommandHistory.push CommandHistoryImplementation::Item.new(command_str: command.str, started_at: Time.now)
 end
 
-Lagniappe::ExecutionContext.on(:after_execute) do |context, command:|
+Lagniappe::ExecutionContext.on(:after_execute) do |context, command:, result:|
   CommandHistory.last.finished!
+  # if result.status_code == 0
+  #   # t = TermInfo.new("xterm-color", STDOUT)
+  #   # h, w = t.screen_size
+  #   # t.control "cub", w
+  #   # # msg =
+  #   # t.control "cuf"
+  #   # # t.control "home"
+  #   #
+  #   # # t.write "hi"
+  #   # # t.control "rc"
+  # end
 end

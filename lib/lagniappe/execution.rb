@@ -88,7 +88,7 @@ module Lagniappe
 
           self.class.fire :before_execute, execution_context, command: command
           result = execution_context.execute(command:command, n:i, of:@command_queue.length)
-          self.class.fire :after_execute, execution_context, command: command
+          self.class.fire :after_execute, execution_context, command: command, result: result
 
           case result
           when :resume
@@ -188,6 +188,7 @@ module Lagniappe
       exitstatus = $? ? $?.exitstatus : nil
       result = ExecutionResult.new(status_code:exitstatus, directory:Dir.pwd, n:n, of:of)
       shell.stdin.puts result.to_shell_str
+      result
     end
 
     def resume

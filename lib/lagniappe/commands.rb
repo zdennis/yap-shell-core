@@ -4,9 +4,35 @@ module Lagniappe
   class CommandError < StandardError ; end
   class CommandUnknownError < CommandError ; end
 
+  require 'singleton'
+  class Aliases
+    include Singleton
+
+    def initialize
+      @aliases = {}
+    end
+
+    def fetch_alias(name)
+      @aliases[name]
+    end
+
+    def set_alias(name, command)
+      @aliases[name] = command
+    end
+
+    def unset_alias(name)
+      @aliases.delete(name)
+    end
+
+    def has_key?(key)
+      @aliases.has_key?(key)
+    end
+  end
+
   class CommandFactory
     def self.build_command_for(command_str)
       case command_str
+      when AliasCommand   then AliasCommand.new(str:command_str)
       when /^\!(.*)/      then RubyCommand.new(str:$1)
       when BuiltinCommand then BuiltinCommand.new(str:command_str)
       when FileSystemCommand  then FileSystemCommand.new(str:command_str)
@@ -71,6 +97,27 @@ module Lagniappe
     end
   end
 
+  class AliasCommand
+    include Command
+
+    def self.===(str)
+      Aliases.instance.has_key?(str)
+    end
+
+    def initialize(str: str)
+
+      @alias = Aliases.instance.fetch_alias(str)
+    end
+
+    def to_executable_str
+      @alias
+    end
+
+    def type
+      :AliasCommand
+    end
+  end
+
   class BuiltinCommand
     include Command
 
@@ -82,7 +129,11 @@ module Lagniappe
       @builtins ||= {
         exit: lambda { |code = 0| exit(code.to_i) },
         fg: lambda{ :resume },
-        cd: lambda{ |path=ENV['HOME'], *_| Dir.chdir(path) }
+        cd: lambda{ |path=ENV['HOME'], *_| Dir.chdir(path) },
+        alias: lambda { |str|
+          name, command = str.scan(/^(.*?)\s*=\s*(.*)$/).flatten
+          Aliases.instance.set_alias name, command
+        }
         # 'set' => lambda { |args|
         #   key, value = args.split('=')
         #   ENV[key] = value

@@ -9,7 +9,6 @@ module Lagniappe
     require 'terminfo'
     include Term::ANSIColor
     def print_time(on:)
-      t = TermInfo.new("xterm-color", STDOUT)
       # t.control "cud", 1
       time_str = Time.now.strftime("%H:%M:%S")
       h, w = t.screen_size
@@ -23,8 +22,14 @@ module Lagniappe
       t.control "rc"
     end
 
+    attr_reader :t
     def loop_on_input(&blk)
+      @t = TermInfo.new("xterm-256color", STDOUT)
+
       loop do
+        # t.control "clear"
+        # t.control "cwin", 0, 0, 100, 100
+
         heredoc = nil
 
         begin
