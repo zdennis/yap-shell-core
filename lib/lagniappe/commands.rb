@@ -31,8 +31,17 @@ module Lagniappe
 
   class CommandFactory
     def self.build_command_for(command_str)
+      aliases = Aliases.instance
+
+      loop do
+        if str=aliases.fetch_alias(command_str)
+          command_str=str
+        else
+          break
+        end
+      end
+
       case command_str
-      when AliasCommand   then AliasCommand.new(str:command_str)
       when /^\!(.*)/      then RubyCommand.new(str:$1)
       when BuiltinCommand then BuiltinCommand.new(str:command_str)
       when FileSystemCommand  then FileSystemCommand.new(str:command_str)
@@ -84,37 +93,17 @@ module Lagniappe
   end
 
   module Command
-    attr_reader :str
+    attr_accessor :str, :args
     attr_accessor :heredoc
 
-    def initialize(str: str, heredoc:heredoc)
+    def initialize(str:, args:[], heredoc:nil)
       @str = str
+      @args = args
       @heredoc = heredoc
     end
 
     def to_executable_str
       raise NotImplementedError, ":to_executable_str must be implemented by including object."
-    end
-  end
-
-  class AliasCommand
-    include Command
-
-    def self.===(str)
-      Aliases.instance.has_key?(str)
-    end
-
-    def initialize(str: str)
-
-      @alias = Aliases.instance.fetch_alias(str)
-    end
-
-    def to_executable_str
-      @alias
-    end
-
-    def type
-      :AliasCommand
     end
   end
 
@@ -180,7 +169,7 @@ module Lagniappe
     end
 
     def to_executable_str
-      str
+      "#{str} #{args.map(&:shellescape).join ' '}"
     end
   end
 

@@ -1,4 +1,5 @@
 require 'terminfo'
+require 'yap/line/parser'
 
 module Lagniappe
   class Repl
@@ -47,14 +48,16 @@ module Lagniappe
           print_time on: :previous_row
           next if input == ""
 
-          arr = input.scan(/^(.*?)(<<(-)?(\S+)\s*)?$/).flatten
-          statements, heredoc_start, heredoc_allow_whitespace, heredoc_end_marker = arr
+          statements = Yap::Line::Parser.parse(input)
 
-          if heredoc_start
-            heredoc = process_heredoc start:heredoc_start, marker: heredoc_end_marker
-          else
-            # arr = input.scan().flatten
-          end
+          # arr = input.scan(/^(.*?)(<<(-)?(\S+)\s*)?$/).flatten
+          # statements, heredoc_start, heredoc_allow_whitespace, heredoc_end_marker = arr
+          #
+          # if heredoc_start
+          #   heredoc = process_heredoc start:heredoc_start, marker: heredoc_end_marker
+          # else
+          #   # arr = input.scan().flatten
+          # end
 
           line = Line.new(statements, heredoc:heredoc)
           yield line.commands if block_given?

@@ -2,11 +2,11 @@ module Lagniappe
   class Line
     attr_reader :body, :heredoc
 
-    def initialize(raw_line, heredoc:heredoc)
-      @raw_line = raw_line
+    def initialize(statements, heredoc:heredoc)
+      @statements = statements
       @heredoc = heredoc
-      @chain = parse_commands_into Array.new
-      @chain.last.heredoc = heredoc
+      @chain = parse_statements_into_commands
+      #@chain.last.heredoc = heredoc
     end
 
     def commands
@@ -14,6 +14,14 @@ module Lagniappe
     end
 
     private
+
+    def parse_statements_into_commands
+      @statements.map do |statement|
+        command = CommandFactory.build_command_for(statement.command)
+        command.args = statement.args
+        command
+      end
+    end
 
     def parse_commands_into(chain)
       scope = []
