@@ -1,4 +1,5 @@
 require 'ostruct'
+require 'yaml'
 
 module Lagniappe
   class CommandError < StandardError ; end
@@ -9,7 +10,12 @@ module Lagniappe
     include Singleton
 
     def initialize
-      @aliases = {}
+      @file = ENV["HOME"] + "/.yapaliases.yml"
+      @aliases = begin
+        YAML.load_file(@file)
+      rescue
+        {}
+      end
     end
 
     def fetch_alias(name)
@@ -18,6 +24,7 @@ module Lagniappe
 
     def set_alias(name, command)
       @aliases[name] = command
+      File.write @file, @aliases.to_yaml
     end
 
     def unset_alias(name)
@@ -117,6 +124,7 @@ module Lagniappe
 
     def self.builtins
       @builtins ||= {
+        builtins: lambda { puts @builtins.keys.sort },
         exit: lambda { |code = 0| exit(code.to_i) },
         fg: lambda{ :resume },
         cd: lambda{ |path=ENV['HOME'], *_| Dir.chdir(path) },
@@ -136,8 +144,7 @@ module Lagniappe
     end
 
     def execute
-      command, *args = Shellwords.split(@str)
-      action = self.class.builtins.fetch(command.to_sym){ raise("Missing proc for builtin #{@str}") }
+      action = self.class.builtins.fetch(str.to_sym){ raise("Missing proc for builtin #{@str}") }
       action.call *args
     end
 
