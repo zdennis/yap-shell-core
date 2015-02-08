@@ -1,7 +1,7 @@
 require 'ostruct'
 require 'yaml'
 
-module Lagniappe
+module Yap
   class CommandError < StandardError ; end
   class CommandUnknownError < CommandError ; end
 

@@ -5,7 +5,7 @@ require 'mkfifo'
 require 'ostruct'
 require 'pty'
 
-module Lagniappe
+module Yap
   require 'childprocess'
   class Shell
     attr_reader :pty_master, :pty_slave

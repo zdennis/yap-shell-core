@@ -1,7 +1,7 @@
 require 'thread'
 require 'yaml'
 
-module Lagniappe
+module Yap
   class Console
     def self.queue
       @queue ||= Queue.new

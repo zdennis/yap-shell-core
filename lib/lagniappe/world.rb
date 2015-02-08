@@ -2,7 +2,7 @@ require 'term/ansicolor'
 require 'forwardable'
 require 'lagniappe/commands'
 
-module Lagniappe
+module Yap
   class World
     include Term::ANSIColor
     extend Forwardable

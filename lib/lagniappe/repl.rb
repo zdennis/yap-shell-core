@@ -1,7 +1,7 @@
 require 'terminfo'
 require 'yap/line/parser'
 
-module Lagniappe
+module Yap
   class Repl
     def initialize(world:)
       @world = world
@@ -57,7 +57,7 @@ module Lagniappe
 
           line = Line.new(statements, heredoc:heredoc)
           yield line.commands if block_given?
-        rescue ::Lagniappe::CommandUnknownError => ex
+        rescue ::Yap::CommandUnknownError => ex
           puts "  CommandError: #{ex.message}"
         rescue Interrupt
           puts "^C"

@@ -1,4 +1,4 @@
-# Lagniappe
+# Yap
 
 TODO: Write a gem description
 

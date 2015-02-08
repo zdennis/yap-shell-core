@@ -5,7 +5,7 @@ require 'lagniappe/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "lagniappe"
-  spec.version       = Lagniappe::VERSION
+  spec.version       = Yap::VERSION
   spec.authors       = ["Zach Dennis"]
   spec.email         = ["zach.dennis@gmail.com"]
   spec.summary       = %q{TODO: Write a short summary. Required.}

@@ -1,6 +1,6 @@
 require "lagniappe/version"
 
-module Lagniappe
+module Yap
   autoload :Console, "lagniappe/console"
   autoload :Shell,   "lagniappe/shell"
   autoload :World,   "lagniappe/world"

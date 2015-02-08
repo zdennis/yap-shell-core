@@ -19,7 +19,7 @@ $LOAD_PATH << File.dirname(file) + '/../lib'
   load "lagniappe.rb"
   load "lagniappe/shell.rb"
   begin
-    Lagniappe.run_console
+    Yap.run_console
   rescue StandardError => ex
     puts ex.message
     puts ex.backtrace

@@ -1,4 +1,4 @@
-module Lagniappe
+module Yap
   class Line
     attr_reader :body, :heredoc
 

@@ -1,4 +1,4 @@
-module Lagniappe
+module Yap
   class ExecutionResult
     def self.parse(message)
       parts = message.scan /^(\d+)\/(\d+):(\d*):([^:]+)$/

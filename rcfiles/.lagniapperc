@@ -33,7 +33,7 @@ self.prompt = -> do
   "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
-::Lagniappe::BuiltinCommand.add(:howmuch) do |*args|
+::Yap::BuiltinCommand.add(:howmuch) do |*args|
   case args.first
   when "time"
     if history_item=CommandHistory.last_run_command
@@ -100,11 +100,11 @@ end
 CommandHistory = CommandHistoryImplementation.new
 
 
-Lagniappe::ExecutionContext.on(:before_execute) do |context, command:|
+Yap::ExecutionContext.on(:before_execute) do |context, command:|
   CommandHistory.push CommandHistoryImplementation::Item.new(command_str: command.str, started_at: Time.now)
 end
 
-Lagniappe::ExecutionContext.on(:after_execute) do |context, command:, result:|
+Yap::ExecutionContext.on(:after_execute) do |context, command:, result:|
   CommandHistory.last.finished!
   # if result.status_code == 0
   #   # t = TermInfo.new("xterm-color", STDOUT)
