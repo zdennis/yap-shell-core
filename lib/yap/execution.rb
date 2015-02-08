@@ -217,20 +217,12 @@ module Yap
 
   class ShellCommandExecution < CommandExecution
     on_execute do |command:, n:, of:|
-      cmd = "#{command.to_executable_str}"
-      cmd << " < #{stdin}" if stdin
-      cmd << " > #{stdout}" if stdout
-      cmd << " 2> #{stderr}" if stderr
-      if command.heredoc
-        cmd << " #{command.heredoc}"
-      else
-        cmd << " ; "
-      end
+      command_result = command.execute
 
-      result = ExecutionResult.new(status_code:"$?", directory:"`pwd`", n:n, of:of)
-      cmd2exec = "( #{cmd} echo \"#{result.to_shell_str}\" ) &"
-      puts "Executing: #{cmd2exec.inspect}" if ENV["DEBUG"]
-      shell.puts cmd2exec
+      # Make up an exit code
+      result = ExecutionResult.new(status_code:0, directory:Dir.pwd, n:n, of:of)
+      shell.stdin.puts result.to_shell_str
+      command_result
     end
   end
 

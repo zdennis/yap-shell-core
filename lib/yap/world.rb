@@ -13,9 +13,14 @@ module Yap
       (options || {}).each do |k,v|
         self.send "#{k}=", v
       end
+
       addons.each do |addon|
         self.instance_eval addon
       end
+    end
+
+    def func(name, &blk)
+      Yap::ShellCommand.define_shell_function(name, &blk)
     end
 
     def readline

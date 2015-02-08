@@ -42,9 +42,9 @@ module Yap
 
       command = statement.command
       case command
+      when ShellCommand then ShellCommand.new(str:command)
       when BuiltinCommand then BuiltinCommand.new(str:command)
       when FileSystemCommand  then FileSystemCommand.new(str:command)
-      # else                     ShellCommand.new(str:command)
       else
         raise CommandUnknownError, "Don't know how to execute command: #{command}"
       end
@@ -179,12 +179,27 @@ module Yap
   class ShellCommand
     include Command
 
+    def self.registered_functions
+      (@registered_functions ||= {}).freeze
+    end
+
+    def self.define_shell_function(name, &blk)
+      raise ArgumentError, "Must provided block when defining a shell function" unless blk
+      (@registered_functions ||= {})[name.to_sym] = blk
+    end
+
+    def self.===(other)
+      registered_functions.include?(other.to_sym)
+    end
+
     def type
       :ShellCommand
     end
 
-    def to_executable_str
-      str.shellescape.shellsplit.flatten.join " "
+    def execute
+      self.class.registered_functions.fetch(str.to_sym){
+        raise "Shell function #{str} was not found!"
+      }.call *args
     end
   end
 

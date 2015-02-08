@@ -33,7 +33,7 @@ self.prompt = -> do
   "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
-::Yap::BuiltinCommand.add(:howmuch) do |*args|
+func :howmuch do |*args|
   case args.first
   when "time"
     if history_item=CommandHistory.last_run_command
