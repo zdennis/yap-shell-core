@@ -49,15 +49,7 @@ module Lagniappe
           next if input == ""
 
           statements = Yap::Line::Parser.parse(input)
-
-          # arr = input.scan(/^(.*?)(<<(-)?(\S+)\s*)?$/).flatten
-          # statements, heredoc_start, heredoc_allow_whitespace, heredoc_end_marker = arr
-          #
-          # if heredoc_start
-          #   heredoc = process_heredoc start:heredoc_start, marker: heredoc_end_marker
-          # else
-          #   # arr = input.scan().flatten
-          # end
+          heredoc = process_heredoc marker:statements.last.heredoc_marker
 
           line = Line.new(statements, heredoc:heredoc)
           yield line.commands if block_given?
@@ -79,16 +71,16 @@ module Lagniappe
 
     private
 
-    def process_heredoc(start:, marker:)
+    def process_heredoc(marker:)
+      return nil if marker.nil?
+
       puts "Beginning heredoc" if ENV["DEBUG"]
       String.new.tap do |heredoc|
-        heredoc << start
-        heredoc << "\n"
+        heredoc << "<<#{marker}\n"
         loop do
-          print "> "
-          str = gets
-          heredoc << str
-          if str =~ /^#{Regexp.escape(marker)}/
+          str = Readline.readline("> ", true)
+          heredoc << "#{str}\n"
+          if str =~ /^#{Regexp.escape(marker)}$/
             puts "Ending heredoc" if ENV["DEBUG"]
             break
           end

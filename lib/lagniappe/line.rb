@@ -6,7 +6,7 @@ module Lagniappe
       @statements = statements
       @heredoc = heredoc
       @chain = parse_statements_into_commands
-      #@chain.last.heredoc = heredoc
+      @chain.last.heredoc = heredoc
     end
 
     def commands

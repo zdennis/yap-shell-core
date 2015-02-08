@@ -169,7 +169,11 @@ module Lagniappe
     end
 
     def to_executable_str
-      "#{str} #{args.map(&:shellescape).join ' '}"
+      [
+        str,
+        args.map(&:shellescape).join(' '),
+        (heredoc if heredoc)
+      ].join(' ')
     end
   end
 
