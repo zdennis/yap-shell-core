@@ -7,14 +7,6 @@ module Lagniappe
     include Term::ANSIColor
     extend Forwardable
 
-    module AliasHelper
-      def set_alias(command, &action)
-        ::Lagniappe::BuiltinCommand.add command, &action
-      end
-    end
-
-    include AliasHelper
-
     attr_accessor :prompt, :contents, :addons
 
     def initialize(options)

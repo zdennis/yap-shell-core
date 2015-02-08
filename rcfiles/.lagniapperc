@@ -33,13 +33,6 @@ self.prompt = -> do
   "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
-aliasdir_file = "#{ENV['HOME']}/.aliasdir"
-if File.exists?(aliasdir_file)
-  YAML.load_file(aliasdir_file).each_pair do |shortcut, target|
-    set_alias(shortcut){ Dir.chdir(target) }
-  end
-end
-
 ::Lagniappe::BuiltinCommand.add(:howmuch) do |*args|
   case args.first
   when "time"

@@ -144,7 +144,8 @@ module Lagniappe
     end
 
     def execute
-      action = self.class.builtins.fetch(str.to_sym){ raise("Missing proc for builtin #{@str}") }
+      builtin,*args = Shellwords.split(str)
+      action = self.class.builtins.fetch(builtin.to_sym){ raise("Missing proc for builtin: '#{builtin}' in #{str.inspect}") }
       action.call *args
     end
 
