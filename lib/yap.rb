@@ -6,7 +6,6 @@ module Yap
   autoload :World,   "yap/world"
 
   autoload :Repl,           "yap/repl"
-  autoload :Line,           "yap/line"
 
   autoload :CommandFactory, "yap/commands"
   autoload :BuiltInCommand, "yap/commands"

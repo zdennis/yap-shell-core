@@ -55,8 +55,8 @@ module Yap
             expand_statement(statement)
           end.flatten
 
-          line = Line.new(statements, heredoc:heredoc)
-          yield line.commands if block_given?
+          commands = convert_statements_to_command_chain(statements, heredoc:heredoc)
+          yield commands if block_given?
         rescue ::Yap::CommandUnknownError => ex
           puts "  CommandError: #{ex.message}"
         rescue Interrupt
@@ -74,6 +74,16 @@ module Yap
     end
 
     private
+
+    def convert_statements_to_command_chain(statements, heredoc:nil)
+      commands = statements.map do |statement|
+        command = CommandFactory.build_command_for(statement)
+        command.args = statement.args if statement.respond_to?(:args)
+        command
+      end
+      commands.last.heredoc = heredoc
+      commands
+    end
 
     def expand_statement(statement)
       return [statement] if statement.internally_evaluate?
