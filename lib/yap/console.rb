@@ -24,7 +24,7 @@ module Yap
     end
 
     def history_file
-      File.expand_path('~') + '/.lagniappe-history'
+      File.expand_path('~') + '/.yap-history'
     end
 
     def run

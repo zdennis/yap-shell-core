@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in lagniappe.gemspec
+# Specify your gem's dependencies in yap.gemspec
 gemspec

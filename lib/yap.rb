@@ -1,26 +1,26 @@
-require "lagniappe/version"
+require "yap/version"
 
 module Yap
-  autoload :Console, "lagniappe/console"
-  autoload :Shell,   "lagniappe/shell"
-  autoload :World,   "lagniappe/world"
+  autoload :Console, "yap/console"
+  autoload :Shell,   "yap/shell"
+  autoload :World,   "yap/world"
 
-  autoload :Repl,           "lagniappe/repl"
-  autoload :Line,           "lagniappe/line"
+  autoload :Repl,           "yap/repl"
+  autoload :Line,           "yap/line"
 
-  autoload :CommandFactory, "lagniappe/commands"
-  autoload :BuiltInCommand, "lagniappe/commands"
-  autoload :FileSystemCommand,  "lagniappe/commands"
-  autoload :RubyCommand,    "lagniappe/commands"
-  autoload :ShellCommand,   "lagniappe/commands"
-  autoload :CommandError,   "lagniappe/commands"
-  autoload :CommandUnknownError,   "lagniappe/commands"
+  autoload :CommandFactory, "yap/commands"
+  autoload :BuiltInCommand, "yap/commands"
+  autoload :FileSystemCommand,  "yap/commands"
+  autoload :RubyCommand,    "yap/commands"
+  autoload :ShellCommand,   "yap/commands"
+  autoload :CommandError,   "yap/commands"
+  autoload :CommandUnknownError,   "yap/commands"
 
-  autoload :ExecutionContext,     "lagniappe/execution"
-  autoload :CommandExecution,     "lagniappe/execution"
-  autoload :FileSystemCommandExecution, "lagniappe/execution"
-  autoload :RubyCommandExecution, "lagniappe/execution"
-  autoload :ShellCommandExecution,"lagniappe/execution"
+  autoload :ExecutionContext,     "yap/execution"
+  autoload :CommandExecution,     "yap/execution"
+  autoload :FileSystemCommandExecution, "yap/execution"
+  autoload :RubyCommandExecution, "yap/execution"
+  autoload :ShellCommandExecution,"yap/execution"
 
   module WorldAddons
     def self.syntax_ok?(file)
@@ -43,7 +43,7 @@ module Yap
 
   def self.run_console
     addons = WorldAddons.load_from_files(files: [
-      "#{ENV['HOME']}/.lagniapperc"
+      "#{ENV['HOME']}/.yaprc"
     ])
     console = Console.new(addons: addons)
     console.run

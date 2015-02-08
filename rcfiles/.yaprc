@@ -29,7 +29,7 @@ self.prompt = -> do
 
   arrow = '➜'
 
-  # ~/source/playground/lagniappe master ➜
+  # ~/source/playground/yap master ➜
   "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 

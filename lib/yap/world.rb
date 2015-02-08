@@ -1,6 +1,6 @@
 require 'term/ansicolor'
 require 'forwardable'
-require 'lagniappe/commands'
+require 'yap/commands'
 
 module Yap
   class World

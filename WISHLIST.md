@@ -9,7 +9,7 @@
 * intelligently handle pipes that show up in ruby blocks, e.g. map{ |a,b| a }
 * Fix shell builtins like pushd/popd. :(
 * Support user-requested background processes, e.g. "ls &"
-* You cannto load lagniappe if you are within lagniappe. Handle the error or let it happen.
+* You cannto load yap if you are within yap. Handle the error or let it happen.
 
 Others requests.
 
