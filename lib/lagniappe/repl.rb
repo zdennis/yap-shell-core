@@ -51,6 +51,10 @@ module Lagniappe
           statements = Yap::Line::Parser.parse(input)
           heredoc = process_heredoc marker:statements.last.heredoc_marker
 
+          statements = statements.map do |statement|
+            expand_statement(statement)
+          end.flatten
+
           line = Line.new(statements, heredoc:heredoc)
           yield line.commands if block_given?
         rescue ::Lagniappe::CommandUnknownError => ex
@@ -70,6 +74,25 @@ module Lagniappe
     end
 
     private
+
+    def expand_statement(statement)
+      return [statement] if statement.internally_evaluate?
+      results = []
+      aliases = Aliases.instance
+      command = statement.command
+      loop do
+        if str=aliases.fetch_alias(command)
+          statements = Yap::Line::Parser.parse(str)
+          statements.map do |s|
+            results.concat expand_statement(s)
+          end
+          return results
+        else
+          results << statement
+          return results
+        end
+      end
+    end
 
     def process_heredoc(marker:)
       return nil if marker.nil?

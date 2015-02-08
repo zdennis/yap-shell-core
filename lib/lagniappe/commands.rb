@@ -40,16 +40,7 @@ module Lagniappe
     def self.build_command_for(statement)
       return RubyCommand.new(str:statement.command) if statement.internally_evaluate?
 
-      aliases = Aliases.instance
       command = statement.command
-      loop do
-        if str=aliases.fetch_alias(command)
-          command=str
-        else
-          break
-        end
-      end
-
       case command
       when BuiltinCommand then BuiltinCommand.new(str:command)
       when FileSystemCommand  then FileSystemCommand.new(str:command)
@@ -144,8 +135,7 @@ module Lagniappe
     end
 
     def execute
-      builtin,*args = Shellwords.split(str)
-      action = self.class.builtins.fetch(builtin.to_sym){ raise("Missing proc for builtin: '#{builtin}' in #{str.inspect}") }
+      action = self.class.builtins.fetch(str.to_sym){ raise("Missing proc for builtin: '#{builtin}' in #{str.inspect}") }
       action.call *args
     end
 
