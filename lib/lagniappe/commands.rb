@@ -30,24 +30,25 @@ module Lagniappe
   end
 
   class CommandFactory
-    def self.build_command_for(command_str)
-      aliases = Aliases.instance
+    def self.build_command_for(statement)
+      return RubyCommand.new(str:statement.command) if statement.internally_evaluate?
 
+      aliases = Aliases.instance
+      command = statement.command
       loop do
-        if str=aliases.fetch_alias(command_str)
-          command_str=str
+        if str=aliases.fetch_alias(command)
+          command=str
         else
           break
         end
       end
 
-      case command_str
-      when /^\!(.*)/      then RubyCommand.new(str:$1)
-      when BuiltinCommand then BuiltinCommand.new(str:command_str)
-      when FileSystemCommand  then FileSystemCommand.new(str:command_str)
-      # else                     ShellCommand.new(str:command_str)
+      case command
+      when BuiltinCommand then BuiltinCommand.new(str:command)
+      when FileSystemCommand  then FileSystemCommand.new(str:command)
+      # else                     ShellCommand.new(str:command)
       else
-        raise CommandUnknownError, "Don't know how to execute command: #{command_str}"
+        raise CommandUnknownError, "Don't know how to execute command: #{command}"
       end
     end
   end
