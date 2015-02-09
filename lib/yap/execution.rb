@@ -68,7 +68,9 @@ module Yap
     end
 
     def execute(world:)
-      @command_queue.each_with_index do |(command, stdin, stdout, stderr), i|
+      @command_queue.each_with_index do |(command, stdin, stdout, stderr), reversed_i|
+        of = @command_queue.length
+        i = of - reversed_i
         stdin  = @stdin  if stdin  == :stdin
         stdout = @stdout if stdout == :stdout
         stderr = @stderr if stderr == :stderr
@@ -87,7 +89,7 @@ module Yap
           )
 
           self.class.fire :before_execute, execution_context, command: command
-          result = execution_context.execute(command:command, n:i, of:@command_queue.length)
+          result = execution_context.execute(command:command, n:i, of:of)
           self.class.fire :after_execute, execution_context, command: command, result: result
 
           case result
@@ -231,9 +233,10 @@ module Yap
       shell, stdin, stdout, stderr, world = @shell, @stdin, @stdout, @stderr, @world
       t = Thread.new {
         exit_code = 0
+        first_command = n == 1
 
         f = nil
-        str = ""
+        result = nil
         begin
           ruby_command = command.to_executable_str
 
@@ -248,7 +251,8 @@ module Yap
 
           method = ruby_command.scan(/^(\w+(?:[!?]|\s*=)?)/).flatten.first.gsub(/\s/, '')
           puts "method: #{method}" if ENV["DEBUG"]
-          obj = if world.respond_to?(method)
+
+          obj = if first_command
             world
           elsif contents.respond_to?(method)
             contents
@@ -258,14 +262,14 @@ module Yap
 
           if ruby_command =~ /^[A-Z]|::/
             puts "Evaluating #{ruby_command} globally" if ENV["DEBUG"]
-            str = eval ruby_command
+            result = eval ruby_command
           else
             ruby_command = "self.#{ruby_command}"
             puts "Evaluating #{ruby_command} on #{obj.inspect}" if ENV["DEBUG"]
-            str = obj.instance_eval ruby_command
+            result = obj.instance_eval ruby_command
           end
         rescue Exception => ex
-          str = <<-EOT.gsub(/^\s*\S/, '')
+          result = <<-EOT.gsub(/^\s*\S/, '')
             |Failed processing ruby: #{ruby_command}
             |#{ex}
             |#{ex.backtrace.join("\n")}
@@ -279,8 +283,11 @@ module Yap
         f2.sync = true
 
         # The next line  causes issues sometimes?
-        # puts "WRITING #{str.length} bytes" if ENV["DEBUG"]
-        f2.write str
+        # puts "WRITING #{result.length} bytes" if ENV["DEBUG"]
+        result = result.to_s
+        result << "\n" unless result.end_with?("\n")
+
+        f2.write result
         f2.flush
 
         f2.close
@@ -292,8 +299,8 @@ module Yap
         Thread.pass
 
         # Make up an exit code
-        result = ExecutionResult.new(status_code:exit_code, directory:Dir.pwd, n:n, of:of)
-        shell.stdin.puts result.to_shell_str
+        exec_result = ExecutionResult.new(status_code:exit_code, directory:Dir.pwd, n:n, of:of)
+        shell.stdin.puts exec_result.to_shell_str
       }
       t.abort_on_exception = true
       t
