@@ -92,7 +92,7 @@ module Yap
       command = statement.command
       loop do
         if str=aliases.fetch_alias(command)
-          statements = Yap::Line::Parser.parse(str)
+          statements = Yap::Line::Parser.parse("#{str} #{statement.args.join(' ')}")
           statements.map do |s|
             results.concat expand_statement(s)
           end
