@@ -162,6 +162,10 @@ module Yap
         if resume_blk
           pid = resume_blk.call
         else
+          r,w = IO.pipe
+          if command.heredoc
+            stdin = r
+          end
           pid = fork do
             # Start a new process gruop as the session leader. Now we are
             # responsible for sending signals that would have otherwise
@@ -169,13 +173,18 @@ module Yap
             if of > 1
               $stdout.reopen stdout
               $stderr.reopen stderr
-              $stdin.reopen stdin if stdin
             end
+            $stdin.reopen stdin if stdin
             Process.setsid
             Kernel.exec command.to_executable_str
           end
+          if command.heredoc
+            w.write command.heredoc
+            w.close
+          end
         end
         Process.waitpid(pid) unless of > 1
+
       rescue Interrupt
         Process.kill "SIGINT", pid
 

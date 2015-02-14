@@ -37,14 +37,14 @@ module Yap
   end
 
   class CommandFactory
-    def self.build_command_for(statement)
-      return RubyCommand.new(str:statement.command) if statement.internally_evaluate?
+    def self.build_command_for(node)
+      # return RubyCommand.new(str:statement.command) if statement.internally_evaluate?
 
-      command = statement.command
+      command = node.command
       case command
       when ShellCommand then ShellCommand.new(str:command)
       when BuiltinCommand then BuiltinCommand.new(str:command)
-      when FileSystemCommand  then FileSystemCommand.new(str:command)
+      when FileSystemCommand  then FileSystemCommand.new(str:command, args:node.args, heredoc:node.heredoc)
       else
         raise CommandUnknownError, "Don't know how to execute command: #{command}"
       end
@@ -170,8 +170,7 @@ module Yap
     def to_executable_str
       [
         str,
-        args.map(&:shellescape).join(' '),
-        (heredoc if heredoc)
+        args.map(&:shellescape).join(' ')
       ].join(' ')
     end
   end

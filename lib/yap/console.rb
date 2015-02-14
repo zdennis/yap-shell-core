@@ -75,6 +75,7 @@ module Yap
       )
 
       @repl.loop_on_input do |commands|
+        puts "LOOP ON INPUT" if ENV["DEBUG"]
         context.clear_commands
 
         pipeline = CommandPipeline.new(commands:commands.reverse)
@@ -83,16 +84,21 @@ module Yap
         end
 
         Yap::ExecutionContext.fire :before_group_execute, self, commands:commands
+        puts "context.before_group_execute" if ENV["DEBUG"]
         context.execute(world:@world)
         Yap::ExecutionContext.fire :after_group_execute, self, commands:commands
+        puts "context.after_group_execute" if ENV["DEBUG"]
 
         messages = []
+        return_value = nil
         loop do
+          puts "loop" if ENV["DEBUG"]
           begin
             message = Console.queue.deq
             messages << message
             puts "DEQ'd #{message.inspect}" if ENV["DEBUG"]
             result = ExecutionResult.parse message
+            return_value = result
             if result
               Yap::ExecutionContext.fire :after_process_finished, self
               Dir.chdir result.directory
@@ -103,6 +109,8 @@ module Yap
             shell.interrupt!
           end
         end
+
+        return_value
       end
     end
   end

@@ -1,5 +1,7 @@
 require 'terminfo'
+$LOAD_PATH.unshift File.dirname(__FILE__) + "/../../../yap-shell-line-parser/lib"
 require 'yap/line/parser'
+require 'yap/line/my_parser'
 
 module Yap
   class Repl
@@ -25,6 +27,7 @@ module Yap
 
     attr_reader :t
     def loop_on_input(&blk)
+      @blk = blk
       @t = TermInfo.new("xterm-256color", STDOUT)
 
       loop do
@@ -48,15 +51,11 @@ module Yap
           print_time on: :previous_row
           next if input == ""
 
-          statements = Yap::Line::Parser.parse(input)
-          heredoc = process_heredoc marker:statements.last.heredoc_marker
+          input = process_heredoc(input)
 
-          statements = statements.map do |statement|
-            expand_statement(statement)
-          end.flatten
+          ast = Yap::Line::MyParser.new.parse(input)
 
-          commands = convert_statements_to_command_chain(statements, heredoc:heredoc)
-          yield commands if block_given?
+          ast.accept self
         rescue ::Yap::CommandUnknownError => ex
           puts "  CommandError: #{ex.message}"
         rescue Interrupt
@@ -70,6 +69,33 @@ module Yap
           next
         end
 
+      end
+    end
+
+    def visit_CommandNode(node)
+      command = CommandFactory.build_command_for(node)
+      @last_result = @blk.call [command]
+    end
+
+    def visit_StatementsNode(node)
+      node.head.accept(self)
+      node.tail.accept(self) if node.tail
+    end
+
+    def visit_ConditionalNode(node)
+      case node.operator
+      when '&&'
+        node.expr1.accept self
+        if @last_result.status_code == 0
+          node.expr2.accept self
+        end
+      when '||'
+        node.expr1.accept self
+        if @last_result.status_code != 0
+          node.expr2.accept self
+        end
+      else
+        raise "Don't know how to visit conditional node: #{node.inspect}"
       end
     end
 
@@ -104,21 +130,25 @@ module Yap
       end
     end
 
-    def process_heredoc(marker:)
-      return nil if marker.nil?
+    def process_heredoc(_input)
+      if _input =~ /<<-?([A-z0-9\-]+)\s*$/
+        input = _input.dup
+        marker = $1
+        input << "\n"
+      else
+        return _input
+      end
 
       puts "Beginning heredoc" if ENV["DEBUG"]
-      String.new.tap do |heredoc|
-        heredoc << "<<#{marker}\n"
-        loop do
-          str = Readline.readline("> ", true)
-          heredoc << "#{str}\n"
-          if str =~ /^#{Regexp.escape(marker)}$/
-            puts "Ending heredoc" if ENV["DEBUG"]
-            break
-          end
+      loop do
+        str = Readline.readline("> ", true)
+        input << "#{str}\n"
+        if str =~ /^#{Regexp.escape(marker)}$/
+          puts "Ending heredoc" if ENV["DEBUG"]
+          break
         end
       end
+      input
     end
 
   end
