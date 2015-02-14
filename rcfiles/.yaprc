@@ -99,6 +99,18 @@ end
 
 CommandHistory = CommandHistoryImplementation.new
 
+Yap::ExecutionContext.on(:before_group_execute) do |context, commands:|
+  # puts "Before group: #{context.to_s}, commands: #{commands.to_s}"
+end
+
+Yap::ExecutionContext.on(:after_group_execute) do |context, commands:|
+  # puts "After group: #{context.to_s}, commands: #{commands.to_s}"
+end
+
+Yap::ExecutionContext.on(:after_process_finished) do |context, *args|
+  # puts "After process: #{context.to_s}, args: #{args.inspect}"
+end
+
 
 Yap::ExecutionContext.on(:before_execute) do |context, command:|
   CommandHistory.push CommandHistoryImplementation::Item.new(command_str: command.str, started_at: Time.now)

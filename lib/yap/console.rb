@@ -82,7 +82,9 @@ module Yap
           context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
         end
 
+        Yap::ExecutionContext.fire :before_group_execute, self, commands:commands
         context.execute(world:@world)
+        Yap::ExecutionContext.fire :after_group_execute, self, commands:commands
 
         messages = []
         loop do
@@ -92,6 +94,7 @@ module Yap
             puts "DEQ'd #{message.inspect}" if ENV["DEBUG"]
             result = ExecutionResult.parse message
             if result
+              Yap::ExecutionContext.fire :after_process_finished, self
               Dir.chdir result.directory
               shell.puts "cd #{result.directory.shellescape}"
               break if messages.length == result.of
