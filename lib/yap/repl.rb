@@ -29,6 +29,9 @@ module Yap
     def loop_on_input(&blk)
       @blk = blk
       @t = TermInfo.new("xterm-256color", STDOUT)
+      @stdin = $stdin
+      @stdout = $stdout
+      @stderr = $stderr
 
       loop do
         # t.control "clear"
@@ -74,7 +77,7 @@ module Yap
 
     def visit_CommandNode(node)
       command = CommandFactory.build_command_for(node)
-      @last_result = @blk.call [command]
+      @last_result = @blk.call command, @stdin, @stdout, @stderr
     end
 
     def visit_StatementsNode(node)
@@ -97,6 +100,27 @@ module Yap
       else
         raise "Don't know how to visit conditional node: #{node.inspect}"
       end
+    end
+
+    def visit_PipelineNode(node, options={})
+      original_stdin = @stdin
+      original_stdout = @stdout
+      original_stderr = @stderr
+
+      r,w = IO.pipe
+
+      @stdout = w
+      @stderr = w
+
+      node.head.accept(self)
+
+      @stdin = r
+      @stdout = original_stdout
+      @stderr = original_stderr
+
+      node.tail.accept(self)
+
+      @stdin = original_stdin
     end
 
     private

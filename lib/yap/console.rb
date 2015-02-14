@@ -74,19 +74,20 @@ module Yap
         stderr: shell.pty_slave.path
       )
 
-      @repl.loop_on_input do |commands|
+      @repl.loop_on_input do |command, stdin, stdout, stderr|
         puts "LOOP ON INPUT" if ENV["DEBUG"]
         context.clear_commands
 
-        pipeline = CommandPipeline.new(commands:commands.reverse)
-        pipeline.each.with_index do |(command, stdin, stdout, stderr), i|
-          context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
-        end
+        # pipeline = CommandPipeline.new(commands:commands.reverse)
+        # pipeline.each.with_index do |(command, stdin, stdout, stderr), i|
+        #   context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
+        # end
+        context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
 
-        Yap::ExecutionContext.fire :before_group_execute, self, commands:commands
+        # Yap::ExecutionContext.fire :before_group_execute, self, commands:commands
         puts "context.before_group_execute" if ENV["DEBUG"]
         context.execute(world:@world)
-        Yap::ExecutionContext.fire :after_group_execute, self, commands:commands
+        # Yap::ExecutionContext.fire :after_group_execute, self, commands:commands
         puts "context.after_group_execute" if ENV["DEBUG"]
 
         messages = []

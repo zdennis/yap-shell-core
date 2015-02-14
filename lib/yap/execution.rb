@@ -75,9 +75,6 @@ module Yap
         stdout = @stdout if stdout == :stdout
         stderr = @stderr if stderr == :stderr
 
-        fifos = [stdin,stdout,stderr].select{ |fifo| fifo && !File.exists?(fifo) }
-        fifos.each{ |fifo| File.mkfifo(fifo) }
-
         execution_context_factory = self.class.execution_context_for(command)
         if execution_context_factory
           execution_context = execution_context_factory.new(
@@ -162,19 +159,18 @@ module Yap
         if resume_blk
           pid = resume_blk.call
         else
-          r,w = IO.pipe
+          r,w = nil, nil
           if command.heredoc
+            r,w = IO.pipe
             stdin = r
           end
           pid = fork do
             # Start a new process gruop as the session leader. Now we are
             # responsible for sending signals that would have otherwise
             # been propagated to the process, e.g. SIGINT, SIGSTOP, SIGCONT, etc.
-            if of > 1
-              $stdout.reopen stdout
-              $stderr.reopen stderr
-            end
-            $stdin.reopen stdin if stdin
+            $stdin.reopen stdin
+            $stdout.reopen stdout
+            $stderr.reopen stderr
             Process.setsid
             Kernel.exec command.to_executable_str
           end
@@ -184,6 +180,13 @@ module Yap
           end
         end
         Process.waitpid(pid) unless of > 1
+
+        # If we're not printing to the terminal than close in/out/err. This
+        # is so the next command in the pipeline can complete and don't hang waiting for
+        # stdin after the command that's writing to its stdin has completed.
+        if stdout != $stdout && !stdout.closed? then stdout.close end
+        if stderr != $stderr && !stderr.closed? then stderr.close end
+        # if stdin != $stdin && !stdin.closed? then stdin.close end
 
       rescue Interrupt
         Process.kill "SIGINT", pid
