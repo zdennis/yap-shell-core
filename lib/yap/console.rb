@@ -78,10 +78,6 @@ module Yap
         puts "LOOP ON INPUT" if ENV["DEBUG"]
         context.clear_commands
 
-        # pipeline = CommandPipeline.new(commands:commands.reverse)
-        # pipeline.each.with_index do |(command, stdin, stdout, stderr), i|
-        #   context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
-        # end
         context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
 
         # Yap::ExecutionContext.fire :before_group_execute, self, commands:commands
