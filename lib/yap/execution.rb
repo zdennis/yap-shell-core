@@ -255,8 +255,8 @@ module Yap
           contents = if stdin.is_a?(String)
             f = File.open stdin
             f.read
-          else
-            ""
+          elsif stdin != $stdin
+            stdin.read
           end
           puts "READ: #{contents.length} bytes from #{stdin}" if ENV["DEBUG"]
           world.contents = contents
@@ -272,7 +272,7 @@ module Yap
             world
           end
 
-          if ruby_command =~ /^[A-Z]|::/
+          if ruby_command =~ /^[A-Z0-9]|::/
             puts "Evaluating #{ruby_command} globally" if ENV["DEBUG"]
             result = eval ruby_command
           else
@@ -291,18 +291,15 @@ module Yap
           f.close if f && !f.closed?
         end
 
-        f2 = File.open stdout, "w"
-        f2.sync = true
-
         # The next line  causes issues sometimes?
         # puts "WRITING #{result.length} bytes" if ENV["DEBUG"]
         result = result.to_s
         result << "\n" unless result.end_with?("\n")
 
-        f2.write result
-        f2.flush
-
-        f2.close
+        stdout.write result
+        stdout.flush
+        stdout.close unless stdout == $stdout
+        stderr.close unless stderr == $stderr
 
         # Pass current execution to give any other threads a chance
         # to be scheduled before we send back our status code. This could

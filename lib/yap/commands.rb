@@ -38,7 +38,9 @@ module Yap
 
   class CommandFactory
     def self.build_command_for(node)
-      # return RubyCommand.new(str:statement.command) if statement.internally_evaluate?
+      if node.respond_to?(:internally_evaluate?) && node.internally_evaluate?
+        return RubyCommand.new(str:node.src)
+      end
 
       command = node.command
       case command

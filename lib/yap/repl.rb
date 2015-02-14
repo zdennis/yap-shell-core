@@ -123,6 +123,11 @@ module Yap
       @stdin = original_stdin
     end
 
+    def visit_InternalEvalNode(node)
+      command = CommandFactory.build_command_for(node)
+      @last_result = @blk.call command, @stdin, @stdout, @stderr
+    end
+
     private
 
     def convert_statements_to_command_chain(statements, heredoc:nil)
