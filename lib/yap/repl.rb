@@ -103,13 +103,18 @@ module Yap
 
     def visit_CommandNode(node)
       with_standard_streams do |stdin, stdout, stderr|
-        command = CommandFactory.build_command_for(
-          command: node.command,
-          args:    shell_expand(node.args),
-          heredoc: node.heredoc,
-          internally_evaluate: node.internally_evaluate?)
-        @stdin, @stdout, @stderr = stream_redirections_for(node)
-        @last_result = @blk.call command, @stdin, @stdout, @stderr
+        if _alias = Aliases.instance.fetch_alias(node.command)
+          ast = Yap::Line::MyParser.new.parse(_alias)
+          ast.accept(self)
+        else
+          command = CommandFactory.build_command_for(
+            command: node.command,
+            args:    shell_expand(node.args),
+            heredoc: node.heredoc,
+            internally_evaluate: node.internally_evaluate?)
+          @stdin, @stdout, @stderr = stream_redirections_for(node)
+          @last_result = @blk.call command, @stdin, @stdout, @stderr
+        end
       end
     end
 
@@ -168,6 +173,34 @@ module Yap
     end
 
     private
+
+    def expand_statement(statement)
+      return [statement] if statement.internally_evaluate?
+      results = []
+      aliases = Aliases.instance
+      command = statement.command
+      loop do
+        if str=aliases.fetch_alias(command)
+          statements = Yap::Line::Parser.parse("#{str} #{statement.args.join(' ')}")
+          statements.map do |s|
+            results.concat expand_statement(s)
+          end
+          return results
+        else
+          results << statement
+          return results
+        end
+      end
+    end
+
+    def alias_expand(input, aliases:Aliases.instance)
+      head, *tail = input.split(/\s/, 2).first
+      if new_head=aliases.fetch_alias(head)
+        [new_head].concat(tail).join(" ")
+      else
+        input
+      end
+    end
 
     def shell_expand(input)
       [input].flatten.map do |str|
