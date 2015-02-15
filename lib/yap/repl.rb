@@ -80,7 +80,11 @@ module Yap
       original_stdout = @stdout
       original_stderr = @stderr
 
-      command = CommandFactory.build_command_for(node)
+      command = CommandFactory.build_command_for(
+        command: node.command,
+        args:    node.args,
+        heredoc: node.heredoc,
+        internally_evaluate: node.internally_evaluate?)
 
       node.redirects.each do |redirect|
         case redirect.kind

@@ -37,16 +37,13 @@ module Yap
   end
 
   class CommandFactory
-    def self.build_command_for(node)
-      if node.respond_to?(:internally_evaluate?) && node.internally_evaluate?
-        return RubyCommand.new(str:node.src)
-      end
+    def self.build_command_for(command:, args:, heredoc:, internally_evaluate:)
+      return RubyCommand.new(str:command) if internally_evaluate
 
-      command = node.command
       case command
       when ShellCommand then ShellCommand.new(str:command)
       when BuiltinCommand then BuiltinCommand.new(str:command)
-      when FileSystemCommand  then FileSystemCommand.new(str:command, args:node.args, heredoc:node.heredoc)
+      when FileSystemCommand  then FileSystemCommand.new(str:command, args:args, heredoc:heredoc)
       else
         raise CommandUnknownError, "Don't know how to execute command: #{command}"
       end
