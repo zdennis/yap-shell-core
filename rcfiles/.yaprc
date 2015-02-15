@@ -33,17 +33,22 @@ self.prompt = -> do
   "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
-func :howmuch do |*args|
+func :howmuch do |args:, stdin:, stdout:, stderr:|
   case args.first
   when "time"
     if history_item=CommandHistory.last_run_command
-      puts history_item.total_time_s
+      stdout.puts history_item.total_time_s
     else
-      puts "Can't report on something you haven't done."
+      stdout.puts "Can't report on something you haven't done."
     end
   else
-    puts "How much what?"
+    stdout.puts "How much what?"
   end
+end
+
+func :upcase do |args:, stdin:, stdout:, stderr:|
+  str = stdin.read
+  stdout.puts str.upcase
 end
 
 class CommandHistoryImplementation

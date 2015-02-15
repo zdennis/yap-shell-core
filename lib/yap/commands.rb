@@ -154,10 +154,10 @@ module Yap
       :ShellCommand
     end
 
-    def execute
+    def to_proc
       self.class.registered_functions.fetch(str.to_sym){
         raise "Shell function #{str} was not found!"
-      }.call *args
+      }
     end
   end
 

@@ -55,7 +55,6 @@ module Yap
           print_time on: :previous_row
           next if input == ""
 
-          input = shell_expand(input)
           input = process_heredoc(input)
 
           ast = Yap::Line::MyParser.new.parse(input)
@@ -106,7 +105,7 @@ module Yap
       with_standard_streams do |stdin, stdout, stderr|
         command = CommandFactory.build_command_for(
           command: node.command,
-          args:    node.args,
+          args:    shell_expand(node.args),
           heredoc: node.heredoc,
           internally_evaluate: node.internally_evaluate?)
         @stdin, @stdout, @stderr = stream_redirections_for(node)
@@ -171,10 +170,10 @@ module Yap
     private
 
     def shell_expand(input)
-      input.shellsplit.map do |str|
+      [input].flatten.map do |str|
         expanded = Dir[str]
         expanded.any? ? expanded.join(" ") : str
-      end.join(" ")
+      end.flatten
     end
 
     def process_heredoc(_input)

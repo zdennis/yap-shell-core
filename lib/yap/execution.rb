@@ -232,7 +232,10 @@ module Yap
 
   class ShellCommandExecution < CommandExecution
     on_execute do |command:, n:, of:|
-      command_result = command.execute
+      func = command.to_proc
+      command_result = func.call(args:command.args, stdin:@stdin, stdout:@stdout, stderr:@stderr)
+      @stdout.close if @stdout != $stdout && !@stdout.closed?
+      @stderr.close if @stderr != $stderr && !@stderr.closed?
     end
   end
 
@@ -249,12 +252,17 @@ module Yap
           ruby_command = command.to_executable_str
 
           contents = if stdin.is_a?(String)
+            puts "READ: stdin as a String: #{stdin.inspect}" if ENV["DEBUG"]
             f = File.open stdin
             f.read
           elsif stdin != $stdin
+            puts "READ: stdin is not $stdin: #{stdin.inspect}" if ENV["DEBUG"]
             stdin.read
+          else
+            puts "READ: contents is: #{contents.inspect}" if ENV["DEBUG"]
           end
-          puts "READ: #{contents.length} bytes from #{stdin}" if ENV["DEBUG"]
+
+          puts "READ: #{contents.length} bytes from #{stdin}" if ENV["DEBUG"] && contents
           world.contents = contents
 
           method = ruby_command.scan(/^(\w+(?:[!?]|\s*=)?)/).flatten.first.gsub(/\s/, '')
@@ -269,11 +277,11 @@ module Yap
           end
 
           if ruby_command =~ /^[A-Z0-9]|::/
-            puts "Evaluating #{ruby_command} globally" if ENV["DEBUG"]
+            puts "Evaluating #{ruby_command.inspect} globally" if ENV["DEBUG"]
             result = eval ruby_command
           else
             ruby_command = "self.#{ruby_command}"
-            puts "Evaluating #{ruby_command} on #{obj.inspect}" if ENV["DEBUG"]
+            puts "Evaluating #{ruby_command.inspect} on #{obj.inspect}" if ENV["DEBUG"]
             result = obj.instance_eval ruby_command
           end
         rescue Exception => ex
