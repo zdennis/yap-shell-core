@@ -4,10 +4,6 @@ require 'yaml'
 
 module Yap
   class Console
-    def self.queue
-      @queue ||= Queue.new
-    end
-
     attr_reader :world
 
     def initialize(io_in:$stdin, prompt:"> ", addons:[])
