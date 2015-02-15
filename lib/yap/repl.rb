@@ -160,7 +160,11 @@ module Yap
     end
 
     def visit_InternalEvalNode(node)
-      command = CommandFactory.build_command_for(node)
+      command = CommandFactory.build_command_for(
+        command: node.command,
+        args:    node.args,
+        heredoc: node.heredoc,
+        internally_evaluate: node.internally_evaluate?)
       @last_result = @blk.call command, @stdin, @stdout, @stderr
     end
 
