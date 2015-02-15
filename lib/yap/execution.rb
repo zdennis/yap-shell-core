@@ -52,8 +52,7 @@ module Yap
       @registrations[command.type] || raise("No execution context found for given #{command.type} command: #{command.inspect}")
     end
 
-    def initialize(shell:, stdin:, stdout:, stderr:)
-      @shell = shell
+    def initialize(stdin:, stdout:, stderr:)
       @stdin, @stdout, @stderr = stdin, stdout, stderr
       @command_queue = []
       @suspended_execution_contexts = []
@@ -78,7 +77,6 @@ module Yap
         execution_context_factory = self.class.execution_context_for(command)
         if execution_context_factory
           execution_context = execution_context_factory.new(
-            shell:  @shell,
             stdin:  stdin,
             stdout: stdout,
             stderr: stderr,
@@ -112,7 +110,7 @@ module Yap
   end
 
   class CommandExecution
-    attr_reader :shell, :stdin, :stdout, :stderr, :world
+    attr_reader :stdin, :stdout, :stderr, :world
 
     def self.on_execute(&blk)
       if block_given?
@@ -122,8 +120,7 @@ module Yap
       end
     end
 
-    def initialize(shell:, stdin:, stdout:, stderr:,world:)
-      @shell = shell
+    def initialize(stdin:, stdout:, stderr:,world:)
       @stdin, @stdout, @stderr = stdin, stdout, stderr
       @world = world
     end
@@ -144,17 +141,14 @@ module Yap
   class BuiltinCommandExecution < CommandExecution
     on_execute do |command:, n:, of:|
       command_result = command.execute
-
-      # Make up an exit code
       result = ExecutionResult.new(status_code:0, directory:Dir.pwd, n:n, of:of)
-      shell.stdin.puts result.to_shell_str
       command_result
     end
   end
 
   class FileSystemCommandExecution < CommandExecution
     on_execute do |command:, n:, of:, resume_blk:nil|
-      shell, stdin, stdout, stderr, world = @shell, @stdin, @stdout, @stderr, @world
+      stdin, stdout, stderr, world = @stdin, @stdout, @stderr, @world
       begin
         if resume_blk
           pid = resume_blk.call
@@ -209,7 +203,6 @@ module Yap
       # if a signal killed or stopped the process (such as SIGINT or SIGTSTP) $? is nil.
       exitstatus = $? ? $?.exitstatus : nil
       result = ExecutionResult.new(status_code:exitstatus, directory:Dir.pwd, n:n, of:of)
-      shell.stdin.puts result.to_shell_str
       result
     end
 
@@ -240,17 +233,12 @@ module Yap
   class ShellCommandExecution < CommandExecution
     on_execute do |command:, n:, of:|
       command_result = command.execute
-
-      # Make up an exit code
-      result = ExecutionResult.new(status_code:0, directory:Dir.pwd, n:n, of:of)
-      shell.stdin.puts result.to_shell_str
-      command_result
     end
   end
 
   class RubyCommandExecution < CommandExecution
     on_execute do |command:, n:, of:|
-      shell, stdin, stdout, stderr, world = @shell, @stdin, @stdout, @stderr, @world
+      stdin, stdout, stderr, world = @stdin, @stdout, @stderr, @world
       t = Thread.new {
         exit_code = 0
         first_command = n == 1
@@ -319,7 +307,7 @@ module Yap
 
         # Make up an exit code
         exec_result = ExecutionResult.new(status_code:exit_code, directory:Dir.pwd, n:n, of:of)
-        shell.stdin.puts exec_result.to_shell_str
+        exec_result
       }
       t.abort_on_exception = true
       t

@@ -2,7 +2,6 @@ require "yap/version"
 
 module Yap
   autoload :Console, "yap/console"
-  autoload :Shell,   "yap/shell"
   autoload :World,   "yap/world"
 
   autoload :Repl,           "yap/repl"
