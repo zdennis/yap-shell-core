@@ -168,10 +168,18 @@ module Yap
             # Start a new process gruop as the session leader. Now we are
             # responsible for sending signals that would have otherwise
             # been propagated to the process, e.g. SIGINT, SIGSTOP, SIGCONT, etc.
+            stdin  = File.open(stdin, "rb") if stdin.is_a?(String)
+            stdout = File.open(stdout, "wb") if stdout.is_a?(String)
+            stderr = File.open(stderr, "wb") if stderr.is_a?(String)
+
+            stdout = stderr if stdout == :stderr
+            stderr = stdout if stderr == :stdout
+
             $stdin.reopen stdin
             $stdout.reopen stdout
             $stderr.reopen stderr
             Process.setsid
+
             Kernel.exec command.to_executable_str
           end
           if command.heredoc
@@ -184,8 +192,8 @@ module Yap
         # If we're not printing to the terminal than close in/out/err. This
         # is so the next command in the pipeline can complete and don't hang waiting for
         # stdin after the command that's writing to its stdin has completed.
-        if stdout != $stdout && !stdout.closed? then stdout.close end
-        if stderr != $stderr && !stderr.closed? then stderr.close end
+        if stdout != $stdout && stdout.is_a?(IO) && !stdout.closed? then stdout.close end
+        if stderr != $stderr && stderr.is_a?(IO) && !stderr.closed? then stderr.close end
         # if stdin != $stdin && !stdin.closed? then stdin.close end
 
       rescue Interrupt
@@ -298,8 +306,10 @@ module Yap
 
         stdout.write result
         stdout.flush
-        stdout.close unless stdout == $stdout
-        stderr.close unless stderr == $stderr
+        stderr.flush
+
+        stdout.close if stdout != $stdout && !stdout.closed?
+        stderr.close if stderr != $stderr && !stderr.closed?
 
         # Pass current execution to give any other threads a chance
         # to be scheduled before we send back our status code. This could

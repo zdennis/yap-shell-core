@@ -76,8 +76,32 @@ module Yap
     end
 
     def visit_CommandNode(node)
+      original_stdin = @stdin
+      original_stdout = @stdout
+      original_stderr = @stderr
+
       command = CommandFactory.build_command_for(node)
+
+      node.redirects.each do |redirect|
+        case redirect.kind
+        when "<"
+          @stdin = redirect.target
+        when ">", "1>"
+          @stdout = redirect.target
+        when "1>&2"
+          @stderr = :stdout
+        when "2>"
+          @stderr = redirect.target
+        when "2>&1"
+          @stdout = :stderr
+        end
+      end
+
       @last_result = @blk.call command, @stdin, @stdout, @stderr
+
+      @stdin = original_stdin
+      @stdout = original_stdout
+      @stderr = original_stderr
     end
 
     def visit_StatementsNode(node)
