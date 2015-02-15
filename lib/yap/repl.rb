@@ -1,3 +1,4 @@
+require 'shellwords'
 require 'terminfo'
 $LOAD_PATH.unshift File.dirname(__FILE__) + "/../../../yap-shell-line-parser/lib"
 require 'yap/line/parser'
@@ -54,6 +55,7 @@ module Yap
           print_time on: :previous_row
           next if input == ""
 
+          input = shell_expand(input)
           input = process_heredoc(input)
 
           ast = Yap::Line::MyParser.new.parse(input)
@@ -158,33 +160,11 @@ module Yap
 
     private
 
-    def convert_statements_to_command_chain(statements, heredoc:nil)
-      commands = statements.map do |statement|
-        command = CommandFactory.build_command_for(statement)
-        command.args = statement.args if statement.respond_to?(:args)
-        command
-      end
-      commands.last.heredoc = heredoc
-      commands
-    end
-
-    def expand_statement(statement)
-      return [statement] if statement.internally_evaluate?
-      results = []
-      aliases = Aliases.instance
-      command = statement.command
-      loop do
-        if str=aliases.fetch_alias(command)
-          statements = Yap::Line::Parser.parse("#{str} #{statement.args.join(' ')}")
-          statements.map do |s|
-            results.concat expand_statement(s)
-          end
-          return results
-        else
-          results << statement
-          return results
-        end
-      end
+    def shell_expand(input)
+      input.shellsplit.map do |str|
+        expanded = Dir[str]
+        expanded.any? ? expanded.join(" ") : str
+      end.join(" ")
     end
 
     def process_heredoc(_input)
