@@ -77,37 +77,41 @@ module Yap
       end
     end
 
-    def visit_CommandNode(node)
-      original_stdin = @stdin
-      original_stdout = @stdout
-      original_stderr = @stderr
+    def with_standard_streams(&blk)
+      stdin, stdout, stderr = @stdin, @stdout, @stderr
+      yield stdin, stdout, stderr
+      @stdin, @stdout, @stderr = stdin, stdout, stderr
+    end
 
-      command = CommandFactory.build_command_for(
-        command: node.command,
-        args:    node.args,
-        heredoc: node.heredoc,
-        internally_evaluate: node.internally_evaluate?)
-
+    def stream_redirections_for(node)
+      stdin, stdout, stderr = @stdin, @stdout, @stderr
       node.redirects.each do |redirect|
         case redirect.kind
         when "<"
-          @stdin = redirect.target
+          stdin = redirect.target
         when ">", "1>"
-          @stdout = redirect.target
+          stdout = redirect.target
         when "1>&2"
-          @stderr = :stdout
+          stderr = :stdout
         when "2>"
-          @stderr = redirect.target
+          stderr = redirect.target
         when "2>&1"
-          @stdout = :stderr
+          stdout = :stderr
         end
       end
+      [stdin, stdout, stderr]
+    end
 
-      @last_result = @blk.call command, @stdin, @stdout, @stderr
-
-      @stdin = original_stdin
-      @stdout = original_stdout
-      @stderr = original_stderr
+    def visit_CommandNode(node)
+      with_standard_streams do |stdin, stdout, stderr|
+        command = CommandFactory.build_command_for(
+          command: node.command,
+          args:    node.args,
+          heredoc: node.heredoc,
+          internally_evaluate: node.internally_evaluate?)
+        @stdin, @stdout, @stderr = stream_redirections_for(node)
+        @last_result = @blk.call command, @stdin, @stdout, @stderr
+      end
     end
 
     def visit_StatementsNode(node)
@@ -133,24 +137,26 @@ module Yap
     end
 
     def visit_PipelineNode(node, options={})
-      original_stdin = @stdin
-      original_stdout = @stdout
-      original_stderr = @stderr
+      with_standard_streams do |stdin, stdout, stderr|
+        # Modify @stdout and @stderr for the first command
+        stdin, @stdout = IO.pipe
+        @stderr = @stdout
 
-      r,w = IO.pipe
+        # Don't modify @stdin for the first command in the pipeline.
+        node.head.accept(self)
 
-      @stdout = w
-      @stderr = w
+        # Modify @stdin starting with the second command to read from the
+        # read portion of our above stdout.
+        @stdin = stdin
 
-      node.head.accept(self)
+        # Modify @stdout,@stderr to go back to the original
+        @stdout, @stderr = stdout, stderr
 
-      @stdin = r
-      @stdout = original_stdout
-      @stderr = original_stderr
+        node.tail.accept(self)
 
-      node.tail.accept(self)
-
-      @stdin = original_stdin
+        # Set our @stdin back to the original
+        @stdin = stdin
+      end
     end
 
     def visit_InternalEvalNode(node)
