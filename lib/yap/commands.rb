@@ -41,8 +41,8 @@ module Yap
       return RubyCommand.new(str:command) if internally_evaluate
 
       case command
-      when ShellCommand then ShellCommand.new(str:command)
-      when BuiltinCommand then BuiltinCommand.new(str:command)
+      when ShellCommand then ShellCommand.new(str:command, args:args, heredoc:heredoc)
+      when BuiltinCommand then BuiltinCommand.new(str:command, args:args, heredoc:heredoc)
       when FileSystemCommand  then FileSystemCommand.new(str:command, args:args, heredoc:heredoc)
       else
         raise CommandUnknownError, "Don't know how to execute command: #{command}"
