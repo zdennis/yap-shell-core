@@ -56,16 +56,61 @@ class CommandHistoryImplementation
     @history = []
   end
 
-  def push(item)
-    @history.push item
+  def start_group(time)
+    @group = Group.new(started_at:time)
+    @history.push @group
   end
 
-  def last
+  def stop_group(time)
+    @group.stopped_at(time)
+  end
+
+  def push(item)
+    @group.add_item item
+  end
+
+  def last_group
     @history.last
   end
 
+  def last_command
+    return @history.last.last_item if @history.last
+    nil
+  end
+
   def last_run_command
-    @history.reverse.detect{ |item| item.finished? }
+    @history.reverse.each do |group|
+      last_run = group.items.reverse.detect{ |item| item.finished? }
+      break last_run if last_run
+    end
+  end
+
+  class Group
+    def initialize(started_at:Time.now)
+      @started_at = started_at
+      @items = []
+    end
+
+    def add_item(item)
+      @items.push item
+    end
+
+    def items
+      @items
+    end
+
+    def last_item
+      @items.last
+    end
+
+    def stopped_at(time)
+      @stopped_at ||= time
+    end
+
+    def duration
+      return nil unless @stopped_at
+      @stopped_at - @started_at
+    end
   end
 
   class Item
@@ -104,25 +149,26 @@ end
 
 CommandHistory = CommandHistoryImplementation.new
 
-Yap::ExecutionContext.on(:before_group_execute) do |context, commands:|
-  # puts "Before group: #{context.to_s}, commands: #{commands.to_s}"
+Yap::ExecutionContext.on(:before_statements_execute) do |context|
+  puts "Before group: #{context.to_s}" if ENV["DEBUG"]
+  CommandHistory.start_group(Time.now)
 end
 
-Yap::ExecutionContext.on(:after_group_execute) do |context, commands:|
-  # puts "After group: #{context.to_s}, commands: #{commands.to_s}"
+Yap::ExecutionContext.on(:after_statements_execute) do |context|
+  CommandHistory.stop_group(Time.now)
+  puts "After group: #{context.to_s}" if ENV["DEBUG"]
 end
 
 Yap::ExecutionContext.on(:after_process_finished) do |context, *args|
   # puts "After process: #{context.to_s}, args: #{args.inspect}"
 end
 
-
 Yap::ExecutionContext.on(:before_execute) do |context, command:|
   CommandHistory.push CommandHistoryImplementation::Item.new(command_str: command.str, started_at: Time.now)
 end
 
 Yap::ExecutionContext.on(:after_execute) do |context, command:, result:|
-  CommandHistory.last.finished!
+  CommandHistory.last_command.finished!
   # if result.status_code == 0
   #   # t = TermInfo.new("xterm-color", STDOUT)
   #   # h, w = t.screen_size

@@ -45,10 +45,10 @@ module Yap
         context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
 
         # Yap::ExecutionContext.fire :before_group_execute, self, commands:commands
-        puts "context.before_group_execute" if ENV["DEBUG"]
+        # puts "context.before_group_execute" if ENV["DEBUG"]
         context.execute(world:@world)
         # Yap::ExecutionContext.fire :after_group_execute, self, commands:commands
-        puts "context.after_group_execute" if ENV["DEBUG"]
+        # puts "context.after_group_execute" if ENV["DEBUG"]
       end
     end
   end

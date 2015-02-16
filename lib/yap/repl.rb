@@ -58,7 +58,6 @@ module Yap
           input = process_heredoc(input)
 
           ast = Yap::Line::MyParser.new.parse(input)
-
           ast.accept self
         rescue ::Yap::CommandUnknownError => ex
           puts "  CommandError: #{ex.message}"
@@ -105,10 +104,12 @@ module Yap
       @aliases_expanded ||= []
       with_standard_streams do |stdin, stdout, stderr|
         if !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
+          @suppress_events = true
           ast = Yap::Line::MyParser.new.parse([_alias].concat(node.args).join(" "))
           @aliases_expanded.push(node.command)
           ast.accept(self)
           @aliases_expanded.pop
+          @suppress_events = false
         else
           command = CommandFactory.build_command_for(
             command: node.command,
@@ -122,8 +123,31 @@ module Yap
     end
 
     def visit_StatementsNode(node)
+      env = ENV.to_h
+      Yap::ExecutionContext.fire :before_statements_execute, self unless @suppress_events
       node.head.accept(self)
-      node.tail.accept(self) if node.tail
+      if node.tail
+        node.tail.accept(self)
+        ENV.clear
+        ENV.replace(env)
+      end
+      Yap::ExecutionContext.fire :after_statements_execute, self unless @suppress_events
+    end
+
+    def visit_EnvWrapperNode(node)
+      env = ENV.to_h
+      node.env.each_pair do |k,v|
+        ENV[k] = v
+      end
+      node.node.accept(self)
+      ENV.clear
+      ENV.replace(env)
+    end
+
+    def visit_EnvNode(node)
+      node.env.each_pair do |key,val|
+        ENV[key] = val
+      end
     end
 
     def visit_ConditionalNode(node)
@@ -177,25 +201,6 @@ module Yap
 
     private
 
-    def expand_statement(statement)
-      return [statement] if statement.internally_evaluate?
-      results = []
-      aliases = Aliases.instance
-      command = statement.command
-      loop do
-        if str=aliases.fetch_alias(command)
-          statements = Yap::Line::Parser.parse("#{str} #{statement.args.join(' ')}")
-          statements.map do |s|
-            results.concat expand_statement(s)
-          end
-          return results
-        else
-          results << statement
-          return results
-        end
-      end
-    end
-
     def alias_expand(input, aliases:Aliases.instance)
       head, *tail = input.split(/\s/, 2).first
       if new_head=aliases.fetch_alias(head)
@@ -208,6 +213,9 @@ module Yap
     def shell_expand(input)
       [input].flatten.map do |str|
         str.gsub!(/\A~(.*)/, ENV["HOME"] + '\1')
+        if str =~ /^\$(.*)/
+          str = ENV.fetch($1, "")
+        end
         expanded = Dir[str]
         expanded.any? ? expanded : str
       end.flatten
