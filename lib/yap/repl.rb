@@ -102,10 +102,13 @@ module Yap
     end
 
     def visit_CommandNode(node)
+      @aliases_expanded ||= []
       with_standard_streams do |stdin, stdout, stderr|
-        if _alias = Aliases.instance.fetch_alias(node.command)
-          ast = Yap::Line::MyParser.new.parse(_alias)
+        if !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
+          ast = Yap::Line::MyParser.new.parse([_alias].concat(node.args).join(" "))
+          @aliases_expanded.push(node.command)
           ast.accept(self)
+          @aliases_expanded.pop
         else
           command = CommandFactory.build_command_for(
             command: node.command,
@@ -204,8 +207,9 @@ module Yap
 
     def shell_expand(input)
       [input].flatten.map do |str|
+        str.gsub!(/\A~(.*)/, ENV["HOME"] + '\1')
         expanded = Dir[str]
-        expanded.any? ? expanded.join(" ") : str
+        expanded.any? ? expanded : str
       end.flatten
     end
 
