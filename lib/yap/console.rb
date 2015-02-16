@@ -16,7 +16,16 @@ module Yap
       File.expand_path('~') + '/.yap-history'
     end
 
+    def load_history
+      return unless File.exists?(history_file) && File.readable?(history_file)
+      (YAML.load_file(history_file) || []).each do |item|
+        ::Readline::HISTORY.push item
+      end
+    end
+
     def run
+      load_history
+
       at_exit do
         File.write history_file, ::Readline::HISTORY.to_a.to_yaml
       end
