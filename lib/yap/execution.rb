@@ -158,6 +158,7 @@ module Yap
             r,w = IO.pipe
             stdin = r
           end
+
           pid = fork do
             # Start a new process gruop as the session leader. Now we are
             # responsible for sending signals that would have otherwise
@@ -181,7 +182,16 @@ module Yap
             w.close
           end
         end
+
+        # This prevents the shell from processing sigint and lets the child
+        # process handle it. Necessary for interactive shells that do not
+        # abort on Ctrl-C such as irb.
+        Signal.trap("SIGINT") do
+          Process.kill("SIGINT", pid)
+        end
+
         Process.waitpid(pid) unless of > 1
+        Signal.trap("SIGINT", "DEFAULT")
 
         # If we're not printing to the terminal than close in/out/err. This
         # is so the next command in the pipeline can complete and don't hang waiting for
