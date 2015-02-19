@@ -1,10 +1,8 @@
 require "yap/version"
 
 module Yap
-  autoload :Console, "yap/console"
-  autoload :World,   "yap/world"
-
-  autoload :Repl,           "yap/repl"
+  autoload :Shell, "yap/shell"
+  autoload :World, "yap/world"
 
   autoload :CommandFactory, "yap/commands"
   autoload :BuiltInCommand, "yap/commands"
@@ -39,11 +37,10 @@ module Yap
   end
 
 
-  def self.run_console
+  def self.run_shell
     addons = WorldAddons.load_from_files(files: [
       "#{ENV['HOME']}/.yaprc"
     ])
-    console = Console.new(addons: addons)
-    console.run
+    Shell.new(addons: addons).repl
   end
 end

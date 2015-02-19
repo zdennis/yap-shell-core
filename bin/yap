@@ -18,7 +18,7 @@ $LOAD_PATH << File.dirname(file) + '/../lib'
 # loop do
   load "yap.rb"
   begin
-    Yap.run_console
+    Yap.run_shell
   rescue StandardError => ex
     puts ex.message
     puts ex.backtrace

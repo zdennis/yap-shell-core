@@ -196,8 +196,13 @@ module Yap
         # If we're not printing to the terminal than close in/out/err. This
         # is so the next command in the pipeline can complete and don't hang waiting for
         # stdin after the command that's writing to its stdin has completed.
-        if stdout != $stdout && stdout.is_a?(IO) && !stdout.closed? then stdout.close end
-        if stderr != $stderr && stderr.is_a?(IO) && !stderr.closed? then stderr.close end
+        if stdout != $stdout && stdout.is_a?(IO) && !stdout.closed? then
+          stdout.close
+        end
+        if stderr != $stderr && stderr.is_a?(IO) && !stderr.closed? then
+          puts "COSE2"
+          stderr.close
+        end
         # if stdin != $stdin && !stdin.closed? then stdin.close end
 
       rescue Interrupt
