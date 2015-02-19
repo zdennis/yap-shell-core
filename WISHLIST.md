@@ -1,5 +1,7 @@
 
-
+* truncate the prompt so you can type long commands
+* don't overwrite timestamp? (or have it disappear when you write over it altogether, similar to ZSH)
+* have configurable prompt components
 * interact with the "World" rather than just operating on string contents
 * communicate exit codes to user (w/color)
 * allow for a multiline smart prompt or at least some kind of status notifications
