@@ -12,16 +12,29 @@ module Yap
 
     require 'terminfo'
     include Term::ANSIColor
+
+    def clear_time
+      time_str = Time.now.strftime("%H:%M:%S")
+      time_str_without_ansii = time_str.gsub(/\x1b[^m]*m/, '')
+      h, w = t.screen_size
+      t.control "sc"
+      t.control "cub", w
+      t.control "cuf", w - time_str_without_ansii.length
+      t.write black(" " * time_str_without_ansii.length)
+      t.control "rc"
+    end
+
     def print_time(on:)
       # t.control "cud", 1
       time_str = Time.now.strftime("%H:%M:%S")
+      time_str_without_ansii = time_str.gsub(/\x1b[^m]*m/, '')
       h, w = t.screen_size
       t.control "sc"
       t.control "cub", w
       if on == :previous_row
         t.control "cuu", 1
       end
-      t.control "cuf", w - time_str.length
+      t.control "cuf", w - time_str_without_ansii.length
       t.write bright_black(time_str)
       t.control "rc"
     end
@@ -33,23 +46,55 @@ module Yap
       @stdin = $stdin
       @stdout = $stdout
       @stderr = $stderr
-
+f = File.open("/tmp/z.log", "w+")
       loop do
         # t.control "clear"
         # t.control "cwin", 0, 0, 100, 100
 
         heredoc = nil
+        prompt = ""
+        without_ansii_proc = ->(str){ str.gsub(/\x1b[^m]*m/, '') }
+        prompt_without_ansii = ""
+
 
         begin
           thr = Thread.new do
             loop do
-              print_time on: :current_row
-              sleep 1
+              rows, columns = t.screen_size
+              prompt_without_ansii = without_ansii_proc.call(prompt)
+              time_str = Time.now.strftime("%H:%M:%S")
+              time_str_without_ansii = without_ansii_proc.call(time_str)
+              used_columns = Readline.line_buffer.to_s.length + prompt_without_ansii.length + time_str_without_ansii.length
+f.puts "Used: #{used_columns} Columns: #{columns}"
+f.flush
+              if used_columns == columns
+                clear_time
+              elsif used_columns < columns
+                print_time on: :current_row
+              end
+              sleep 0.1
             end
           end
           thr.abort_on_exception = true
 
-          input = Readline.readline("#{@world.prompt}", true)
+          prompt = @world.prompt
+          # prompt = "foobar >"
+          prompt_without_ansii = without_ansii_proc.call(prompt)
+          rows, columns = t.screen_size
+
+          # time_str = Time.now.strftime("%H:%M:%S")
+          # time_str_without_ansii = time_str.gsub(/\x1b[^m]*m/, '')
+          #
+          # Signal.trap("WINCH") do
+          #   rows, columns = t.screen_size
+          #   # puts "WINCH: rows: #{rows}  columns: #{columns}  #{columns - (prompt_without_ansii.length + time_str_without_ansii.length)}"
+          #   ncols = columns - (time_str_without_ansii.length)
+          #   Readline.set_screen_size(rows, ncols)
+          # end
+          #
+          # ncols = columns - (time_str_without_ansii.length)
+          # Readline.set_screen_size(rows, columns - 10)
+          input = Readline.readline("#{prompt}", true)
           Thread.kill(thr)
 
           print_time on: :previous_row
@@ -70,6 +115,8 @@ module Yap
           # about to do that.
           puts "^Z"
           next
+        ensure
+          thr.kill if thr
         end
 
       end
