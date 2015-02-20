@@ -1,5 +1,3 @@
-require "yap/shell"
-
 module Yap
   autoload :Shell, "yap/shell"
   autoload :World, "yap/world"
@@ -27,6 +25,6 @@ module Yap
     addons = WorldAddons.load_from_files(files: [
       "#{ENV['HOME']}/.yaprc"
     ])
-    Shell.new(addons: addons).repl
+    Shell::Impl.new(addons: addons).repl
   end
 end
