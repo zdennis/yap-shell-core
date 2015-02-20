@@ -16,6 +16,14 @@ module Yap
         ast.accept(self)
       end
 
+      private
+
+      ######################################################################
+      #                                                                    #
+      #               VISITOR METHODS FOR AST TREE WALKING                 #
+      #                                                                    #
+      ######################################################################
+
       def visit_CommandNode(node)
         @aliases_expanded ||= []
         with_standard_streams do |stdin, stdout, stderr|
@@ -115,7 +123,11 @@ module Yap
         @last_result = @blk.call command, @stdin, @stdout, @stderr
       end
 
-      private
+      ######################################################################
+      #                                                                    #
+      #               HELPER / UTILITY METHODS                             #
+      #                                                                    #
+      ######################################################################
 
       def alias_expand(input, aliases:Aliases.instance)
         head, *tail = input.split(/\s/, 2).first
