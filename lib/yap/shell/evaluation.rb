@@ -1,4 +1,3 @@
-$LOAD_PATH.unshift File.dirname(__FILE__) + "/../../../../yap-shell-line-parser/lib"
 require 'yap/shell/parser'
 require 'yap/shell/commands'
 require 'yap/shell/aliases'
