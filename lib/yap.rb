@@ -1,25 +1,6 @@
-require "yap/version"
-
 module Yap
-  autoload :Console, "yap/console"
-  autoload :Shell,   "yap/shell"
-  autoload :World,   "yap/world"
-
-  autoload :Repl,           "yap/repl"
-
-  autoload :CommandFactory, "yap/commands"
-  autoload :BuiltInCommand, "yap/commands"
-  autoload :FileSystemCommand,  "yap/commands"
-  autoload :RubyCommand,    "yap/commands"
-  autoload :ShellCommand,   "yap/commands"
-  autoload :CommandError,   "yap/commands"
-  autoload :CommandUnknownError,   "yap/commands"
-
-  autoload :ExecutionContext,     "yap/execution"
-  autoload :CommandExecution,     "yap/execution"
-  autoload :FileSystemCommandExecution, "yap/execution"
-  autoload :RubyCommandExecution, "yap/execution"
-  autoload :ShellCommandExecution,"yap/execution"
+  autoload :Shell, "yap/shell"
+  autoload :World, "yap/world"
 
   module WorldAddons
     def self.syntax_ok?(file)
@@ -40,11 +21,10 @@ module Yap
   end
 
 
-  def self.run_console
+  def self.run_shell
     addons = WorldAddons.load_from_files(files: [
       "#{ENV['HOME']}/.yaprc"
     ])
-    console = Console.new(addons: addons)
-    console.run
+    Shell::Impl.new(addons: addons).repl
   end
 end

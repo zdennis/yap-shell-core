@@ -1,97 +1,24 @@
-require 'ostruct'
-require 'yaml'
+require 'yap/shell/aliases'
 
-module Yap
+module Yap::Shell
   class CommandError < StandardError ; end
   class CommandUnknownError < CommandError ; end
 
-  require 'singleton'
-  class Aliases
-    include Singleton
-
-    def initialize
-      @file = ENV["HOME"] + "/.yapaliases.yml"
-      @aliases = begin
-        YAML.load_file(@file)
-      rescue
-        {}
-      end
-    end
-
-    def fetch_alias(name)
-      @aliases[name]
-    end
-
-    def set_alias(name, command)
-      @aliases[name] = command
-      File.write @file, @aliases.to_yaml
-    end
-
-    def unset_alias(name)
-      @aliases.delete(name)
-    end
-
-    def has_key?(key)
-      @aliases.has_key?(key)
-    end
-  end
-
   class CommandFactory
-    def self.build_command_for(statement)
-      return RubyCommand.new(str:statement.command) if statement.internally_evaluate?
+    def self.build_command_for(command:, args:, heredoc:, internally_evaluate:)
+      return RubyCommand.new(str:command) if internally_evaluate
 
-      command = statement.command
       case command
-      when ShellCommand then ShellCommand.new(str:command)
-      when BuiltinCommand then BuiltinCommand.new(str:command)
-      when FileSystemCommand  then FileSystemCommand.new(str:command)
+      when ShellCommand then ShellCommand.new(str:command, args:args, heredoc:heredoc)
+      when BuiltinCommand then BuiltinCommand.new(str:command, args:args, heredoc:heredoc)
+      when FileSystemCommand  then FileSystemCommand.new(str:command, args:args, heredoc:heredoc)
       else
         raise CommandUnknownError, "Don't know how to execute command: #{command}"
       end
     end
   end
 
-  class CommandPipeline
-    def initialize(commands:)
-      @commands = commands
-      @pipes = []
-    end
-
-    def length
-      @commands.length
-    end
-
-    def each(&blk)
-      @pipes.clear
-      arr = @commands.map.with_index do |command, n|
-        stdin, stdout, stderr = pipes_for_command n:n+1, of: @commands.length
-        @pipes << OpenStruct.new(stdin:stdin, stdout:stdout, stderr:stderr)
-        [command, stdin, stdout, stderr]
-      end
-
-      if block_given?
-        arr.each{ |*args| yield *args }
-      else
-        arr.each
-      end
-    end
-
-    private
-
-    def pipes_for_command(n:, of:)
-      if of == 1    # only one command in the pipeline
-        [:stdin, :stdout, :stderr]
-      elsif n == 1  # we are the last command, e.g. 'grep' in 'ls | grep e'
-        ["fifo-test-#{of - n}", :stdout, :stderr]
-      elsif n == of # we are the first command, e.g. 'ls' in 'ls | grep e'
-        [:stdin, @pipes.last.stdin, @pipes.last.stdin]
-      elsif n < of  # more than one command in the pipeline, w're somewhere in the middle
-        ["fifo-test-#{of - n}", @pipes.last.stdin, @pipes.last.stdin]
-      end
-    end
-  end
-
-  module Command
+  class Command
     attr_accessor :str, :args
     attr_accessor :heredoc
 
@@ -106,9 +33,7 @@ module Yap
     end
   end
 
-  class BuiltinCommand
-    include Command
-
+  class BuiltinCommand < Command
     def self.===(other)
       self.builtins.keys.include?(other.split(' ').first.to_sym) || super
     end
@@ -148,9 +73,7 @@ module Yap
     end
   end
 
-  class FileSystemCommand
-    include Command
-
+  class FileSystemCommand < Command
     def self.===(other)
       command = other.split(/\s+/).detect{ |f| !f.include?("=") }
 
@@ -170,15 +93,12 @@ module Yap
     def to_executable_str
       [
         str,
-        args.map(&:shellescape).join(' '),
-        (heredoc if heredoc)
+        args.map(&:shellescape).join(' ')
       ].join(' ')
     end
   end
 
-  class ShellCommand
-    include Command
-
+  class ShellCommand < Command
     def self.registered_functions
       (@registered_functions ||= {}).freeze
     end
@@ -196,16 +116,14 @@ module Yap
       :ShellCommand
     end
 
-    def execute
+    def to_proc
       self.class.registered_functions.fetch(str.to_sym){
         raise "Shell function #{str} was not found!"
-      }.call *args
+      }
     end
   end
 
-  class RubyCommand
-    include Command
-
+  class RubyCommand < Command
     def type
       :RubyCommand
     end

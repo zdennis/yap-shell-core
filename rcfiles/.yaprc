@@ -33,17 +33,22 @@ self.prompt = -> do
   "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
-func :howmuch do |*args|
+func :howmuch do |args:, stdin:, stdout:, stderr:|
   case args.first
   when "time"
     if history_item=CommandHistory.last_run_command
-      puts history_item.total_time_s
+      stdout.puts history_item.total_time_s
     else
-      puts "Can't report on something you haven't done."
+      stdout.puts "Can't report on something you haven't done."
     end
   else
-    puts "How much what?"
+    stdout.puts "How much what?"
   end
+end
+
+func :upcase do |args:, stdin:, stdout:, stderr:|
+  str = stdin.read
+  stdout.puts str.upcase
 end
 
 class CommandHistoryImplementation
@@ -51,16 +56,61 @@ class CommandHistoryImplementation
     @history = []
   end
 
-  def push(item)
-    @history.push item
+  def start_group(time)
+    @group = Group.new(started_at:time)
+    @history.push @group
   end
 
-  def last
+  def stop_group(time)
+    @group.stopped_at(time)
+  end
+
+  def push(item)
+    @group.add_item item
+  end
+
+  def last_group
     @history.last
   end
 
+  def last_command
+    return @history.last.last_item if @history.last
+    nil
+  end
+
   def last_run_command
-    @history.reverse.detect{ |item| item.finished? }
+    @history.reverse.each do |group|
+      last_run = group.items.reverse.detect{ |item| item.finished? }
+      break last_run if last_run
+    end
+  end
+
+  class Group
+    def initialize(started_at:Time.now)
+      @started_at = started_at
+      @items = []
+    end
+
+    def add_item(item)
+      @items.push item
+    end
+
+    def items
+      @items
+    end
+
+    def last_item
+      @items.last
+    end
+
+    def stopped_at(time)
+      @stopped_at ||= time
+    end
+
+    def duration
+      return nil unless @stopped_at
+      @stopped_at - @started_at
+    end
   end
 
   class Item
@@ -99,13 +149,26 @@ end
 
 CommandHistory = CommandHistoryImplementation.new
 
+Yap::Shell::Execution::Context.on(:before_statements_execute) do |context|
+  puts "Before group: #{context.to_s}" if ENV["DEBUG"]
+  CommandHistory.start_group(Time.now)
+end
 
-Yap::ExecutionContext.on(:before_execute) do |context, command:|
+Yap::Shell::Execution::Context.on(:after_statements_execute) do |context|
+  CommandHistory.stop_group(Time.now)
+  puts "After group: #{context.to_s}" if ENV["DEBUG"]
+end
+
+Yap::Shell::Execution::Context.on(:after_process_finished) do |context, *args|
+  # puts "After process: #{context.to_s}, args: #{args.inspect}"
+end
+
+Yap::Shell::Execution::Context.on(:before_execute) do |context, command:|
   CommandHistory.push CommandHistoryImplementation::Item.new(command_str: command.str, started_at: Time.now)
 end
 
-Yap::ExecutionContext.on(:after_execute) do |context, command:, result:|
-  CommandHistory.last.finished!
+Yap::Shell::Execution::Context.on(:after_execute) do |context, command:, result:|
+  CommandHistory.last_command.finished!
   # if result.status_code == 0
   #   # t = TermInfo.new("xterm-color", STDOUT)
   #   # h, w = t.screen_size

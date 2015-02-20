@@ -1,68 +1,72 @@
-require 'shellwords'
 require 'readline'
-
-require 'mkfifo'
-require 'ostruct'
-require 'pty'
+require 'yaml'
+require "yap/shell/version"
 
 module Yap
-  require 'childprocess'
-  class Shell
-    attr_reader :pty_master, :pty_slave
+  module Shell
+    autoload :Aliases, "yap/shell/aliases"
 
-    def initialize
-      build_childprocess
+    autoload :CommandFactory, "yap/shell/commands"
+    autoload :CommandError,  "yap/shell/commands"
+    autoload :CommandUnknownError,  "yap/shell/commands"
+    autoload :BuiltinCommand,  "yap/shell/commands"
+    autoload :FileSystemCommand,  "yap/shell/commands"
+    autoload :RubyCommand,  "yap/shell/commands"
+    autoload :ShellCommand,  "yap/shell/commands"
+
+    autoload :Execution,  "yap/shell/execution"
+
+    autoload :Evaluation, "yap/shell/evaluation"
+    autoload :Repl, "yap/shell/repl"
+
+    class Impl
+      def initialize(addons:)
+        @stdin = $stdin
+        @stdout = $stdout
+        @stderr = $stderr
+
+        @stdout.sync = true
+        @stderr.sync = true
+
+        @addons = addons
+      end
+
+      def repl
+        @world = Yap::World.new(addons:@addons)
+        context = Yap::Shell::Execution::Context.new(
+          stdin:  @stdin,
+          stdout: @stdout,
+          stderr: @stderr
+        )
+
+        @repl = Yap::Shell::Repl.new(world:@world)
+        @repl.loop_on_input do |input|
+          evaluation = Yap::Shell::Evaluation.new(stdin:@stdin, stdout:@stdout, stderr:@stderr)
+          evaluation.evaluate(input) do |command, stdin, stdout, stderr|
+            context.clear_commands
+            context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
+            context.execute(world:@world)
+          end
+        end
+      end
+
+      private
+
+      def history_file
+        File.expand_path('~') + '/.yap-history'
+      end
+
+      def load_history
+        return unless File.exists?(history_file) && File.readable?(history_file)
+        (YAML.load_file(history_file) || []).each do |item|
+          ::Readline::HISTORY.push item
+        end
+
+        at_exit do
+          File.write history_file, ::Readline::HISTORY.to_a.to_yaml
+        end
+      end
     end
 
-    def open_pty
-      @pty_master.close if @pty_master
-      @pty_slave.close  if @pty_slave
-      @pty_master, @pty_slave = PTY.open
-      @pty_master.sync = true
-      @pty_slave.sync = true
-    end
-
-    def stdin
-      @w
-    end
-
-    def stdout
-      @r
-    end
-
-    def stderr
-      @r
-    end
-
-    # Sends a INT signal to the child process of our child process.
-    # Killing the child process itself will result in pipe errors. 
-    def interrupt!
-      pids = `ps -o pid -g #{@childprocess.pid}`.split("\n")
-      pid = pids[-1]
-      $stdout.puts "Killing: #{pid}" if ENV["DEBUG"]
-      `kill -INT #{pid}`
-    end
-
-    def puts(str)
-      @childprocess.io.stdin.puts "#{str}"
-    end
-
-    def wait
-      @childprocess.wait
-    end
-
-    private
-
-    def build_childprocess
-      @r, @w = IO.pipe
-      @r.sync = true
-      @w.sync = true
-      @childprocess = ChildProcess.build("bash", "-l", "-O", "expand_aliases")
-      @childprocess.duplex = true
-      @childprocess.io.stdout = @childprocess.io.stderr = @w
-      @childprocess.leader = true
-      @childprocess.start
-      @childprocess
-    end
   end
 end
