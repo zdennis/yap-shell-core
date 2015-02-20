@@ -149,25 +149,25 @@ end
 
 CommandHistory = CommandHistoryImplementation.new
 
-Yap::ExecutionContext.on(:before_statements_execute) do |context|
+Yap::Shell::Execution::Context.on(:before_statements_execute) do |context|
   puts "Before group: #{context.to_s}" if ENV["DEBUG"]
   CommandHistory.start_group(Time.now)
 end
 
-Yap::ExecutionContext.on(:after_statements_execute) do |context|
+Yap::Shell::Execution::Context.on(:after_statements_execute) do |context|
   CommandHistory.stop_group(Time.now)
   puts "After group: #{context.to_s}" if ENV["DEBUG"]
 end
 
-Yap::ExecutionContext.on(:after_process_finished) do |context, *args|
+Yap::Shell::Execution::Context.on(:after_process_finished) do |context, *args|
   # puts "After process: #{context.to_s}, args: #{args.inspect}"
 end
 
-Yap::ExecutionContext.on(:before_execute) do |context, command:|
+Yap::Shell::Execution::Context.on(:before_execute) do |context, command:|
   CommandHistory.push CommandHistoryImplementation::Item.new(command_str: command.str, started_at: Time.now)
 end
 
-Yap::ExecutionContext.on(:after_execute) do |context, command:, result:|
+Yap::Shell::Execution::Context.on(:after_execute) do |context, command:, result:|
   CommandHistory.last_command.finished!
   # if result.status_code == 0
   #   # t = TermInfo.new("xterm-color", STDOUT)

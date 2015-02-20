@@ -4,12 +4,6 @@ module Yap
   autoload :Shell, "yap/shell"
   autoload :World, "yap/world"
 
-  autoload :ExecutionContext,     "yap/execution"
-  autoload :CommandExecution,     "yap/execution"
-  autoload :FileSystemCommandExecution, "yap/execution"
-  autoload :RubyCommandExecution, "yap/execution"
-  autoload :ShellCommandExecution,"yap/execution"
-
   module WorldAddons
     def self.syntax_ok?(file)
       `ruby -c #{file}`

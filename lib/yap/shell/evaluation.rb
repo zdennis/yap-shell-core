@@ -48,14 +48,14 @@ module Yap
 
       def visit_StatementsNode(node)
         env = ENV.to_h
-        Yap::ExecutionContext.fire :before_statements_execute, self unless @suppress_events
+        Yap::Shell::Execution::Context.fire :before_statements_execute, self unless @suppress_events
         node.head.accept(self)
         if node.tail
           node.tail.accept(self)
           ENV.clear
           ENV.replace(env)
         end
-        Yap::ExecutionContext.fire :after_statements_execute, self unless @suppress_events
+        Yap::Shell::Execution::Context.fire :after_statements_execute, self unless @suppress_events
       end
 
       def visit_EnvWrapperNode(node)

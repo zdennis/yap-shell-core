@@ -13,6 +13,8 @@ module Yap
     autoload :RubyCommand,  "yap/shell/commands"
     autoload :ShellCommand,  "yap/shell/commands"
 
+    autoload :Execution,  "yap/shell/execution"
+
     autoload :Evaluation, "yap/shell/evaluation"
     autoload :Repl, "yap/shell/repl"
 
@@ -29,7 +31,7 @@ module Yap
 
     def repl
       @world = Yap::World.new(addons:@addons)
-      context = ExecutionContext.new(
+      context = Yap::Shell::Execution::Context.new(
         stdin:  @stdin,
         stdout: @stdout,
         stderr: @stderr
