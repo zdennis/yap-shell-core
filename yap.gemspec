@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'yap/version'
+require 'yap/shell/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "yap"
-  spec.version       = Yap::VERSION
+  spec.version       = Yap::Shell::VERSION
   spec.authors       = ["Zach Dennis"]
   spec.email         = ["zach.dennis@gmail.com"]
   spec.summary       = %q{TODO: Write a short summary. Required.}

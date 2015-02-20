@@ -1,4 +1,4 @@
-require "yap/version"
+require "yap/shell"
 
 module Yap
   autoload :Shell, "yap/shell"
