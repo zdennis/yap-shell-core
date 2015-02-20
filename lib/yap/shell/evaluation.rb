@@ -1,7 +1,7 @@
 $LOAD_PATH.unshift File.dirname(__FILE__) + "/../../../../yap-shell-line-parser/lib"
 require 'yap/line/my_parser'
 
-require 'yap/commands'
+require 'yap/shell/commands'
 
 module Yap
   class Shell

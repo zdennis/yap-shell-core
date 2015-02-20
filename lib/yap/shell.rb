@@ -3,6 +3,16 @@ require 'yaml'
 
 module Yap
   class Shell
+    autoload :Aliases, "yap/shell/aliases"
+
+    autoload :CommandFactory, "yap/shell/commands"
+    autoload :CommandError,  "yap/shell/commands"
+    autoload :CommandUnknownError,  "yap/shell/commands"
+    autoload :BuiltinCommand,  "yap/shell/commands"
+    autoload :FileSystemCommand,  "yap/shell/commands"
+    autoload :RubyCommand,  "yap/shell/commands"
+    autoload :ShellCommand,  "yap/shell/commands"
+
     autoload :Evaluation, "yap/shell/evaluation"
     autoload :Repl, "yap/shell/repl"
 

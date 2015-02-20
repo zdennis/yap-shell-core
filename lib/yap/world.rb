@@ -1,6 +1,5 @@
 require 'term/ansicolor'
 require 'forwardable'
-require 'yap/commands'
 
 module Yap
   class World
@@ -20,7 +19,7 @@ module Yap
     end
 
     def func(name, &blk)
-      Yap::ShellCommand.define_shell_function(name, &blk)
+      Yap::Shell::ShellCommand.define_shell_function(name, &blk)
     end
 
     def readline

@@ -23,7 +23,7 @@ module Yap
             input = process_heredoc(input)
 
             yield input
-          rescue ::Yap::CommandUnknownError => ex
+          rescue ::Yap::Shell::CommandUnknownError => ex
             puts "  CommandError: #{ex.message}"
           rescue Interrupt
             puts "^C"

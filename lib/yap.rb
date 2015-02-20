@@ -4,14 +4,6 @@ module Yap
   autoload :Shell, "yap/shell"
   autoload :World, "yap/world"
 
-  autoload :CommandFactory, "yap/commands"
-  autoload :BuiltInCommand, "yap/commands"
-  autoload :FileSystemCommand,  "yap/commands"
-  autoload :RubyCommand,    "yap/commands"
-  autoload :ShellCommand,   "yap/commands"
-  autoload :CommandError,   "yap/commands"
-  autoload :CommandUnknownError,   "yap/commands"
-
   autoload :ExecutionContext,     "yap/execution"
   autoload :CommandExecution,     "yap/execution"
   autoload :FileSystemCommandExecution, "yap/execution"
