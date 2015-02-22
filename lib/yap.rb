@@ -1,7 +1,7 @@
-module Yap
-  autoload :Shell, "yap/shell"
-  autoload :World, "yap/world"
+require 'yap/shell'
+require 'yap/world'
 
+module Yap
   module WorldAddons
     def self.syntax_ok?(file)
       `ruby -c #{file}`
