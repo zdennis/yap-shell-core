@@ -1,3 +1,4 @@
+require 'shellwords'
 require 'yap/shell/aliases'
 
 module Yap::Shell
