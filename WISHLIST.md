@@ -1,4 +1,6 @@
 
+* support user-specified gems to install (so they're available for rc files)
+
 * truncate the prompt so you can type long commands
 * don't overwrite timestamp? (or have it disappear when you write over it altogether, similar to ZSH)
 * have configurable prompt components
