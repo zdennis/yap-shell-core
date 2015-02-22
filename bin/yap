@@ -1,6 +1,4 @@
 #!/usr/bin/env ruby
-require 'pry'
-
 file = __FILE__
 if File.symlink?(file)
   file = File.readlink(file)
