@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["zach.dennis@gmail.com"]
   spec.summary       = %q{The Lagniappe "Yap" shell.}
   spec.description   = %q{The Lagniappe "Yap" shell.}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/zdennis/yap-shell"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
