@@ -29,5 +29,12 @@ module Yap::Shell
     def has_key?(key)
       @aliases.has_key?(key)
     end
+
+    def to_h
+      @aliases.keys.sort.inject(Hash.new) do |h,k|
+        h[k] = @aliases[k]
+        h
+      end
+    end
   end
 end

@@ -1,6 +1,7 @@
 require 'readline'
 require 'yaml'
-require "yap/shell/version"
+require 'yap/shell/version'
+require 'yap/shell/builtins'
 
 module Yap
   module Shell
