@@ -5,6 +5,7 @@ module Yap::Shell
     builtin :cd do |path=ENV['HOME'], *_|
       DIRECTORY_HISTORY << Dir.pwd
       Dir.chdir(path)
+      ENV["PWD"] = Dir.pwd
       output=""
     end
 
