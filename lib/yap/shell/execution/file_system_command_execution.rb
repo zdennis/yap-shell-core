@@ -2,6 +2,7 @@ module Yap::Shell::Execution
   class FileSystemCommandExecution < CommandExecution
     on_execute do |command:, n:, of:, resume_blk:nil|
       stdin, stdout, stderr, world = @stdin, @stdout, @stderr, @world
+      result = nil
       begin
         if resume_blk
           pid = resume_blk.call
@@ -60,17 +61,19 @@ module Yap::Shell::Execution
       rescue Interrupt
         Process.kill "SIGINT", pid
 
-      rescue SuspendSignalError
+      rescue SuspendSignalError => ex
         Process.kill "SIGSTOP", pid
+
         # The Process started above with the PID +pid+ is a child process
         # so it has also received the suspend/SIGTSTP signal.
         suspended(command:command, n:n, of:of, pid: pid)
+
+        result = SuspendExecution.new(status_code:nil, directory:Dir.pwd, n:n, of:of)
       end
 
       # if a signal killed or stopped the process (such as SIGINT or SIGTSTP) $? is nil.
       exitstatus = $? ? $?.exitstatus : nil
-      result = Result.new(status_code:exitstatus, directory:Dir.pwd, n:n, of:of)
-      result
+      result || Result.new(status_code:exitstatus, directory:Dir.pwd, n:n, of:of)
     end
 
     def resume

@@ -62,17 +62,18 @@ module Yap::Shell::Execution
           self.class.fire :after_execute, execution_context, command: command, result: result
 
           case result
-          when :resume
+          when SuspendExecution
+            # Ensure echo is turned back on. Some suspended programs
+            # may have turned it off.
+            `stty echo`
+            @suspended_execution_contexts.push execution_context
+          when ResumeExecution
             execution_context = @suspended_execution_contexts.pop
             if execution_context
               execution_context.resume
             else
               stderr.puts "fg: No such job"
             end
-          end
-
-          if execution_context.suspended?
-            @suspended_execution_contexts.push execution_context
           end
 
           results << result

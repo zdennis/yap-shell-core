@@ -9,4 +9,10 @@ module Yap::Shell::Execution
       @of = of
     end
   end
+
+  class SuspendExecution < Result
+  end
+
+  class ResumeExecution < Result
+  end
 end
