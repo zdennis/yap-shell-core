@@ -26,7 +26,7 @@ module Yap::Shell
     def visit_CommandNode(node)
       @aliases_expanded ||= []
       with_standard_streams do |stdin, stdout, stderr|
-        if !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
+        if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
           ast = Yap::Shell::Parser.new.parse([_alias].concat(node.args).join(" "))
           @aliases_expanded.push(node.command)
