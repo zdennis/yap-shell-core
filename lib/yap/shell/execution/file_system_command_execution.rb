@@ -53,7 +53,6 @@ module Yap::Shell::Execution
           stdout.close
         end
         if stderr != $stderr && stderr.is_a?(IO) && !stderr.closed? then
-          puts "COSE2"
           stderr.close
         end
         # if stdin != $stdin && !stdin.closed? then stdin.close end
