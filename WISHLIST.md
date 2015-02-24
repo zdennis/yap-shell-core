@@ -1,4 +1,7 @@
 
+
+* need to add custom tab completion for aliases, builtins, shell commands, and file system commands
+
 * support user-specified gems to install (so they're available for rc files)
 
 * truncate the prompt so you can type long commands
