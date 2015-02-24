@@ -6,6 +6,7 @@ module Yap::Shell
   class Evaluation
     def initialize(stdin:, stdout:, stderr:)
       @stdin, @stdout, @stderr = stdin, stdout, stderr
+      @last_result = nil
     end
 
     def evaluate(input, &blk)
