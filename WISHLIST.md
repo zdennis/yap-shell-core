@@ -1,10 +1,9 @@
 
-
 * need to add custom tab completion for aliases, builtins, shell commands, and file system commands
-
 * support user-specified gems to install (so they're available for rc files)
-
 * truncate the prompt so you can type long commands
+* add right-prompt (similar to ZSH)
+* provide realtime updating prompt items
 * don't overwrite timestamp? (or have it disappear when you write over it altogether, similar to ZSH)
 * have configurable prompt components
 * interact with the "World" rather than just operating on string contents
