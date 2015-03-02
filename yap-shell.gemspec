@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'yap/shell/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "yap"
+  spec.name          = "yap-shell"
   spec.version       = Yap::Shell::VERSION
   spec.authors       = ["Zach Dennis"]
   spec.email         = ["zach.dennis@gmail.com"]
