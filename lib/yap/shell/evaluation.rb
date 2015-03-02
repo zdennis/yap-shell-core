@@ -6,6 +6,7 @@ module Yap::Shell
   class Evaluation
     def initialize(stdin:, stdout:, stderr:)
       @stdin, @stdout, @stderr = stdin, stdout, stderr
+      @last_result = nil
     end
 
     def evaluate(input, &blk)
@@ -25,7 +26,7 @@ module Yap::Shell
     def visit_CommandNode(node)
       @aliases_expanded ||= []
       with_standard_streams do |stdin, stdout, stderr|
-        if !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
+        if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
           ast = Yap::Shell::Parser.new.parse([_alias].concat(node.args).join(" "))
           @aliases_expanded.push(node.command)
@@ -137,13 +138,34 @@ module Yap::Shell
     end
 
     def shell_expand(input)
-      [input].flatten.map do |str|
-        str.gsub!(/\A~(.*)/, ENV["HOME"] + '\1')
-        if str =~ /^\$(.*)/
-          str = ENV.fetch($1, "")
+      [input].flatten.inject([]) do |results,str|
+        # Basic bash-style brace expansion
+        expansions = str.scan(/\{([^\}]+)\}/).flatten.first
+        if expansions
+          expansions.split(",").each do |expansion|
+            results << str.sub(/\{([^\}]+)\}/, expansion)
+          end
+        else
+          results << str
         end
-        expanded = Dir[str]
-        expanded.any? ? expanded : str
+
+        results = results.map! do |s|
+          # Basic bash-style tilde expansion
+          s.gsub!(/\A~(.*)/, ENV["HOME"] + '\1')
+
+          # Basic bash-style variable expansion
+          if s =~ /^\$(.*)/
+            s = ENV.fetch($1, "")
+          end
+
+          # Basic bash-style path-name expansion
+          expansions = Dir[s]
+          if expansions.any?
+            expansions
+          else
+            s
+          end
+        end.flatten
       end.flatten
     end
 

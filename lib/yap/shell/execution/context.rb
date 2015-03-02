@@ -40,6 +40,7 @@ module Yap::Shell::Execution
     end
 
     def execute(world:)
+      results = []
       @command_queue.each_with_index do |(command, stdin, stdout, stderr), reversed_i|
         of = @command_queue.length
         i = of - reversed_i
@@ -61,24 +62,27 @@ module Yap::Shell::Execution
           self.class.fire :after_execute, execution_context, command: command, result: result
 
           case result
-          when :resume
+          when SuspendExecution
+            # Ensure echo is turned back on. Some suspended programs
+            # may have turned it off.
+            `stty echo`
+            @suspended_execution_contexts.push execution_context
+          when ResumeExecution
             execution_context = @suspended_execution_contexts.pop
             if execution_context
               execution_context.resume
             else
-              puts "fg: No such job"
-              next
+              stderr.puts "fg: No such job"
             end
           end
 
-          if execution_context.suspended?
-            @suspended_execution_contexts.push execution_context
-          end
+          results << result
         end
-
       end
 
       clear_commands
+
+      results.last
     end
   end
 end

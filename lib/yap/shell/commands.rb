@@ -44,11 +44,6 @@ module Yap::Shell
         builtins: lambda { puts @builtins.keys.sort },
         exit: lambda { |code = 0| exit(code.to_i) },
         fg: lambda{ :resume },
-        # cd: lambda{ |path=ENV['HOME'], *_| Dir.chdir(path) }
-        # 'set' => lambda { |args|
-        #   key, value = args.split('=')
-        #   ENV[key] = value
-        # }
       }
     end
 
