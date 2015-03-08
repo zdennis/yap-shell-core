@@ -44,7 +44,9 @@ module Yap::Shell
       @builtins ||= {
         builtins: lambda { puts @builtins.keys.sort },
         exit: lambda { |code = 0| exit(code.to_i) },
-        fg: lambda{ ResumeExecution },
+        fg: lambda{
+          :resume
+        },
       }
     end
 

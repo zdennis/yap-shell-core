@@ -57,32 +57,40 @@ module Yap::Shell::Execution
             world:  world
           )
 
+          @saved_tty_attrs = Termios.tcgetattr(STDIN)
           self.class.fire :before_execute, execution_context, command: command
           result = execution_context.execute(command:command, n:i, of:of)
           self.class.fire :after_execute, execution_context, command: command, result: result
 
-          case result
-          when SuspendExecution
-            # Ensure echo is turned back on. Some suspended programs
-            # may have turned it off.
-            `stty echo`
-            @suspended_execution_contexts.push execution_context
-          when ResumeExecution
-            execution_context = @suspended_execution_contexts.pop
-            if execution_context
-              execution_context.resume
-            else
-              stderr.puts "fg: No such job"
-            end
-          end
-
-          results << result
+          results << process_execution_result(execution_context:execution_context, result: result)
+          Termios.tcsetattr(STDIN, Termios::TCSANOW, @saved_tty_attrs)
         end
       end
 
       clear_commands
 
       results.last
+    end
+
+    private
+
+    def process_execution_result(execution_context:, result:)
+      case result
+      when SuspendExecution
+        @suspended_execution_contexts.push execution_context
+        return result
+
+      when ResumeExecution
+        execution_context = @suspended_execution_contexts.pop
+        if execution_context
+          nresult = execution_context.resume
+          return process_execution_result execution_context: execution_context, result: nresult
+        else
+          stderr.puts "fg: No such job"
+        end
+      else
+        return result
+      end
     end
   end
 end
