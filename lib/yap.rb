@@ -38,7 +38,7 @@ module Yap
     end
 
     def self.load_addon_file(file)
-      name = File.basename(file).sub(/\.[^\.]+$/, "").capitalize
+      name = File.basename(file).sub(/\.[^\.]+$/, "").split(/[_]/).map(&:capitalize).join
       klass_name = "Yap::WorldAddons::#{name}"
 
       load file
