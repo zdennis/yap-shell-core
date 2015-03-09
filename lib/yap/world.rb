@@ -18,7 +18,7 @@ module Yap
       end
 
       addons.each do |addon|
-        self.instance_eval addon
+        addon.initialize_world(self)
       end
     end
 
