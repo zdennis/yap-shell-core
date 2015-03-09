@@ -1,5 +1,6 @@
 require 'shellwords'
 require 'yap/shell/aliases'
+require 'yap/shell/execution/result'
 
 module Yap::Shell
   class CommandError < StandardError ; end
@@ -43,7 +44,9 @@ module Yap::Shell
       @builtins ||= {
         builtins: lambda { puts @builtins.keys.sort },
         exit: lambda { |code = 0| exit(code.to_i) },
-        fg: lambda{ :resume },
+        fg: lambda{
+          :resume
+        },
       }
     end
 

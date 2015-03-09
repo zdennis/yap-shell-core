@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+1000.times do
+  ("A".."z").each do |letter|
+    puts letter
+    sleep 2
+  end
+end
