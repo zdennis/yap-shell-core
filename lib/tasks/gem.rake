@@ -15,11 +15,13 @@ namespace :bump do
           _major = major.call($1) if major
           _minor = minor.call($2) if minor
           _patch = patch.call($3) if patch
-          version = %|VERSION = "#{_major}.#{_minor}.#{_patch}"|
+          version = "#{_major}.#{_minor}.#{_patch}"
+          results = %|VERSION = "#{version}"|
         end
         File.write(@file, contents)
         system "bundle"
-        system "git add #{ProjectVersion::FILE}\ && git commit -m 'Bumping version to #{version}'"
+        system "git add #{ProjectVersion::FILE} && git commit -m 'Bumping version to #{version}'"
+        system "git tag v#{version}"
       end
 
       private
