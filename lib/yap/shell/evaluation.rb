@@ -94,7 +94,6 @@ module Yap::Shell
       with_standard_streams do |stdin, stdout, stderr|
         # Modify @stdout and @stderr for the first command
         stdin, @stdout = IO.pipe
-        @stderr = @stdout
 
         # Don't modify @stdin for the first command in the pipeline.
         node.head.accept(self)
