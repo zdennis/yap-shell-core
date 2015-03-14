@@ -3,35 +3,57 @@ module Yap::Shell
     DIRECTORY_HISTORY = []
     DIRECTORY_FUTURE  = []
 
-    builtin :cd do |path=ENV['HOME'], *_|
-      DIRECTORY_HISTORY << Dir.pwd
-      Dir.chdir(path)
-      ENV["PWD"] = Dir.pwd
-      output=""
-    end
-
-    builtin :popd do
-      output = []
-      if DIRECTORY_HISTORY.any?
-        DIRECTORY_FUTURE << Dir.pwd
-        path = DIRECTORY_HISTORY.pop
-        execute_builtin :cd, path
+    builtin :cd do |args:, stderr:, **|
+      path = args.first || ENV['HOME']
+      cwd = Dir.pwd
+      if Dir.exist?(path)
+        DIRECTORY_HISTORY << cwd
+        Dir.chdir(path)
+        ENV["PWD"] = cwd
+        exit_status = 0
       else
-        output << "popd: directory stack empty\n"
+        stderr.puts "cd: #{path}: No such file or directory"
+        exit_status = 1
       end
-      output.join("\n")
     end
 
-    builtin :pushd do
+    builtin :popd do |args:, stderr:, **keyword_args|
+      output = []
+      cwd = Dir.pwd
+      if DIRECTORY_HISTORY.any?
+        path = DIRECTORY_HISTORY.pop
+        if Dir.exist?(path)
+          DIRECTORY_FUTURE << cwd
+          Dir.chdir(path)
+          ENV["PWD"] =cwd
+          exit_status = 0
+        else
+          stderr.puts "popd: #{path}: No such file or directory"
+          exit_status = 1
+        end
+      else
+        stderr.puts "popd: directory stack empty"
+        exit_status = 1
+      end
+    end
+
+    builtin :pushd do |args:, stderr:, **keyword_args|
       output = []
       if DIRECTORY_FUTURE.any?
-        DIRECTORY_HISTORY << Dir.pwd
         path = DIRECTORY_FUTURE.pop
-        execute_builtin :cd, path
+        if Dir.exist?(path)
+          DIRECTORY_HISTORY << Dir.pwd
+          Dir.chdir(path)
+          ENV["PWD"] = path
+          exit_status = 0
+        else
+          stderr.puts "pushd: #{path}: No such file or directory"
+          exit_status = 1
+        end
       else
-        output << "pushd: there are no directories in your future\n"
+        stderr.puts "pushd: there are no directories in your future"
+        exit_status = 1
       end
-      output.join("\n")
     end
   end
 end
