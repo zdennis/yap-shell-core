@@ -1,5 +1,6 @@
 require 'shellwords'
 require 'yap/shell/aliases'
+require 'yap/shell/execution/result'
 
 module Yap::Shell
   class CommandError < StandardError ; end

@@ -1,3 +1,5 @@
+require 'yap/shell/execution/result'
+
 module Yap::Shell::Execution
   class BuiltinCommandExecution < CommandExecution
     on_execute do |command:, n:, of:|
