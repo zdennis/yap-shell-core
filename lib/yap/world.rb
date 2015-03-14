@@ -1,6 +1,3 @@
-puts ENV["PATH"]
-$stdout.flush
-
 require 'term/ansicolor'
 require 'forwardable'
 require 'yap/shell/execution'
