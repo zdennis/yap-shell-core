@@ -11,11 +11,32 @@ module Yap::Shell
 
     def evaluate(input, &blk)
       @blk = blk
+      parser = Yap::Shell::Parser.new
+      input = recursively_find_and_replace_command_substitutions(parser, input)
       ast = Yap::Shell::Parser.new.parse(input)
       ast.accept(self)
     end
 
     private
+
+    # +recursively_find_and_replace_command_substitutions+ is responsible for recursively
+    # finding and expanding command substitutions, in a depth first manner.
+    def recursively_find_and_replace_command_substitutions(parser, input)
+      input = input.dup
+      parser.each_command_substitution_for(input) do |substitution_result, start_position, end_position|
+        result = recursively_find_and_replace_command_substitutions(parser, substitution_result.str)
+        position = substitution_result.position
+        ast = parser.parse(result)
+        with_standard_streams do |stdin, stdout, stderr|
+          r,w = IO.pipe
+          @stdout = w
+          ast.accept(self)
+          input[position.min...position.max] = r.read.chomp
+        end
+      end
+      input
+    end
+
 
     ######################################################################
     #                                                                    #
@@ -26,9 +47,10 @@ module Yap::Shell
     def visit_CommandNode(node)
       @aliases_expanded ||= []
       with_standard_streams do |stdin, stdout, stderr|
+        args = node.args.map(&:lvalue)
         if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
-          ast = Yap::Shell::Parser.new.parse([_alias].concat(node.args).join(" "))
+          ast = Yap::Shell::Parser.new.parse([_alias].concat(args).join(" "))
           @aliases_expanded.push(node.command)
           ast.accept(self)
           @aliases_expanded.pop
@@ -36,7 +58,7 @@ module Yap::Shell
         else
           command = CommandFactory.build_command_for(
             command: node.command,
-            args:    shell_expand(node.args),
+            args:    shell_expand(args),
             heredoc: node.heredoc,
             internally_evaluate: node.internally_evaluate?)
           @stdin, @stdout, @stderr = stream_redirections_for(node)
