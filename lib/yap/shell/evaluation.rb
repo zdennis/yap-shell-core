@@ -31,7 +31,7 @@ module Yap::Shell
           r,w = IO.pipe
           @stdout = w
           ast.accept(self)
-          input[position.min..position.max] = r.read.chomp
+          input[position.min...position.max] = r.read.chomp
         end
       end
       input
