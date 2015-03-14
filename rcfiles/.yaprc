@@ -1,7 +1,10 @@
 #!/usr/bin/ruby
 
-require 'chronic'
-require 'term/ansicolor'
+ENV["PATH"] = "/Applications/Postgres.app/Contents/MacOS/bin:/usr/local/share/npm/bin/:/usr/local/heroku/bin:/Users/zdennis/.bin:/Users/zdennis/.rvm/gems/ruby-2.1.5/bin:/Users/zdennis/.rvm/gems/ruby-2.1.5@global/bin:/Users/zdennis/.rvm/rubies/ruby-2.1.5/bin:/usr/local/bin:/usr/local/sbin:/Users/zdennis/bin:/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/CrossPack-AVR/bin:/private/tmp/.tidbits/bin:/Users/zdennis/source/playground/AdobeAir/AdobeAIRSDK/bin:/Users/zdennis/.rvm/bin:/Users/zdennis/Downloads/adt-bundle-mac-x86_64-20130219/sdk/tools/:/Users/zdennis/.rvm/bin"
+ENV["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.1.5:/Users/zdennis/.rvm/gems/ruby-2.1.5@global"
+
+# require 'chronic'
+# require 'term/ansicolor'
 
 #
 # Configuring your prompt. This can be set to a static value or to a
@@ -33,151 +36,8 @@ self.prompt = -> do
   "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
-func :howmuch do |args:, stdin:, stdout:, stderr:|
-  case args.first
-  when "time"
-    if history_item=CommandHistory.last_run_command
-      stdout.puts history_item.total_time_s
-    else
-      stdout.puts "Can't report on something you haven't done."
-    end
-  else
-    stdout.puts "How much what?"
-  end
-end
 
 func :upcase do |args:, stdin:, stdout:, stderr:|
   str = stdin.read
   stdout.puts str.upcase
-end
-
-class CommandHistoryImplementation
-  def initialize
-    @history = []
-  end
-
-  def start_group(time)
-    @group = Group.new(started_at:time)
-    @history.push @group
-  end
-
-  def stop_group(time)
-    @group.stopped_at(time)
-  end
-
-  def push(item)
-    @group.add_item item
-  end
-
-  def last_group
-    @history.last
-  end
-
-  def last_command
-    return @history.last.last_item if @history.last
-    nil
-  end
-
-  def last_run_command
-    @history.reverse.each do |group|
-      last_run = group.items.reverse.detect{ |item| item.finished? }
-      break last_run if last_run
-    end
-  end
-
-  class Group
-    def initialize(started_at:Time.now)
-      @started_at = started_at
-      @items = []
-    end
-
-    def add_item(item)
-      @items.push item
-    end
-
-    def items
-      @items
-    end
-
-    def last_item
-      @items.last
-    end
-
-    def stopped_at(time)
-      @stopped_at ||= time
-    end
-
-    def duration
-      return nil unless @stopped_at
-      @stopped_at - @started_at
-    end
-  end
-
-  class Item
-    def initialize(command_str:command_str, started_at:Time.now)
-      @command_str = command_str
-      @started_at = started_at
-      @ended_at = nil
-    end
-
-    def finished!
-      @ended_at = Time.now
-    end
-
-    def finished?
-      !!@ended_at
-    end
-
-    def total_time_s
-      humanize(@ended_at - @started_at) if @ended_at && @started_at
-    end
-
-    private
-
-    def humanize secs
-      [[60, :seconds], [60, :minutes], [24, :hours], [1000, :days]].inject([]){ |s, (count, name)|
-        if secs > 0
-          secs, n = secs.divmod(count)
-          s.unshift "#{n} #{name}"
-        end
-        s
-      }.join(' ')
-    end
-  end
-
-end
-
-CommandHistory = CommandHistoryImplementation.new
-
-Yap::Shell::Execution::Context.on(:before_statements_execute) do |context|
-  puts "Before group: #{context.to_s}" if ENV["DEBUG"]
-  CommandHistory.start_group(Time.now)
-end
-
-Yap::Shell::Execution::Context.on(:after_statements_execute) do |context|
-  CommandHistory.stop_group(Time.now)
-  puts "After group: #{context.to_s}" if ENV["DEBUG"]
-end
-
-Yap::Shell::Execution::Context.on(:after_process_finished) do |context, *args|
-  # puts "After process: #{context.to_s}, args: #{args.inspect}"
-end
-
-Yap::Shell::Execution::Context.on(:before_execute) do |context, command:|
-  CommandHistory.push CommandHistoryImplementation::Item.new(command_str: command.str, started_at: Time.now)
-end
-
-Yap::Shell::Execution::Context.on(:after_execute) do |context, command:, result:|
-  CommandHistory.last_command.finished!
-  # if result.status_code == 0
-  #   # t = TermInfo.new("xterm-color", STDOUT)
-  #   # h, w = t.screen_size
-  #   # t.control "cub", w
-  #   # # msg =
-  #   # t.control "cuf"
-  #   # # t.control "home"
-  #   #
-  #   # # t.write "hi"
-  #   # # t.control "rc"
-  # end
 end
