@@ -41,9 +41,9 @@ module Yap::Shell
 
     def self.builtins
       @builtins ||= {
-        builtins: lambda { puts @builtins.keys.sort },
-        exit: lambda { |code = 0| exit(code.to_i) },
-        fg: lambda{ :resume },
+        builtins: lambda { |stdout:, **| stdout.puts @builtins.keys.sort },
+        exit: lambda { |code = 0, **| exit(code.to_i) },
+        fg: lambda{ |**| :resume },
       }
     end
 
@@ -51,9 +51,9 @@ module Yap::Shell
       builtins.merge!(command.to_sym => action)
     end
 
-    def execute
+    def execute(stdin:, stdout:, stderr:)
       action = self.class.builtins.fetch(str.to_sym){ raise("Missing proc for builtin: '#{builtin}' in #{str.inspect}") }
-      action.call *args
+      action.call args:args, stdin:stdin, stdout:stdout, stderr:stderr
     end
 
     def type
