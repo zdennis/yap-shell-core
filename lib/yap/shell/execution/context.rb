@@ -86,7 +86,7 @@ module Yap::Shell::Execution
           nresult = execution_context.resume
           return process_execution_result execution_context: execution_context, result: nresult
         else
-          stderr.puts "fg: No such job"
+          @stderr.puts "fg: No such job"
         end
       else
         return result
