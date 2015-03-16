@@ -4,9 +4,9 @@ require 'yap/shell/aliases'
 
 module Yap::Shell
   class Evaluation
-    def initialize(stdin:, stdout:, stderr:)
+    def initialize(stdin:, stdout:, stderr:, last_result:nil)
       @stdin, @stdout, @stderr = stdin, stdout, stderr
-      @last_result = nil
+      @last_result = last_result
     end
 
     def evaluate(input, &blk)
@@ -15,6 +15,10 @@ module Yap::Shell
       input = recursively_find_and_replace_command_substitutions(parser, input)
       ast = Yap::Shell::Parser.new.parse(input)
       ast.accept(self)
+    end
+
+    def status_code
+      @last_result.status_code
     end
 
     private

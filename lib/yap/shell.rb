@@ -41,17 +41,16 @@ module Yap
         )
 
         @repl = Yap::Shell::Repl.new(world:@world)
+        last_result = nil
         @repl.loop_on_input do |input|
-          evaluation = Yap::Shell::Evaluation.new(stdin:@stdin, stdout:@stdout, stderr:@stderr)
+          evaluation = Yap::Shell::Evaluation.new(stdin:@stdin, stdout:@stdout, stderr:@stderr, last_result:last_result)
           evaluation.evaluate(input) do |command, stdin, stdout, stderr|
             context.clear_commands
             context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
-            context.execute(world:@world)
+            last_result = context.execute(world:@world)
           end
         end
       end
-
     end
-
   end
 end
