@@ -51,7 +51,7 @@ module Yap::Shell
     def visit_CommandNode(node)
       @aliases_expanded ||= []
       with_standard_streams do |stdin, stdout, stderr|
-        args = node.args.map(&:lvalue)
+        args = node.args.map(&:lvalue).map{ |arg| env_expand(arg) }
         if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
           ast = Yap::Shell::Parser.new.parse([_alias].concat(args).join(" "))
@@ -60,8 +60,9 @@ module Yap::Shell
           @aliases_expanded.pop
           @suppress_events = false
         else
+          cmd2execute = env_expand(node.command)
           command = CommandFactory.build_command_for(
-            command: node.command,
+            command: cmd2execute,
             args:    shell_expand(args),
             heredoc: node.heredoc,
             internally_evaluate: node.internally_evaluate?)
@@ -159,6 +160,18 @@ module Yap::Shell
         [new_head].concat(tail).join(" ")
       else
         input
+      end
+    end
+
+    def env_expand(input)
+      input.gsub(/\$(\w+)/) do |match,*args|
+        var_name = match[1..-1]
+        case var_name
+        when "$?"
+          @last_result ? @last_result.status_code.to_s : '0'
+        else
+          ENV.fetch(var_name){ match }
+        end
       end
     end
 
