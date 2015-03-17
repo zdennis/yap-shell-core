@@ -51,7 +51,7 @@ module Yap::Shell
     def visit_CommandNode(node)
       @aliases_expanded ||= []
       with_standard_streams do |stdin, stdout, stderr|
-        args = node.args.map(&:lvalue)
+        args = node.args.map(&:lvalue).map{ |arg| env_expand(arg) }
         if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
           ast = Yap::Shell::Parser.new.parse([_alias].concat(args).join(" "))
@@ -60,8 +60,9 @@ module Yap::Shell
           @aliases_expanded.pop
           @suppress_events = false
         else
+          cmd2execute = env_expand(node.command)
           command = CommandFactory.build_command_for(
-            command: node.command,
+            command: cmd2execute,
             args:    shell_expand(args),
             heredoc: node.heredoc,
             internally_evaluate: node.internally_evaluate?)
@@ -72,31 +73,52 @@ module Yap::Shell
     end
 
     def visit_StatementsNode(node)
-      env = ENV.to_h
       Yap::Shell::Execution::Context.fire :before_statements_execute, self unless @suppress_events
       node.head.accept(self)
       if node.tail
         node.tail.accept(self)
-        ENV.clear
-        ENV.replace(env)
       end
       Yap::Shell::Execution::Context.fire :after_statements_execute, self unless @suppress_events
     end
 
+    # Represents a statement that has scoped environment variables being set,
+    # e.g.:
+    #
+    #    yap> A=5 ls
+    #    yap> A=5 B=6 echo
+    #
+    # These environment variables are reset after the their statement, e.g.:
+    #
+    #    yap> A=5
+    #    yap> echo $A
+    #    5
+    #    yap> A=b echo $A
+    #    b
+    #    yap> echo $
+    #    5
+    #
     def visit_EnvWrapperNode(node)
-      env = ENV.to_h
-      node.env.each_pair do |k,v|
-        ENV[k] = v
+      with_env do
+        node.env.each_pair { |env_var_name,value| ENV[env_var_name] = value }
+        node.node.accept(self)
       end
-      node.node.accept(self)
-      ENV.clear
-      ENV.replace(env)
     end
 
+    # Represents a statement that contains nothing but environment
+    # variables being set, e.g.:
+    #
+    #    yap> A=5
+    #    yap> A=5 B=6
+    #    yap> A=3 && B=6
+    #
+    # The environment variables persist from statement to statement until
+    # they cleared or overridden.
+    #
     def visit_EnvNode(node)
       node.env.each_pair do |key,val|
         ENV[key] = val
       end
+      Yap::Shell::Execution::Result.new(status_code:0, directory:Dir.pwd, n:1, of:1)
     end
 
     def visit_ConditionalNode(node)
@@ -162,6 +184,18 @@ module Yap::Shell
       end
     end
 
+    def env_expand(input)
+      input.gsub(/\$(\w+)/) do |match,*args|
+        var_name = match[1..-1]
+        case var_name
+        when "$?"
+          @last_result ? @last_result.status_code.to_s : '0'
+        else
+          ENV.fetch(var_name){ match }
+        end
+      end
+    end
+
     def shell_expand(input)
       [input].flatten.inject([]) do |results,str|
         # Basic bash-style brace expansion
@@ -219,5 +253,14 @@ module Yap::Shell
       [stdin, stdout, stderr]
     end
 
+    def with_env(&blk)
+      env = ENV.to_h
+      begin
+        yield if block_given?
+      ensure
+        ENV.clear
+        ENV.replace(env)
+      end
+    end
   end
 end
