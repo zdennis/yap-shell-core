@@ -73,31 +73,52 @@ module Yap::Shell
     end
 
     def visit_StatementsNode(node)
-      env = ENV.to_h
       Yap::Shell::Execution::Context.fire :before_statements_execute, self unless @suppress_events
       node.head.accept(self)
       if node.tail
         node.tail.accept(self)
-        ENV.clear
-        ENV.replace(env)
       end
       Yap::Shell::Execution::Context.fire :after_statements_execute, self unless @suppress_events
     end
 
+    # Represents a statement that has scoped environment variables being set,
+    # e.g.:
+    #
+    #    yap> A=5 ls
+    #    yap> A=5 B=6 echo
+    #
+    # These environment variables are reset after the their statement, e.g.:
+    #
+    #    yap> A=5
+    #    yap> echo $A
+    #    5
+    #    yap> A=b echo $A
+    #    b
+    #    yap> echo $
+    #    5
+    #
     def visit_EnvWrapperNode(node)
-      env = ENV.to_h
-      node.env.each_pair do |k,v|
-        ENV[k] = v
+      with_env do
+        node.env.each_pair { |env_var_name,value| ENV[env_var_name] = value }
+        node.node.accept(self)
       end
-      node.node.accept(self)
-      ENV.clear
-      ENV.replace(env)
     end
 
+    # Represents a statement that contains nothing but environment
+    # variables being set, e.g.:
+    #
+    #    yap> A=5
+    #    yap> A=5 B=6
+    #    yap> A=3 && B=6
+    #
+    # The environment variables persist from statement to statement until
+    # they cleared or overridden.
+    #
     def visit_EnvNode(node)
       node.env.each_pair do |key,val|
         ENV[key] = val
       end
+      Yap::Shell::Execution::Result.new(status_code:0, directory:Dir.pwd, n:1, of:1)
     end
 
     def visit_ConditionalNode(node)
@@ -232,5 +253,14 @@ module Yap::Shell
       [stdin, stdout, stderr]
     end
 
+    def with_env(&blk)
+      env = ENV.to_h
+      begin
+        yield if block_given?
+      ensure
+        ENV.clear
+        ENV.replace(env)
+      end
+    end
   end
 end
