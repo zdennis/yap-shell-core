@@ -11,11 +11,9 @@ module Yap::Shell
 
       loop do
         heredoc = nil
-        prompt = ""
 
         begin
-          prompt = @world ? @world.prompt : "> "
-          input = Readline.readline("#{prompt}", true)
+          input = Readline.readline("#{@world.prompt.update.text}", true)
 
           next if input == ""
 
@@ -27,6 +25,9 @@ module Yap::Shell
         rescue Interrupt
           puts "^C"
           next
+        # rescue Exception => ex
+        #   require 'pry'
+        #   binding.pry
         end
       end
     end

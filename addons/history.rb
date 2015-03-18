@@ -2,7 +2,7 @@ require 'forwardable'
 module Yap
   module WorldAddons
     class History
-      def self.load
+      def self.load_addon
         instance
       end
 

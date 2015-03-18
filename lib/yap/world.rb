@@ -1,13 +1,30 @@
 require 'term/ansicolor'
 require 'forwardable'
 require 'yap/shell/execution'
+require 'termios'
 
 module Yap
+  class Prompt
+    attr_reader :text
+
+    def initialize(text=nil, &blk)
+      @text = text
+      @blk = blk
+    end
+
+    def update
+      if @blk
+        @text = @blk.call
+      end
+      self
+    end
+  end
+
   class World
     include Term::ANSIColor
     extend Forwardable
 
-    attr_accessor :prompt, :contents, :addons
+    attr_accessor :current_prompt, :prompt, :contents, :addons
 
     def initialize(options)
       (options || {}).each do |k,v|
@@ -27,11 +44,21 @@ module Yap
       ::Readline
     end
 
+    def foreground?
+      Process.getpgrp == Termios.tcgetpgrp($stdout)
+    end
+
     def prompt
-      if @prompt.respond_to? :call
-        @prompt.call
+      @prompt
+    end
+
+    def prompt=(prompt=nil, &blk)
+      if prompt.is_a?(Prompt)
+        @prompt = prompt
+      elsif prompt.respond_to?(:call)
+        @prompt = Prompt.new(&prompt)
       else
-        @prompt
+        @prompt = Prompt.new(prompt, &blk)
       end
     end
 
