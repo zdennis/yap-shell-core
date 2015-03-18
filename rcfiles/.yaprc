@@ -17,7 +17,7 @@ last_prompt = nil
 self.prompt = -> do
   pwd = Dir.pwd.sub Regexp.new(ENV['HOME']), '~'
 
-  git_current_branch = `git cbranch 2>/dev/null`.chomp
+  git_current_branch = `git branch | sed -n '/\* /s///p' 2>/dev/null`.chomp
   if git_current_branch.length > 0
     git_current_branch += " "
     git_dirty_not_cached = `git diff --shortstat`.length > 0
