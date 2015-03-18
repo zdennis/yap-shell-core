@@ -5,6 +5,7 @@ ENV["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.1.5:/Users/zdennis/.rvm/gems/
 
 # require 'chronic'
 # require 'term/ansicolor'
+require 'terminfo'
 
 #
 # Configuring your prompt. This can be set to a static value or to a
@@ -12,6 +13,7 @@ ENV["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.1.5:/Users/zdennis/.rvm/gems/
 # be used every time the prompt is to be re-drawn
 #
 
+last_prompt = nil
 self.prompt = -> do
   pwd = Dir.pwd.sub Regexp.new(ENV['HOME']), '~'
 
@@ -33,8 +35,37 @@ self.prompt = -> do
   arrow = '➜'
 
   # ~/source/playground/yap master ➜
-  "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
+  last_prompt = "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
+
+world = self
+thr = Thread.new do
+  loop do
+    sleep 1
+
+    # Make sure we're in the foreground otherwise trying Error::EIO will be
+    # thrown trying to talk to STDOUT.
+    if world.foreground?
+      t = TermInfo.new(ENV["TERM"], STDOUT)
+
+      current_prompt_text = self.prompt.text
+      new_prompt_text = self.prompt.update.text
+
+      if current_prompt_text != new_prompt_text
+        buffer = Readline.line_buffer
+
+        # clear to beginning of the line
+        t.control "el1", 1
+
+        # move cursor to the first column of the current row
+        t.control "cr", 1
+        print new_prompt_text, buffer
+        Readline.redisplay
+      end
+    end
+  end
+end
+thr.abort_on_exception = true
 
 
 func :upcase do |args:, stdin:, stdout:, stderr:|
