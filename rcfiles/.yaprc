@@ -38,36 +38,6 @@ self.prompt = -> do
   last_prompt = "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
-# world = self
-# thr = Thread.new do
-#   loop do
-#     sleep 1
-#
-#     # Make sure we're in the foreground otherwise trying Error::EIO will be
-#     # thrown trying to talk to STDOUT.
-#     if world.foreground?
-#       t = TermInfo.new(ENV["TERM"], STDOUT)
-#
-#       current_prompt_text = self.prompt.text
-#       new_prompt_text = self.prompt.update.text
-#
-#       if current_prompt_text != new_prompt_text
-#         buffer = Readline.line_buffer
-#
-#         # clear to beginning of the line
-#         t.control "el1", 1
-#
-#         # move cursor to the first column of the current row
-#         t.control "cr", 1
-#         print new_prompt_text, buffer
-#         Readline.redisplay
-#       end
-#     end
-#   end
-# end
-# thr.abort_on_exception = true
-#
-
 func :upcase do |args:, stdin:, stdout:, stderr:|
   str = stdin.read
   stdout.puts str.upcase
