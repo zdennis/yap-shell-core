@@ -1,30 +1,15 @@
 require 'term/ansicolor'
 require 'forwardable'
 require 'yap/shell/execution'
+require 'yap/shell/prompt'
 require 'termios'
 
 module Yap
-  class Prompt
-    attr_reader :text
-
-    def initialize(text=nil, &blk)
-      @text = text
-      @blk = blk
-    end
-
-    def update
-      if @blk
-        @text = @blk.call
-      end
-      self
-    end
-  end
-
   class World
     include Term::ANSIColor
     extend Forwardable
 
-    attr_accessor :current_prompt, :prompt, :contents, :addons
+    attr_accessor :prompt, :contents, :addons
 
     def initialize(options)
       (options || {}).each do |k,v|
@@ -53,13 +38,15 @@ module Yap
     end
 
     def prompt=(prompt=nil, &blk)
-      if prompt.is_a?(Prompt)
+      # TODO if prompt_controller then undefine, cancel events, etc
+      if prompt.is_a?(Yap::Shell::Prompt)
         @prompt = prompt
-      elsif prompt.respond_to?(:call)
-        @prompt = Prompt.new(&prompt)
-      else
-        @prompt = Prompt.new(prompt, &blk)
+      elsif prompt.respond_to?(:call) # proc
+        @prompt = Yap::Shell::Prompt.new(text:prompt.call, &prompt)
+      else # text
+        @prompt = Yap::Shell::Prompt.new(text:prompt, &blk)
       end
+      @prompt_controller = Yap::Shell::PromptController.new(world:self, prompt:@prompt)
     end
 
     (String.instance_methods - Object.instance_methods).each do |m|
