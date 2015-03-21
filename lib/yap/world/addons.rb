@@ -51,9 +51,13 @@ module Yap
         # namespace collision.
         addon_module = Yap::World::UserAddons.const_set namespace, Module.new
 
+        lib_path = File.join directory, "lib"
+        $LOAD_PATH.unshift lib_path
         Dir["#{directory}/*.rb"].map do |addon_file|
           load_file(addon_file, namespace:namespace, dir:directory, addon_module:addon_module)
         end
+      ensure
+        $LOAD_PATH.delete(lib_path) if lib_path
       end
 
       def self.load_file(file, dir:, namespace:, addon_module:)

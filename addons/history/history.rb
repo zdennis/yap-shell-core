@@ -1,6 +1,21 @@
 require 'forwardable'
 
 class History
+  def self.parent_module
+    Module.nesting[1] # return the first parent of the current class (History)
+  end
+
+  def self.require_support_files(*files)
+    lib_path = File.join File.dirname(__FILE__), "lib"
+    files.each do |file|
+      support_file = File.join lib_path, file
+      support_file = "#{support_file}.rb" unless File.exists?(file)
+      parent_module.module_eval IO.read(support_file), support_file, 1
+    end
+  end
+
+  require_support_files 'history/group', 'history/item'
+
   def self.load_addon
     instance
   end
@@ -71,96 +86,26 @@ class History
       File.write history_file, ::Readline::HISTORY.to_a.to_yaml
     end
   end
+end
 
-  class Group
-    extend Forwardable
 
-    def initialize(started_at:Time.now)
-      @started_at = started_at
-      @stopped_at = nil
-      @items = []
-    end
+Yap::Shell::Execution::Context.on(:before_statements_execute) do |context|
+  History.instance.start_group(Time.now)
+end
 
-    def_delegators :@items, :push, :<<, :pop, :first, :last
+Yap::Shell::Execution::Context.on(:after_statements_execute) do |context|
+  History.instance.stop_group(Time.now)
+  puts "After group: #{context.to_s}" if ENV["DEBUG"]
+end
 
-    def duration
-      return nil unless @stopped_at
-      @stopped_at - @started_at
-    end
+Yap::Shell::Execution::Context.on(:after_process_finished) do |context, *args|
+  # puts "After process: #{context.to_s}, args: #{args.inspect}"
+end
 
-    def executing(command:, started_at:)
-      @items.push Item.new(command:command, started_at:started_at)
-    end
+Yap::Shell::Execution::Context.on(:before_execute) do |context, command:|
+  History.instance.executing command:command.str, started_at:Time.now
+end
 
-    def executed(command:, stopped_at:)
-      raise "2:Cannot complete execution of a command when no group has been started!" unless @items.last
-      item = @items.reverse.detect do |item|
-        command == item.command && !item.finished?
-      end
-      item.finished!(stopped_at)
-    end
-
-    def last_executed_item
-      @items.reverse.detect{ |item| item.finished? }
-    end
-
-    def stopped_at(time)
-      @stopped_at ||= time
-    end
-  end
-
-  class Item
-    attr_reader :command
-
-    def initialize(command:command, started_at:Time.now)
-      @command = command
-      @started_at = started_at
-      @ended_at = nil
-    end
-
-    def finished!(at)
-      @ended_at = at
-    end
-
-    def finished?
-      !!@ended_at
-    end
-
-    def total_time_s
-      humanize(@ended_at - @started_at) if @ended_at && @started_at
-    end
-
-    private
-
-    def humanize secs
-      [[60, :seconds], [60, :minutes], [24, :hours], [1000, :days]].inject([]){ |s, (count, name)|
-        if secs > 0
-          secs, n = secs.divmod(count)
-          s.unshift "#{n} #{name}"
-        end
-        s
-      }.join(' ')
-    end
-  end
-
-  Yap::Shell::Execution::Context.on(:before_statements_execute) do |context|
-    History.instance.start_group(Time.now)
-  end
-
-  Yap::Shell::Execution::Context.on(:after_statements_execute) do |context|
-    History.instance.stop_group(Time.now)
-    puts "After group: #{context.to_s}" if ENV["DEBUG"]
-  end
-
-  Yap::Shell::Execution::Context.on(:after_process_finished) do |context, *args|
-    # puts "After process: #{context.to_s}, args: #{args.inspect}"
-  end
-
-  Yap::Shell::Execution::Context.on(:before_execute) do |context, command:|
-    History.instance.executing command:command.str, started_at:Time.now
-  end
-
-  Yap::Shell::Execution::Context.on(:after_execute) do |context, command:, result:|
-    History.instance.executed command:command.str, stopped_at:Time.now
-  end
+Yap::Shell::Execution::Context.on(:after_execute) do |context, command:, result:|
+  History.instance.executed command:command.str, stopped_at:Time.now
 end
