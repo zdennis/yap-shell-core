@@ -1,7 +1,7 @@
 require 'terminfo'
 
 module Yap
-  module WorldAddons
+  module World::Addons
     module Prompt
       class RightPrompt
         include Term::ANSIColor

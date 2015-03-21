@@ -1,6 +1,6 @@
 require 'forwardable'
 module Yap
-  module WorldAddons
+  module World::Addons
     class History
       def self.load_addon
         instance

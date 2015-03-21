@@ -2,6 +2,7 @@ require 'term/ansicolor'
 require 'forwardable'
 require 'yap/shell/execution'
 require 'yap/shell/prompt'
+require 'yap/world/addons'
 require 'termios'
 
 module Yap
