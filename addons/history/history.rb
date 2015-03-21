@@ -1,21 +1,9 @@
 require 'forwardable'
 
+require 'history/group'
+require 'history/item'
+
 class History
-  def self.parent_module
-    Module.nesting[1] # return the first parent of the current class (History)
-  end
-
-  def self.require_support_files(*files)
-    lib_path = File.join File.dirname(__FILE__), "lib"
-    files.each do |file|
-      support_file = File.join lib_path, file
-      support_file = "#{support_file}.rb" unless File.exists?(file)
-      parent_module.module_eval IO.read(support_file), support_file, 1
-    end
-  end
-
-  require_support_files 'history/group', 'history/item'
-
   def self.load_addon
     instance
   end

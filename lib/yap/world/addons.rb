@@ -49,7 +49,18 @@ module Yap
 
         # Create a wrapper module for every add-on. This is to eliminate
         # namespace collision.
-        addon_module = Yap::World::UserAddons.const_set namespace, Module.new
+        addon_module = Module.new do
+          singleton_class.send :define_method, :require do |name|
+            lib_path = File.join directory, "lib"
+            support_file = File.join lib_path, "#{name}.rb"
+            if File.exists?(support_file)
+              module_eval IO.read(support_file), support_file, lineno=1
+            else
+              super(name)
+            end
+          end
+        end
+        Yap::World::UserAddons.const_set namespace, addon_module
 
         lib_path = File.join directory, "lib"
         $LOAD_PATH.unshift lib_path
