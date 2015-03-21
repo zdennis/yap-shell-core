@@ -42,10 +42,9 @@ module Yap
           map{ |m| m.split(/[_-]/).map(&:capitalize).join }.
           join("::")
 
-        # name = File.basename(file).sub(dir, "").sub(File.extname(file), "").split(/[_]/).map(&:capitalize).join
         klass_name = "Yap::World::Addons::#{name}"
 
-        load file
+        module_eval IO.read(file), file, 1
 
         klass_name.split("::").reduce(Object) do |namespace,name|
           if namespace.const_defined?(name)
