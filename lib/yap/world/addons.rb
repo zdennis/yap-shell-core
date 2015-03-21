@@ -1,20 +1,27 @@
+require 'pathname'
+
 module Yap
   class World
+    module UserAddons
+    end
+
     module Addons
       def self.syntax_ok?(file)
         `ruby -c #{file}`
         $?.exitstatus == 0
       end
 
-      def self.load_addons_from_files(dir:, files:[])
+      def self.load_rcfiles(files)
         files.map do |file|
-          (puts "Cannot load world addon: #{file} does not exist" and next) unless File.exist?(file)
-          (puts "Cannot load world addon: #{file} is not readable" and next) unless File.exist?(file)
-          (puts "Cannot load world addon: #{file} is a directory file" and next) if File.directory?(file)
-
-          addon = file.end_with?("rc") ? load_rcfile(file:file) : load_addon_file(dir:dir, file:file)
-          addon.load_addon
+          RcFile.new IO.read(file)
         end
+      end
+
+      def self.load_directories(directories)
+        directories.map do |d|
+          next unless File.directory?(d)
+          load_directory(d).map(&:load_addon)
+        end.flatten
       end
 
       class RcFile
@@ -31,24 +38,37 @@ module Yap
         end
       end
 
-      def self.load_rcfile(file:)
-        RcFile.new IO.read(file)
+      def self.load_directory(directory)
+        namespace = File.basename(directory).
+          split(/[_-]/).
+          map(&:capitalize).join
+
+        if Yap::World::UserAddons.const_defined?(namespace)
+          raise LoadError, "#{namespace} is already defined! Failed loading #{file}"
+        end
+
+        # Create a wrapper module for every add-on. This is to eliminate
+        # namespace collision.
+        addon_module = Yap::World::UserAddons.const_set namespace, Module.new
+
+        Dir["#{directory}/*.rb"].map do |addon_file|
+          load_file(addon_file, namespace:namespace, dir:directory, addon_module:addon_module)
+        end
       end
 
-      def self.load_addon_file(dir:, file:)
-        name = file.sub(dir, "").
-          sub(File.extname(file), "").
+      def self.load_file(file, dir:, namespace:, addon_module:)
+        klass_name = file.sub(dir, "").
+          sub(/^#{Regexp.escape(File::Separator)}/, "").
+          sub(File.extname(file.to_s), "").
           split(File::Separator).
           map{ |m| m.split(/[_-]/).map(&:capitalize).join }.
           join("::")
 
-        klass_name = "Yap::World::Addons::#{name}"
+        addon_module.module_eval IO.read(file), file, lineno=1
 
-        module_eval IO.read(file), file, 1
-
-        klass_name.split("::").reduce(Object) do |namespace,name|
-          if namespace.const_defined?(name)
-            namespace.const_get(name)
+        klass_name.split("::").reduce(addon_module) do |ns,name|
+          if ns.const_defined?(name)
+            ns.const_get(name)
           else
             raise("Did not find #{klass_name} in #{file}")
           end

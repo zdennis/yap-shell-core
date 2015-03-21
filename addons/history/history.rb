@@ -144,7 +144,6 @@ class History
   end
 
   Yap::Shell::Execution::Context.on(:before_statements_execute) do |context|
-    puts "Before group: #{context.to_s}" if ENV["DEBUG"]
     History.instance.start_group(Time.now)
   end
 
