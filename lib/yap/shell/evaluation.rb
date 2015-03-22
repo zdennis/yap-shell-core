@@ -4,8 +4,9 @@ require 'yap/shell/aliases'
 
 module Yap::Shell
   class Evaluation
-    def initialize(stdin:, stdout:, stderr:, last_result:nil)
+    def initialize(stdin:, stdout:, stderr:, world:, last_result:nil)
       @stdin, @stdout, @stderr = stdin, stdout, stderr
+      @world = world
       @last_result = last_result
     end
 
@@ -73,12 +74,12 @@ module Yap::Shell
     end
 
     def visit_StatementsNode(node)
-      Yap::Shell::Execution::Context.fire :before_statements_execute, self unless @suppress_events
+      Yap::Shell::Execution::Context.fire :before_statements_execute, @world unless @suppress_events
       node.head.accept(self)
       if node.tail
         node.tail.accept(self)
       end
-      Yap::Shell::Execution::Context.fire :after_statements_execute, self unless @suppress_events
+      Yap::Shell::Execution::Context.fire :after_statements_execute, @world unless @suppress_events
     end
 
     # Represents a statement that has scoped environment variables being set,

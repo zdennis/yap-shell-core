@@ -1,11 +1,7 @@
 require 'terminfo'
 
-class LiveUpdates
+class LiveUpdates < Addon
   attr_reader :world
-
-  def self.load_addon
-    @instance ||= new
-  end
 
   def initialize_world(world)
     @world = world

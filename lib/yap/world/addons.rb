@@ -5,6 +5,49 @@ module Yap
     module UserAddons
     end
 
+    module AddonMethods
+      module ClassMethods
+        def load_addon
+          # no-op, override in subclass if you need to do anything special
+          # when your addon is first loaded when the shell starts
+        end
+
+        def addon_name
+          @addon_name ||= self.name.split(/::/).last.scan(/[A-Z][^A-Z]+/).map(&:downcase).reject{ |f| f == "addon" }.join("_").to_sym
+        end
+
+        def require(name)
+          directory = File.dirname caller[0].split(':').first
+          lib_path = File.join directory, "lib"
+          support_file = File.join lib_path, "#{name}.rb"
+          namespace = self.name.split('::').reduce(Object) do |context,n|
+            o = context.const_get(n)
+            break o if o.is_a?(Namespace)
+            o
+          end
+          if File.exists?(support_file) && namespace
+            namespace.module_eval IO.read(support_file), support_file, lineno=1
+          else
+            super(name)
+          end
+        end
+      end
+
+      module InstanceMethods
+        def addon_name
+          @addon_name ||= self.class.addon_name
+        end
+      end
+    end
+
+    module Namespace
+    end
+
+    class Addon
+      extend AddonMethods::ClassMethods
+      include AddonMethods::InstanceMethods
+    end
+
     module Addons
       def self.syntax_ok?(file)
         `ruby -c #{file}`
@@ -20,17 +63,13 @@ module Yap
       def self.load_directories(directories)
         directories.map do |d|
           next unless File.directory?(d)
-          load_directory(d).map(&:load_addon)
+          load_directory(d).map(&:new)
         end.flatten
       end
 
-      class RcFile
+      class RcFile < Addon
         def initialize(contents)
           @contents = contents
-        end
-
-        def load_addon
-          self
         end
 
         def initialize_world(world)
@@ -42,6 +81,7 @@ module Yap
         namespace = File.basename(directory).
           split(/[_-]/).
           map(&:capitalize).join
+        namespace = "#{namespace}Addon"
 
         if Yap::World::UserAddons.const_defined?(namespace)
           raise LoadError, "#{namespace} is already defined! Failed loading #{file}"
@@ -50,16 +90,11 @@ module Yap
         # Create a wrapper module for every add-on. This is to eliminate
         # namespace collision.
         addon_module = Module.new do
-          singleton_class.send :define_method, :require do |name|
-            lib_path = File.join directory, "lib"
-            support_file = File.join lib_path, "#{name}.rb"
-            if File.exists?(support_file)
-              module_eval IO.read(support_file), support_file, lineno=1
-            else
-              super(name)
-            end
-          end
+          extend Namespace
+          extend AddonMethods::ClassMethods
+          const_set :Addon, Addon
         end
+
         Yap::World::UserAddons.const_set namespace, addon_module
 
         lib_path = File.join directory, "lib"

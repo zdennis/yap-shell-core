@@ -12,14 +12,16 @@ module Yap
 
     attr_accessor :prompt, :contents, :addons
 
-    def initialize(options)
-      (options || {}).each do |k,v|
-        self.send "#{k}=", v
-      end
-
-      addons.each do |addon|
+    def initialize(addons:)
+      @addons_by_name = addons.reduce(Hash.new) do |hsh, addon|
         addon.initialize_world(self)
+        hsh[addon.addon_name] = addon
+        hsh
       end
+    end
+
+    def [](addon_name)
+      @addons_by_name.fetch(addon_name){ raise(ArgumentError, "No addon loaded registered as #{addon_name}") }
     end
 
     def func(name, &blk)
@@ -49,11 +51,5 @@ module Yap
       end
       @prompt_controller = Yap::Shell::PromptController.new(world:self, prompt:@prompt)
     end
-
-    (String.instance_methods - Object.instance_methods).each do |m|
-      next if [:object_id, :__send__, :initialize].include?(m)
-      def_delegator :@contents, m
-    end
-
   end
 end

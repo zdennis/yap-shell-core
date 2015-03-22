@@ -1,22 +1,11 @@
 require 'forwardable'
 
-require 'history/group'
-require 'history/item'
-
-class History
-  def self.load_addon
-    instance
-  end
-
-  def self.instance
-    @history ||= History.new
-  end
-
-  def initialize
-    @history = []
-  end
+class History < Addon
+  require 'history/group'
+  require 'history/item'
 
   def initialize_world(world)
+    @history = []
     load_history
 
     world.func(:howmuch) do |args:, stdin:, stdout:, stderr:|
@@ -77,23 +66,22 @@ class History
 end
 
 
-Yap::Shell::Execution::Context.on(:before_statements_execute) do |context|
-  History.instance.start_group(Time.now)
+Yap::Shell::Execution::Context.on(:before_statements_execute) do |world|
+  world[:history].start_group(Time.now)
 end
 
-Yap::Shell::Execution::Context.on(:after_statements_execute) do |context|
-  History.instance.stop_group(Time.now)
-  puts "After group: #{context.to_s}" if ENV["DEBUG"]
+Yap::Shell::Execution::Context.on(:after_statements_execute) do |world|
+  world[:history].stop_group(Time.now)
 end
 
-Yap::Shell::Execution::Context.on(:after_process_finished) do |context, *args|
-  # puts "After process: #{context.to_s}, args: #{args.inspect}"
+Yap::Shell::Execution::Context.on(:after_process_finished) do |world, *args|
+  # puts "After process: #{world.to_s}, args: #{args.inspect}"
 end
 
-Yap::Shell::Execution::Context.on(:before_execute) do |context, command:|
-  History.instance.executing command:command.str, started_at:Time.now
+Yap::Shell::Execution::Context.on(:before_execute) do |world, command:|
+  world[:history].executing command:command.str, started_at:Time.now
 end
 
-Yap::Shell::Execution::Context.on(:after_execute) do |context, command:, result:|
-  History.instance.executed command:command.str, stopped_at:Time.now
+Yap::Shell::Execution::Context.on(:after_execute) do |world, command:, result:|
+  world[:history].executed command:command.str, stopped_at:Time.now
 end

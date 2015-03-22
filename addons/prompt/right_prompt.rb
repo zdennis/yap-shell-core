@@ -1,6 +1,6 @@
 require 'terminfo'
 
-class RightPrompt
+class RightPrompt < Addon
   include Term::ANSIColor
 
   def self.load_addon
