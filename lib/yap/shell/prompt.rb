@@ -32,7 +32,7 @@ module Yap::Shell
       end
     end
 
-    def redraw_left_prompt(text)
+    def redraw_prompt(text)
       @text = text
     end
 
@@ -106,7 +106,8 @@ module Yap::Shell
       @renderer = PromptRenderer.new(text:prompt.text)
       @events = []
 
-      @prompt.on(:left_text_update){ |text| @events << [:redraw_left_prompt, text] }
+      @prompt.on(:immediate_text_update){ |text| @renderer.redraw_prompt text }
+      @prompt.on(:text_update){ |text| @events << [:redraw_prompt, text] }
       @prompt.on(:right_text_update){ |text| @events << [:redraw_right_prompt, text] }
 
       @thr = Thread.new do
@@ -153,6 +154,7 @@ module Yap::Shell
     def update
       if @blk
         @text = @blk.call
+        emit :immediate_text_update, text
       end
       self
     end
