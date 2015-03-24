@@ -110,24 +110,39 @@ module Yap::Shell
       @prompt.on(:text_update){ |text| @events << [:redraw_prompt, text] }
       @prompt.on(:right_text_update){ |text| @events << [:redraw_right_prompt, text] }
 
+      event_loop
+    end
+
+    private
+
+    def event_loop
+      @mutex = Mutex.new
       @thr = Thread.new do
         loop do
           sleep 0.25
-
           while event=@events.pop
-            # Make sure we're in the foreground otherwise trying Error::EIO will be
-            # thrown trying to talk to STDOUT
-            if @world.foreground?
-              renderer_action, text = event
-              begin
-                @renderer.send renderer_action, text
-              rescue Errno::EIO => ex
-              end
-            end
+            process_event(event)
           end
         end
       end
       @thr.abort_on_exception = true
+    end
+
+    def process_event(event)
+      # Make sure we're in the foreground otherwise trying Error::EIO will be
+      # thrown trying to talk to STDOUT
+      if @world.foreground?
+        renderer_action, text = event
+        begin
+          @mutex.synchronize do
+            @renderer.send renderer_action, text
+          end
+        rescue Errno::EIO => ex
+          # EIO is still possible in some cases so if it does
+          # happen treat it as a no-op since we're not in the
+          # foreground.
+        end
+      end
     end
   end
 
