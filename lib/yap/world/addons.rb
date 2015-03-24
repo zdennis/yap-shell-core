@@ -99,6 +99,12 @@ module Yap
 
         lib_path = File.join directory, "lib"
         $LOAD_PATH.unshift lib_path
+
+        gemfiles =   Dir["#{directory}/Gemfile"]
+        gemfiles.each do |gemfile|
+          eval File.read(gemfile)
+        end
+
         Dir["#{directory}/*.rb"].map do |addon_file|
           load_file(addon_file, namespace:namespace, dir:directory, addon_module:addon_module)
         end
