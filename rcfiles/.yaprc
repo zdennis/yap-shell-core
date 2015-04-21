@@ -3,7 +3,7 @@
 ENV["PATH"] = "/Applications/Postgres.app/Contents/MacOS/bin:/usr/local/share/npm/bin/:/usr/local/heroku/bin:/Users/zdennis/.bin:/Users/zdennis/.rvm/gems/ruby-2.1.5/bin:/Users/zdennis/.rvm/gems/ruby-2.1.5@global/bin:/Users/zdennis/.rvm/rubies/ruby-2.1.5/bin:/usr/local/bin:/usr/local/sbin:/Users/zdennis/bin:/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/CrossPack-AVR/bin:/private/tmp/.tidbits/bin:/Users/zdennis/source/playground/AdobeAir/AdobeAIRSDK/bin:/Users/zdennis/.rvm/bin:/Users/zdennis/Downloads/adt-bundle-mac-x86_64-20130219/sdk/tools/:/Users/zdennis/.rvm/bin"
 ENV["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.1.5:/Users/zdennis/.rvm/gems/ruby-2.1.5@global"
 
-# require 'chronic'
+require 'chronic'
 # require 'term/ansicolor'
 require 'terminfo'
 
@@ -17,11 +17,11 @@ last_prompt = nil
 self.prompt = -> do
   pwd = Dir.pwd.sub Regexp.new(ENV['HOME']), '~'
 
-  git_current_branch = `git branch | sed -n '/\* /s///p' 2>/dev/null`.chomp
+  git_current_branch = `git branch 2>/dev/null | sed -n '/\* /s///p'`.chomp
   if git_current_branch.length > 0
     git_current_branch += " "
-    git_dirty_not_cached = `git diff --shortstat`.length > 0
-    git_dirty_cached = `git diff --shortstat --cached`.length > 0
+    git_dirty_not_cached = `git diff --shortstat 2>/dev/null`.length > 0
+    git_dirty_cached = `git diff --shortstat --cached 2>/dev/null`.length > 0
 
     if git_dirty_not_cached || git_dirty_cached
       git_branch = intense_cyan(git_current_branch)
