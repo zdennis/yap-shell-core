@@ -22,10 +22,10 @@ module Yap::Shell
           input = process_heredoc(input)
 
           yield input
-        rescue Errno::EIO => ex
-          # This happens when yap is no longer the foreground process
-          # but it tries to receive input/output from the tty. I believe it
-          # is a race condition when launching a child process.
+        # rescue Errno::EIO => ex
+        #   # This happens when yap is no longer the foreground process
+        #   # but it tries to receive input/output from the tty. I believe it
+        #   # is a race condition when launching a child process.
         rescue ::Yap::Shell::CommandUnknownError => ex
           puts "  CommandError: #{ex.message}"
         rescue Interrupt
