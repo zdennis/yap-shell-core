@@ -5,10 +5,8 @@ class LiveUpdates < Addon
 
   def initialize_world(world)
     @world = world
-    thr = Thread.new do
+    @thr = Thread.new do
       loop do
-        sleep 1
-
         # Make sure we're in the foreground otherwise trying Error::EIO will be
         # thrown trying to talk to STDOUT.
         if world.foreground?
@@ -17,9 +15,10 @@ class LiveUpdates < Addon
           rescue Errno::EIO => ex
           end
         end
+        sleep 1
       end
     end
-    thr.abort_on_exception = true
+    @thr.abort_on_exception = true
   end
 
   private
