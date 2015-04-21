@@ -13,6 +13,7 @@ module Yap::Shell
         heredoc = nil
 
         begin
+          $stdout.flush
           ensure_process_group_controls_the_tty
 
           input = Readline.readline("#{@world.prompt.update.text}", true)
