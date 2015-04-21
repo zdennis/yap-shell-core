@@ -58,9 +58,9 @@ module Yap::Shell::Execution
           )
 
           @saved_tty_attrs = Termios.tcgetattr(STDIN)
-          self.class.fire :before_execute, execution_context, command: command
+          self.class.fire :before_execute, world, command: command
           result = execution_context.execute(command:command, n:i, of:of)
-          self.class.fire :after_execute, execution_context, command: command, result: result
+          self.class.fire :after_execute, world, command: command, result: result
 
           results << process_execution_result(execution_context:execution_context, result: result)
           Termios.tcsetattr(STDIN, Termios::TCSANOW, @saved_tty_attrs)
