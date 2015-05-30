@@ -8,8 +8,8 @@ module Yap::Shell
       cwd = Dir.pwd
       if Dir.exist?(path)
         DIRECTORY_HISTORY << cwd
+        ENV["PWD"] = File.expand_path(path)
         Dir.chdir(path)
-        ENV["PWD"] = cwd
         exit_status = 0
       else
         stderr.puts "cd: #{path}: No such file or directory"
@@ -25,7 +25,7 @@ module Yap::Shell
         if Dir.exist?(path)
           DIRECTORY_FUTURE << cwd
           Dir.chdir(path)
-          ENV["PWD"] =cwd
+          ENV["PWD"] = cwd
           exit_status = 0
         else
           stderr.puts "popd: #{path}: No such file or directory"
