@@ -11,7 +11,7 @@ class LiveUpdates < Addon
         # thrown trying to talk to STDOUT.
         if world.foreground?
           begin
-            redraw_prompt
+          #  redraw_prompt
           rescue Errno::EIO => ex
           end
         end

@@ -16,4 +16,7 @@ $LOAD_PATH.unshift File.dirname(file) + '/../lib'
 # $LOAD_PATH.unshift File.dirname(file) + '/../../yap-shell-parser/lib'
 
 require "yap"
+
+$stdout.sync = true
+
 Yap.run_shell

@@ -5,45 +5,45 @@ module Yap::Shell
     include Term::ANSIColor
 
     def initialize(text:text)
-      @term_info = TermInfo.new("xterm-256color", STDOUT)
-      @text = text
-      @right_text = nil
-
-      Signal.trap("SIGWINCH") do
-        # clear to end of line (in case we're shortening the line)
-        @term_info.control "ed", 1
-        Readline.redisplay
-      end
+      # @term_info = TermInfo.new("xterm-256color", STDOUT)
+      # @text = text
+      # @right_text = nil
+      #
+      # Signal.trap("SIGWINCH") do
+      #   # clear to end of line (in case we're shortening the line)
+      #   @term_info.control "ed", 1
+      #   Readline.redisplay
+      # end
     end
 
     def redraw_prompt(text)
       @text = text
     end
-
-    def redraw_right_prompt(text)
-      @right_text = text
-
-      buffer = Readline.line_buffer
-      left_text_without_ansi = strip_ansi(@text)
-      total_length = left_text_without_ansi.length + buffer.length
-
-      rows, columns = term_info.screen_size
-
-      if is_overlapping_right_prompt?(total_length)
-        preserve_cursor do
-          term_info.control "cub", columns
-          term_info.control "cuf", total_length
-          term_info.control "el", 1 # clear to end of line
-        end
-      else
-        preserve_cursor do
-          term_info.control "cub", columns
-          term_info.control "cuf", total_length
-          term_info.control "el", 1 # clear to end of line
-        end
-        _draw_right_prompt(text)
-      end
-    end
+    #
+    # def redraw_right_prompt(text)
+    #   @right_text = text
+    #
+    #   buffer = Readline.line_buffer
+    #   left_text_without_ansi = strip_ansi(@text)
+    #   total_length = left_text_without_ansi.length + buffer.length
+    #
+    #   rows, columns = term_info.screen_size
+    #
+    #   if is_overlapping_right_prompt?(total_length)
+    #     preserve_cursor do
+    #       term_info.control "cub", columns
+    #       term_info.control "cuf", total_length
+    #       term_info.control "el", 1 # clear to end of line
+    #     end
+    #   else
+    #     preserve_cursor do
+    #       term_info.control "cub", columns
+    #       term_info.control "cuf", total_length
+    #       term_info.control "el", 1 # clear to end of line
+    #     end
+    #     _draw_right_prompt(text)
+    #   end
+    # end
 
     def _draw_right_prompt(text)
       text_without_ansii = strip_ansi(text)
@@ -90,9 +90,9 @@ module Yap::Shell
       @renderer = PromptRenderer.new(text:prompt.text)
       @events = []
 
-      @prompt.on(:immediate_text_update){ |text| @renderer.redraw_prompt text }
+      # @prompt.on(:immediate_text_update){ |text| @renderer.redraw_prompt text }
       @prompt.on(:text_update){ |text| @events << [:redraw_prompt, text] }
-      @prompt.on(:right_text_update){ |text| @events << [:redraw_right_prompt, text] }
+      # @prompt.on(:right_text_update){ |text| @events << [:redraw_right_prompt, text] }
 
       event_loop
     end

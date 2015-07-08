@@ -28,9 +28,9 @@ module Yap
       Yap::Shell::ShellCommand.define_shell_function(name, &blk)
     end
 
-    def readline
-      ::Readline
-    end
+    # def readline
+    #   ::Readline
+    # end
 
     def foreground?
       Process.getpgrp == Termios.tcgetpgrp($stdout)

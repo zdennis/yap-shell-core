@@ -6,12 +6,12 @@ class RightPrompt < Addon
   end
 
   def initialize_world(world)
-    @world = world
-    Thread.new do
-      loop do
-        @world.prompt.right_text = Time.now.strftime("%H:%M:%S")
-        sleep 1
-      end
-    end
+    # @world = world
+    # Thread.new do
+    #   loop do
+    #     @world.prompt.right_text = Time.now.strftime("%H:%M:%S")
+    #     sleep 1
+    #   end
+    # end
   end
 end
