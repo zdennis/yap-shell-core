@@ -39,9 +39,8 @@ module Yap
           stderr: @stderr
         )
 
-        @repl = Yap::Shell::Repl.new(world:@world)
         last_result = nil
-        @repl.loop_on_input do |input|
+        @world.repl.loop_on_input do |input|
           evaluation = Yap::Shell::Evaluation.new(stdin:@stdin, stdout:@stdout, stderr:@stderr, world:@world, last_result:last_result)
           evaluation.evaluate(input) do |command, stdin, stdout, stderr|
             context.clear_commands

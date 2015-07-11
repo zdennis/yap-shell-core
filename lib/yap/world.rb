@@ -10,9 +10,10 @@ module Yap
     include Term::ANSIColor
     extend Forwardable
 
-    attr_accessor :prompt, :contents, :addons
+    attr_accessor :prompt, :contents, :addons, :repl
 
     def initialize(addons:)
+      @repl = Yap::Shell::Repl.new(world:self)
       @addons_by_name = addons.reduce(Hash.new) do |hsh, addon|
         addon.initialize_world(self)
         hsh[addon.addon_name] = addon
@@ -27,10 +28,6 @@ module Yap
     def func(name, &blk)
       Yap::Shell::ShellCommand.define_shell_function(name, &blk)
     end
-
-    # def readline
-    #   ::Readline
-    # end
 
     def foreground?
       Process.getpgrp == Termios.tcgetpgrp($stdout)

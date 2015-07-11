@@ -12,8 +12,8 @@ module Yap::Shell
     attr_reader :editor
 
     def initialize(world:nil)
-      @world = world
       @editor = RawLine::Editor.new
+      @world = world
     end
 
     def loop_on_input(&blk)
