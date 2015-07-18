@@ -55,12 +55,73 @@ module Yap::Shell
       editor.terminal.keys.merge!(enter: [13])
       editor.bind(:return){ editor.newline }
 
+      # Move to beginning of line
+      editor.bind(:ctrl_a) { editor.move_to_position 0 }
+
+      # Move to end of line
+      editor.bind(:ctrl_e) { editor.move_to_position editor.line.length }
+
+      # Move backward one word at a time
+      editor.bind(:ctrl_b) {
+        text = editor.line.text[0...editor.line.position].reverse
+        position = text.index(/\s+/, 1)
+        position = position ? (text.length - position) : 0
+        editor.move_to_position position
+      }
+
+      # Move forward one word at a time
+      editor.bind(:ctrl_f) {
+        text = editor.line.text
+        position = text.index(/\s+/, editor.line.position)
+        position = position ? (position + 1) : text.length
+        editor.move_to_position position
+      }
+
+      # Backwards delete one word
+      editor.bind(:ctrl_w){
+        before_text =  editor.line.text[0...editor.line.position]
+        after_text = editor.line.text[editor.line.position..-1]
+
+        before_text = before_text.reverse.sub(/^\s*\S+/, '').reverse
+        editor.overwrite_line [before_text, after_text].join
+        editor.move_to_position before_text.length
+      }
+
+      # History forward, but if at the end of the history then give user a
+      # blank line rather than remain on the last command
+      editor.bind(:down_arrow) {
+        if editor.history.searching? && !editor.history.end?
+          editor.history_forward
+        else
+          editor.overwrite_line ""
+        end
+      }
+      editor.bind(:up_arrow) { editor.history_back }
+
+      editor.bind(:enter) { editor.newline }
+      editor.bind(:tab) { editor.complete }
+      editor.bind(:backspace) { editor.delete_left_character }
+
+      # Delete to end of line fro mcursor position
+      editor.bind(:ctrl_k) {
+        editor.overwrite_line editor.line.text[0...editor.line.position]
+      }
+
+      # editor.bind(:ctrl_k) { editor.clear_line }
+      editor.bind(:ctrl_u) { editor.undo }
+      editor.bind(:ctrl_r) { editor.redo }
+      editor.bind(:left_arrow) { editor.move_left }
+      editor.bind(:right_arrow) { editor.move_right }
+      editor.bind(:up_arrow) { editor.history_back }
+      editor.bind(:down_arrow) { editor.history_forward }
+      editor.bind(:delete) { editor.delete_character }
+      editor.bind(:insert) { editor.toggle_mode }
+
       editor.bind(:ctrl_g) { editor.clear_history }
       editor.bind(:ctrl_l) { editor.debug_line }
       editor.bind(:ctrl_h) { editor.show_history }
       editor.bind(:ctrl_d) { puts; puts "Exiting..."; exit }
-      editor.bind(:ctrl_a) { editor.move_to_position 0 }
-      editor.bind(:ctrl_e) { editor.move_to_position editor.line.length }
+
     end
 
     def install_default_tab_completion_proc
