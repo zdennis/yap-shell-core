@@ -1,8 +1,6 @@
 require 'shellwords'
 require 'term/ansicolor'
 
-require 'yap/shell/repl/rawline'
-
 module Yap::Shell
   module Color
     extend Term::ANSIColor
@@ -12,8 +10,8 @@ module Yap::Shell
     attr_reader :editor
 
     def initialize(world:nil)
-      @editor = RawLine::Editor.new
       @world = world
+      @editor= world.editor
     end
 
     def loop_on_input(&blk)
