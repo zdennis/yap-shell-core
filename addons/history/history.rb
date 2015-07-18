@@ -5,6 +5,7 @@ class History < Addon
   require 'history/item'
 
   def initialize_world(world)
+    @world = world
     @history = []
     load_history
 
@@ -54,14 +55,12 @@ class History < Addon
   end
 
   def load_history
-    return unless File.exists?(history_file) && File.readable?(history_file)
-    (YAML.load_file(history_file) || []).each do |item|
-      # ::Readline::HISTORY.push item
+    at_exit do
+      File.write history_file, @world.editor.history.to_a.to_yaml
     end
 
-    at_exit do
-      # File.write history_file, ::Readline::HISTORY.to_a.to_yaml
-    end
+    return unless File.exists?(history_file) && File.readable?(history_file)
+    @world.editor.history.replace(YAML.load_file(history_file) || [])
   end
 end
 
