@@ -99,27 +99,24 @@ module Yap::Shell
         before_text =  editor.line.text[0...editor.line.position]
         after_text = editor.line.text[editor.line.position..-1]
 
-        last_was_whitespace = false
+        have_only_seen_whitespace = true
         position = 0
-        before_text.each_char.with_index do |ch, i|
-          if ch =~ /\s/
-            if !last_was_whitespace
-              last_was_whitespace = true
-              if i != (before_text.length - 1)
-                position = i
-              end
-            end
+
+        before_text.reverse.each_char.with_index do |ch, i|
+          if ch =~ /\s/ && !have_only_seen_whitespace
+            position = before_text.length - (i + 1)
+            break
           else
-            last_was_whitespace = false
+            have_only_seen_whitespace = false
           end
         end
 
-        killed_text = before_text[(position+1)...editor.line.position]
+        killed_text = before_text[position...editor.line.position]
         kill_ring.push killed_text
 
-        text = [before_text[0..position], after_text].join
+        text = [before_text.slice(0, position), after_text].join
         editor.overwrite_line text
-        editor.move_to_position before_text.length
+        editor.move_to_position position
       }
 
       # History forward, but if at the end of the history then give user a
@@ -161,6 +158,10 @@ module Yap::Shell
         editor.move_to_position position
       }
 
+      editor.bind(:ctrl_l){
+        editor.clear_screen
+      }
+
       editor.bind(:ctrl_r) { editor.redo }
       editor.bind(:left_arrow) { editor.move_left }
       editor.bind(:right_arrow) { editor.move_right }
@@ -170,7 +171,7 @@ module Yap::Shell
       editor.bind(:insert) { editor.toggle_mode }
 
       editor.bind(:ctrl_g) { editor.clear_history }
-      editor.bind(:ctrl_l) { editor.debug_line }
+      # editor.bind(:ctrl_l) { editor.debug_line }
       editor.bind(:ctrl_h) { editor.show_history }
       editor.bind(:ctrl_d) { puts; puts "Exiting..."; exit }
 
