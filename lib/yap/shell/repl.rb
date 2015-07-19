@@ -51,6 +51,10 @@ module Yap::Shell
 
     private
 
+    def kill_ring
+      @kill_ring ||= []
+    end
+
     def install_default_keybindings
       editor.terminal.keys.merge!(enter: [13])
       editor.bind(:return){ editor.newline }
@@ -77,13 +81,44 @@ module Yap::Shell
         editor.move_to_position position
       }
 
+      # Yank text from the kill ring and insert it at the cursor position
+      editor.bind(:ctrl_y){
+        yanked_text = kill_ring[-1]
+        if yanked_text
+          before_text =  editor.line.text[0...editor.line.position]
+          after_text = editor.line.text[editor.line.position..-1]
+          text = [before_text, yanked_text, after_text].join
+          position = editor.line.position + yanked_text.length
+          editor.overwrite_line text
+          editor.move_to_position position
+        end
+      }
+
       # Backwards delete one word
       editor.bind(:ctrl_w){
         before_text =  editor.line.text[0...editor.line.position]
         after_text = editor.line.text[editor.line.position..-1]
 
-        before_text = before_text.reverse.sub(/^\s*\S+/, '').reverse
-        editor.overwrite_line [before_text, after_text].join
+        last_was_whitespace = false
+        position = 0
+        before_text.each_char.with_index do |ch, i|
+          if ch =~ /\s/
+            if !last_was_whitespace
+              last_was_whitespace = true
+              if i != (before_text.length - 1)
+                position = i
+              end
+            end
+          else
+            last_was_whitespace = false
+          end
+        end
+
+        killed_text = before_text[(position+1)...editor.line.position]
+        kill_ring.push killed_text
+
+        text = [before_text[0..position], after_text].join
+        editor.overwrite_line text
         editor.move_to_position before_text.length
       }
 
@@ -102,13 +137,30 @@ module Yap::Shell
       editor.bind(:tab) { editor.complete }
       editor.bind(:backspace) { editor.delete_left_character }
 
-      # Delete to end of line fro mcursor position
+      # Delete to end of line from cursor position
       editor.bind(:ctrl_k) {
+        kill_ring.push editor.line.text[editor.line.position..-1]
         editor.overwrite_line editor.line.text[0...editor.line.position]
+        editor.move_to_position editor.line.length
       }
 
-      # editor.bind(:ctrl_k) { editor.clear_line }
-      editor.bind(:ctrl_u) { editor.undo }
+      # Delete to beginning of line from cursor position
+      editor.bind(:ctrl_u) {
+        kill_ring.push editor.line.text[0...editor.line.position]
+        editor.overwrite_line editor.line.text[editor.line.position..-1]
+        editor.move_to_position 0
+      }
+
+      # Forward delete a character, leaving the cursor in place
+      editor.bind("\e[3~") {
+        before_text =  editor.line.text[0...editor.line.position]
+        after_text = editor.line.text[(editor.line.position+1)..-1]
+        text = [before_text, after_text].join
+        position = editor.line.position
+        editor.overwrite_line text
+        editor.move_to_position position
+      }
+
       editor.bind(:ctrl_r) { editor.redo }
       editor.bind(:left_arrow) { editor.move_left }
       editor.bind(:right_arrow) { editor.move_right }
