@@ -43,7 +43,7 @@ module Yap::Shell::Execution
       results = []
       @command_queue.each_with_index do |(command, stdin, stdout, stderr), reversed_i|
         of = @command_queue.length
-        i = of - reversed_i
+        i = reversed_i + 1
         stdin  = @stdin  if stdin  == :stdin
         stdout = @stdout if stdout == :stdout
         stderr = @stderr if stderr == :stderr

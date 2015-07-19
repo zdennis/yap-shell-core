@@ -75,9 +75,13 @@ module Yap::Shell
 
     def visit_StatementsNode(node)
       Yap::Shell::Execution::Context.fire :before_statements_execute, @world unless @suppress_events
+      @blk.call :new_command_group
       node.head.accept(self)
+      @blk.call :run_command_group
       if node.tail
+        @blk.call :new_command_group
         node.tail.accept(self)
+        @blk.call :run_command_group
       end
       Yap::Shell::Execution::Context.fire :after_statements_execute, @world unless @suppress_events
     end

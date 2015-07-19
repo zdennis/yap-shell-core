@@ -43,9 +43,13 @@ module Yap
         @world.repl.loop_on_input do |input|
           evaluation = Yap::Shell::Evaluation.new(stdin:@stdin, stdout:@stdout, stderr:@stderr, world:@world, last_result:last_result)
           evaluation.evaluate(input) do |command, stdin, stdout, stderr|
-            context.clear_commands
-            context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
-            last_result = context.execute(world:@world)
+            if command == :new_command_group
+              context.clear_commands
+            elsif command == :run_command_group
+              last_result = context.execute(world:@world)
+            else
+              context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr
+            end
           end
         end
       end

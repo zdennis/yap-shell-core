@@ -54,10 +54,10 @@ module Yap::Shell::Execution
 
       # Set terminal's process group to that of the child process
       Termios.tcsetpgrp STDIN, pid
-      pid, status = Process.wait2(-1, Process::WUNTRACED) unless of > 1
-      puts "Process (#{pid}) stopped: #{status.inspect}" if ENV["DEBUG"]
+      pid, status = Process.wait2(pid, Process::WUNTRACED) if n == of
+      $z.puts "Process (#{pid}) stopped: #{status.inspect}" if ENV["DEBUG"]
 
-      # If we're not printing to the terminal than close in/out/err. This
+      # If we're not printing to the terminal then close in/out/err. This
       # is so the next command in the pipeline can complete and don't hang waiting for
       # stdin after the command that's writing to its stdin has completed.
       if stdout != $stdout && stdout.is_a?(IO) && !stdout.closed? then
@@ -78,7 +78,7 @@ module Yap::Shell::Execution
       end
 
       # if the reason we stopped is from being suspended
-      if status.stopsig == Signal.list["TSTP"]
+      if status && status.stopsig == Signal.list["TSTP"]
         puts "Process (#{pid}) suspended: #{status.stopsig}" if ENV["DEBUG"]
         suspended(command:command, n:n, of:of, pid: pid)
         result = Yap::Shell::Execution::SuspendExecution.new(status_code:nil, directory:Dir.pwd, n:n, of:of)
