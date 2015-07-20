@@ -65,7 +65,6 @@ class History < Addon
     pos = editor.line.position
     text = editor.line.text
     editor.puts
-    editor.puts "History:"
 
     history_items = history.map.with_index do |group, i|
       OpenStruct.new(
