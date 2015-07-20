@@ -175,7 +175,7 @@ module Yap::Shell
       editor.bind(:ctrl_d) { puts; puts "Exiting..."; exit }
 
       # character-search; wraps around as necessary
-      editor.bind(:ctrl_f) {
+      editor.bind(:ctrl_n) {
         line = editor.line
         text, start_position = line.text, line.position
         i, new_position = start_position, nil
