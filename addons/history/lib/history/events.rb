@@ -6,10 +6,6 @@ Yap::Shell::Execution::Context.on(:after_statements_execute) do |world|
   world[:history].stop_group(Time.now)
 end
 
-Yap::Shell::Execution::Context.on(:after_process_finished) do |world, *args|
-  # puts "After process: #{world.to_s}, args: #{args.inspect}"
-end
-
 Yap::Shell::Execution::Context.on(:before_execute) do |world, command:|
   world[:history].executing command:command.str, started_at:Time.now
 end
