@@ -20,7 +20,7 @@ class History
     def initialize(command:, started_at:Time.now, stopped_at:nil, items:[])
       @command = command
       @started_at = started_at
-      @stopped_at = nil
+      @stopped_at = stopped_at
       @items = items
     end
 
@@ -28,7 +28,22 @@ class History
 
     def duration
       return nil unless @stopped_at
-      @stopped_at - @started_at
+      total_seconds = @stopped_at - @started_at
+
+      seconds = ((total_seconds % 60) * 10_000).to_i / 10_000.0
+      minutes = ((total_seconds / 60) % 60).to_i
+      hours = (total_seconds / (60 * 60)).to_i
+
+      arr = []
+      arr << sprintf("%d hr", hours) if hours == 1
+      arr << sprintf("%d hrs", hours) if hours > 1
+      arr << sprintf("%d min", minutes) if minutes == 1
+      arr << sprintf("%d mins", minutes) if minutes > 1
+      arr << sprintf("%.3f secs", seconds) if seconds > 0
+
+      "less than a 10th of second" if arr.empty?
+
+      arr.join(" ")
     end
 
     def executing(command:, started_at:)

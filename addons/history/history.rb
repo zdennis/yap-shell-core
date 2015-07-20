@@ -1,13 +1,40 @@
 require 'forwardable'
+require 'term/ansicolor'
+require 'ostruct'
 
 class History < Addon
   require 'history/group'
   require 'history/item'
   require 'history/buffer'
 
+  Color = Object.extend Term::ANSIColor
+
+  class << self
+    attr_accessor :history_item_formatter, :ignore_history_item
+  end
+
+  self.ignore_history_item = ->(item:) do
+    item.command == "exit"
+  end
+
+  self.history_item_formatter = ->(item:, options:{}) do
+    if item.duration
+      sprintf(
+        "%#{options[:max_position_width]}d %-s %s",
+        item.position,
+        item.command,
+        Color.negative(Color.intense_black(item.duration))
+      )
+    else
+      sprintf("%#{options[:max_position_width]}d %-s", item.position, item.command)
+    end
+  end
+
   def initialize_world(world)
     @world = world
     load_history
+
+    world.editor.bind(:ctrl_h) { show_history(@world.editor) }
 
     world.func(:howmuch) do |args:, stdin:, stdout:, stderr:|
       case args.first
@@ -23,13 +50,45 @@ class History < Addon
     end
   end
 
+  def show_history(editor)
+    pos = editor.line.position
+    text = editor.line.text
+    editor.puts
+    editor.puts "History:"
+
+    history_items = history.map.with_index do |group, i|
+      OpenStruct.new(
+        command:group.command,
+        duration:group.duration,
+        position:(i+1).to_s
+      )
+    end
+
+    term_width = editor.terminal_width
+    max_position_width = history_items.map(&:position).map(&:length).max
+    max_duration_width = history_items.map(&:duration).compact.map(&:length).max
+    max_command_width = history_items.map(&:command).map(&:length).max
+
+    history_items.each do |item|
+      next if self.class.ignore_history_item.call(item:item)
+      editor.puts self.class.history_item_formatter.call(item:item, options:{
+        term_width: term_width,
+        max_position_width: max_position_width,
+        max_duration_width: max_duration_width,
+        max_command_width: max_command_width
+      })
+    end
+
+    editor.overwrite_line(text, pos)
+  end
+
   def executing(command:, started_at:)
-    raise "Cannot acknowledge execution beginning of a command when no group has been started!" unless @history.last
+    raise "Cannot acknowledge execution beginning of a command when no group has been started!" unless history.last
     history.last.executing command:command, started_at:started_at
   end
 
   def executed(command:, stopped_at:)
-    raise "Cannot complete execution of a command when no group has been started!" unless @history.last
+    raise "Cannot complete execution of a command when no group has been started!" unless history.last
     history.last.executed command:command, stopped_at:stopped_at
   end
 
