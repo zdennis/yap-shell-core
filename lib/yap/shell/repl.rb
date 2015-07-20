@@ -174,6 +174,24 @@ module Yap::Shell
       editor.bind(:ctrl_h) { editor.show_history }
       editor.bind(:ctrl_d) { puts; puts "Exiting..."; exit }
 
+      # character-search; wraps around as necessary
+      editor.bind(:ctrl_f) {
+        line = editor.line
+        text, start_position = line.text, line.position
+        i, new_position = start_position, nil
+
+        break_on_bytes = [editor.terminal.keys[:ctrl_c]].flatten
+        byte = [editor.read_character].flatten.first
+
+        unless break_on_bytes.include?(byte)
+          loop do
+            i += 1
+            i = 0 if i >= text.length                                    # wrap-around to the beginning
+            break if i == start_position                                 # back to where we started
+            (editor.move_to_position(i) ; break) if text[i] == byte.chr  # found a match; move and break
+          end
+        end
+      }
     end
 
     def install_default_tab_completion_proc
