@@ -1,6 +1,6 @@
 module Yap::Shell::Execution
   class RubyCommandExecution < CommandExecution
-    on_execute do |command:, n:, of:|
+    on_execute do |command:, n:, of:, wait:|
       result = nil
       stdin, stdout, stderr, world = @stdin, @stdout, @stderr, @world
       t = Thread.new {

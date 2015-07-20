@@ -3,7 +3,7 @@ require 'termios'
 
 module Yap::Shell::Execution
   class FileSystemCommandExecution < CommandExecution
-    on_execute do |command:, n:, of:, resume_blk:nil|
+    on_execute do |command:, n:, of:, wait:, resume_blk:nil|
       stdin, stdout, stderr, world = @stdin, @stdout, @stderr, @world
       result = nil
       if resume_blk
@@ -54,8 +54,7 @@ module Yap::Shell::Execution
 
       # Set terminal's process group to that of the child process
       Termios.tcsetpgrp STDIN, pid
-      pid, status = Process.wait2(pid, Process::WUNTRACED) if n == of
-      $z.puts "Process (#{pid}) stopped: #{status.inspect}" if ENV["DEBUG"]
+      pid, status = Process.wait2(pid, Process::WUNTRACED) if wait
 
       # If we're not printing to the terminal then close in/out/err. This
       # is so the next command in the pipeline can complete and don't hang waiting for

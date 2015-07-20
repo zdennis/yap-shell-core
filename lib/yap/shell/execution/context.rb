@@ -31,8 +31,8 @@ module Yap::Shell::Execution
       @suspended_execution_contexts = []
     end
 
-    def add_command_to_run(command, stdin:, stdout:, stderr:)
-      @command_queue << [command, stdin, stdout, stderr]
+    def add_command_to_run(command, stdin:, stdout:, stderr:, wait:)
+      @command_queue << [command, stdin, stdout, stderr, wait]
     end
 
     def clear_commands
@@ -41,7 +41,7 @@ module Yap::Shell::Execution
 
     def execute(world:)
       results = []
-      @command_queue.each_with_index do |(command, stdin, stdout, stderr), reversed_i|
+      @command_queue.each_with_index do |(command, stdin, stdout, stderr, wait), reversed_i|
         of = @command_queue.length
         i = reversed_i + 1
         stdin  = @stdin  if stdin  == :stdin
@@ -59,10 +59,10 @@ module Yap::Shell::Execution
 
           @saved_tty_attrs = Termios.tcgetattr(STDIN)
           self.class.fire :before_execute, world, command: command
-          result = execution_context.execute(command:command, n:i, of:of)
+          result = execution_context.execute(command:command, n:i, of:of, wait:wait)
           self.class.fire :after_execute, world, command: command, result: result
 
-          results << process_execution_result(execution_context:execution_context, result: result)
+          results << process_execution_result(execution_context:execution_context, result:result)
           Termios.tcsetattr(STDIN, Termios::TCSANOW, @saved_tty_attrs)
         end
       end

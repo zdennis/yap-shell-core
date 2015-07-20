@@ -2,7 +2,7 @@ require 'yap/shell/execution/result'
 
 module Yap::Shell::Execution
   class BuiltinCommandExecution < CommandExecution
-    on_execute do |command:, n:, of:|
+    on_execute do |command:, n:, of:, wait:|
       status_code = command.execute(stdin:@stdin, stdout:@stdout, stderr:@stderr)
       if status_code == :resume
         ResumeExecution.new(status_code:0, directory:Dir.pwd, n:n, of:of)

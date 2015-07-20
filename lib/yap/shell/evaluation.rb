@@ -68,20 +68,16 @@ module Yap::Shell
             heredoc: node.heredoc,
             internally_evaluate: node.internally_evaluate?)
           @stdin, @stdout, @stderr = stream_redirections_for(node)
-          @last_result = @blk.call command, @stdin, @stdout, @stderr
+          @last_result = @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
         end
       end
     end
 
     def visit_StatementsNode(node)
       Yap::Shell::Execution::Context.fire :before_statements_execute, @world unless @suppress_events
-      @blk.call :new_command_group
       node.head.accept(self)
-      @blk.call :run_command_group
       if node.tail
-        @blk.call :new_command_group
         node.tail.accept(self)
-        @blk.call :run_command_group
       end
       Yap::Shell::Execution::Context.fire :after_statements_execute, @world unless @suppress_events
     end
@@ -147,7 +143,7 @@ module Yap::Shell
       with_standard_streams do |stdin, stdout, stderr|
         # Modify @stdout and @stderr for the first command
         stdin, @stdout = IO.pipe
-
+        pipeline_stack.push true
         # Don't modify @stdin for the first command in the pipeline.
         node.head.accept(self)
 
@@ -158,6 +154,7 @@ module Yap::Shell
         # Modify @stdout,@stderr to go back to the original
         @stdout, @stderr = stdout, stderr
 
+        pipeline_stack.pop
         node.tail.accept(self)
 
         # Set our @stdin back to the original
@@ -171,7 +168,7 @@ module Yap::Shell
         args:    node.args,
         heredoc: node.heredoc,
         internally_evaluate: node.internally_evaluate?)
-      @last_result = @blk.call command, @stdin, @stdout, @stderr
+      @last_result = @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
     end
 
     ######################################################################
@@ -179,6 +176,13 @@ module Yap::Shell
     #               HELPER / UTILITY METHODS                             #
     #                                                                    #
     ######################################################################
+
+
+    # +pipeline_stack+ is used to determine if we are about go inside of a
+    # pipeline. It will be empty when we are coming out of a pipeline node.
+    def pipeline_stack
+      @pipeline_stack ||= []
+    end
 
     def alias_expand(input, aliases:Aliases.instance)
       head, *tail = input.split(/\s/, 2).first
@@ -190,10 +194,10 @@ module Yap::Shell
     end
 
     def env_expand(input)
-      input.gsub(/\$(\w+)/) do |match,*args|
+      input.gsub(/\$(\S+)/) do |match,*args|
         var_name = match[1..-1]
         case var_name
-        when "$?"
+        when "?"
           @last_result ? @last_result.status_code.to_s : '0'
         else
           ENV.fetch(var_name){ match }

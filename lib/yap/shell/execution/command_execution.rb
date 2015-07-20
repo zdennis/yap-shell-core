@@ -10,14 +10,14 @@ module Yap::Shell::Execution
       end
     end
 
-    def initialize(stdin:, stdout:, stderr:,world:)
+    def initialize(stdin:, stdout:, stderr:, world:)
       @stdin, @stdout, @stderr = stdin, stdout, stderr
       @world = world
     end
 
-    def execute(command:, n:, of:)
+    def execute(command:, n:, of:, wait:true)
       if self.class.on_execute
-        self.instance_exec(command:command, n:n, of:of, &self.class.on_execute)
+        self.instance_exec(command:command, n:n, of:of, wait:wait, &self.class.on_execute)
       else
         raise NotImplementedError, "on_execute block hasn't been implemented!"
       end
