@@ -132,7 +132,11 @@ class History < Addon
     @world.editor.history = @history = History::Buffer.new(Float::INFINITY)
 
     at_exit do
-      File.write history_file, @world.editor.history.to_yaml
+      File.open(history_file, "a") do |file|
+        # Don't write the YAML header because we're going to append to the
+        # history file, not overwrite. YAML works fine without it.
+        file.write @world.editor.history.to_yaml(@history_start_position..-1).sub(/^---\n/m, '')
+      end
     end
 
     return unless File.exists?(history_file) && File.readable?(history_file)
@@ -149,6 +153,7 @@ class History < Addon
       end
     end
 
+    @history_start_position = history_elements.length
     @world.editor.history.replace(history_elements)
   end
 end

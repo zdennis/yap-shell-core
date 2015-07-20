@@ -123,8 +123,8 @@ class History
 
     alias << push
 
-    def to_yaml
-      map do |element|
+    def to_yaml(range=(0..-1))
+      self[range].map do |element|
         element.kind_of?(String) ? element : element.to_h
       end.to_yaml
     end
