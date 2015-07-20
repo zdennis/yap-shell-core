@@ -12,13 +12,12 @@ module Yap::Shell
     def initialize(world:nil)
       @world = world
       @editor= world.editor
+      install_default_keybindings
+      install_default_tab_completion_proc
     end
 
     def loop_on_input(&blk)
       @blk = blk
-
-      install_default_keybindings
-      install_default_tab_completion_proc
 
       loop do
         heredoc = nil
