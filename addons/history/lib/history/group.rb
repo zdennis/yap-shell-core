@@ -41,8 +41,6 @@ class History
       arr << sprintf("%d mins", minutes) if minutes > 1
       arr << sprintf("%.3f secs", seconds) if seconds > 0
 
-      "less than a 10th of second" if arr.empty?
-
       arr.join(" ")
     end
 
