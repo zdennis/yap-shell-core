@@ -17,7 +17,6 @@ module Yap
     def initialize(addons:)
       @editor = RawLine::Editor.new do |editor|
         editor.word_break_characters = " \t\n\"\\'`@$><=;|&{(/"
-        editor.history.search_strategy = Yap::Shell::ReplHistorySearch.new
       end
 
       @repl = Yap::Shell::Repl.new(world:self)

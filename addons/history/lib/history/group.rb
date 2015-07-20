@@ -2,10 +2,26 @@ class History
   class Group
     extend Forwardable
 
-    def initialize(started_at:Time.now)
+    def self.from_string(str)
+      Group.new(started_at:nil, items:[Item.from_string(str)])
+    end
+
+    def self.from_hash(hsh)
+      Group.new(
+        command: hsh[:command],
+        started_at: hsh[:started_at],
+        stopped_at: hsh[:stopped_at],
+        items: Item.from_array(hsh[:items])
+      )
+    end
+
+    attr_reader :command
+
+    def initialize(command:, started_at:Time.now, stopped_at:nil, items:[])
+      @command = command
       @started_at = started_at
       @stopped_at = nil
-      @items = []
+      @items = items
     end
 
     def_delegators :@items, :push, :<<, :pop, :first, :last
@@ -34,5 +50,54 @@ class History
     def stopped_at(time)
       @stopped_at ||= time
     end
+
+    def to_s
+      @command
+    end
+
+    def to_h
+      {
+        command: @command,
+        started_at: @started_at,
+        stopped_at: @stopped_at,
+        items: @items.map(&:to_h)
+      }
+    end
+
+    #
+    # Methods to conform to RawLine::HistoryBuffer expectations for
+    # searching.
+    #
+    # def method_missing(name, *args, &blk)
+    #   if @command.respond_to?(name)
+    #     @command.send name, *args, &blk
+    #   else
+    #     super
+    #   end
+    # end
+    def [](*args)
+      @command[*args]
+    end
+
+    def chars
+      @command.chars
+    end
+
+    def strip
+      @command.strip!
+    end
+
+    def length
+      @command.length
+    end
+
+    def each_byte(&blk)
+      @command.each_byte(&blk)
+    end
+
+    def =~(rgx)
+      @command =~ rgx
+    end
+
   end
 end

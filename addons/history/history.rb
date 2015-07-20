@@ -3,10 +3,10 @@ require 'forwardable'
 class History < Addon
   require 'history/group'
   require 'history/item'
+  require 'history/buffer'
 
   def initialize_world(world)
     @world = world
-    @history = []
     load_history
 
     world.func(:howmuch) do |args:, stdin:, stdout:, stderr:|
@@ -25,45 +25,64 @@ class History < Addon
 
   def executing(command:, started_at:)
     raise "Cannot acknowledge execution beginning of a command when no group has been started!" unless @history.last
-    @history.last.executing command:command, started_at:started_at
+    history.last.executing command:command, started_at:started_at
   end
 
   def executed(command:, stopped_at:)
     raise "Cannot complete execution of a command when no group has been started!" unless @history.last
-    @history.last.executed command:command, stopped_at:stopped_at
+    history.last.executed command:command, stopped_at:stopped_at
   end
 
   def last_executed_item
-    @history.reverse.each do |group|
+    history.reverse.each do |group|
       last_run = group.last_executed_item
       break last_run if last_run
     end
   end
 
   def start_group(started_at)
-    @history.push Group.new(started_at:started_at)
+    last_command = history[-1]
+    history[-1] = Group.new(started_at:started_at, command:last_command)
   end
 
   def stop_group(stopped_at)
-    @history.last.stopped_at(stopped_at)
+    history.last.stopped_at(stopped_at)
   end
 
   private
+
+  def history
+    @history
+  end
 
   def history_file
     @history_file ||= File.expand_path('~') + '/.yap-history'
   end
 
   def load_history
+    @world.editor.history = @history = History::Buffer.new(Float::INFINITY)
+
     at_exit do
-      File.write history_file, @world.editor.history.to_a.to_yaml
+      File.write history_file, @world.editor.history.to_yaml
     end
 
     return unless File.exists?(history_file) && File.readable?(history_file)
-    @world.editor.history.replace(YAML.load_file(history_file) || [])
+
+    history_elements = YAML.load_file(history_file) || []
+    history_elements.map! do |element|
+      case element
+      when String
+        Group.from_string(element)
+      when Hash
+        Group.from_hash(element)
+      else
+        raise "Don't know how to load history from #{element.inspect}"
+      end
+    end
+
+    @world.editor.history.replace(history_elements)
   end
 end
-
 
 Yap::Shell::Execution::Context.on(:before_statements_execute) do |world|
   world[:history].start_group(Time.now)
