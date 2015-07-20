@@ -37,21 +37,31 @@ class History < Addon
 
     world.editor.bind(:ctrl_h) { show_history(@world.editor) }
 
-    world.func(:howmuch) do |args:, stdin:, stdout:, stderr:|
-      case args.first
-      when "time"
-        if history_item=self.last_executed_item
-          stdout.puts history_item.total_time_s
+    world.func(:history) do |args:, stdin:, stdout:, stderr:|
+      first_arg = args.first
+      case first_arg
+      when String
+        if first_arg.start_with?("/")
+          regex = first_arg.gsub(/(^\|\/$)/, '')
+          ignore_history_item = ->(item:, options:{}) do
+            item.command !~ /#{regex}/
+          end
         else
-          stdout.puts "Can't report on something you haven't done."
+          ignore_history_item = ->(item:, options:{}) do
+            item.command !~ /#{first_arg}/
+          end
         end
+        show_history(world.editor, redraw_prompt:false, ignore_history_item:ignore_history_item)
       else
-        stdout.puts "How much what?"
+        show_history(world.editor, redraw_prompt:false)
       end
     end
   end
 
-  def show_history(editor)
+  def show_history(editor, redraw_prompt:true, ignore_history_item:nil, history_item_formatter:nil)
+    ignore_history_item ||= self.class.ignore_history_item
+    history_item_formatter ||= self.class.history_item_formatter
+
     pos = editor.line.position
     text = editor.line.text
     editor.puts
@@ -71,8 +81,8 @@ class History < Addon
     max_command_width = history_items.map(&:command).map(&:length).max
 
     history_items.each do |item|
-      next if self.class.ignore_history_item.call(item:item)
-      editor.puts self.class.history_item_formatter.call(item:item, options:{
+      next if ignore_history_item.call(item:item)
+      editor.puts history_item_formatter.call(item:item, options:{
         term_width: term_width,
         max_position_width: max_position_width,
         max_duration_width: max_duration_width,
@@ -80,7 +90,7 @@ class History < Addon
       })
     end
 
-    editor.overwrite_line(text, pos)
+    editor.overwrite_line(text, pos) if redraw_prompt
   end
 
   def executing(command:, started_at:)
