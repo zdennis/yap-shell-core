@@ -9,15 +9,20 @@ class TabCompletion < Addon
 
   Color = Term::ANSIColor
 
-  COLOR_PROCS = Hash.new{ |h,k| h[k] = ->{ "" } }.merge(
-    directory: -> { Color.bold + Color.red },
-    command: -> { Color.bold + Color.green },
-    symlink: -> { Color.bold + Color.cyan }
+  DISPLAY_PROCS = Hash.new{ |h,k| h[k] = ->(text){ text } }.merge(
+    directory: -> (text){ text + "/" }
   )
 
-  POST_DECORATOR_PROCS = Hash.new{ |h,k| h[k] = ->{ "" } }.merge(
-    directory: -> { "/" },
-    symlink: -> { "@" }
+  STYLE_PROCS = Hash.new{ |h,k| h[k] = ->(text){ text } }.merge(
+    directory: -> (text){ Color.bold(Color.red(text)) },
+    command:   -> (text){ Color.bold(Color.green(text)) },
+    symlink:   -> (text){ Color.bold(Color.cyan(text)) },
+    selected:  -> (text){ Color.negative(text) }
+  )
+
+  DECORATION_PROCS = Hash.new{ |h,k| h[k] = ->(text){ text } }.merge(
+    directory: -> (text){ text + "/" },
+    command:   -> (text){ text + "@" }
   )
 
   attr_reader :editor
@@ -27,8 +32,10 @@ class TabCompletion < Addon
     @editor = @world.editor
     @editor.bind(:tab){ complete }
     @completions = COMPLETIONS.dup
-    @color_procs = COLOR_PROCS.dup
-    @post_decorators = POST_DECORATOR_PROCS.dup
+
+    @style_procs = STYLE_PROCS.dup
+    @decoration_procs = DECORATION_PROCS.dup
+    @display_procs = DISPLAY_PROCS.dup
   end
 
   def add_completion(match:nil, &blk)
@@ -38,7 +45,7 @@ class TabCompletion < Addon
 
   def set_decoration(type, &blk)
     raise ArgumentError, "Must supply block!" unless block_given?
-    @color_procs[type] = blk
+    @style_procs[type] = blk
   end
 
   def complete
@@ -69,7 +76,7 @@ class TabCompletion < Addon
           last_printed_text.length.times { editor.delete_left_character }
         end
         match = matches[@selected_index]
-        display_text = "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}"
+        display_text = display_text_for_match(match)
 
         modified_before_text = @input_fragment.before_text[0...(@input_fragment.line_position - @input_fragment.word[:text].length)]
         text = [modified_before_text, display_text, @input_fragment.after_text].join
@@ -152,20 +159,35 @@ class TabCompletion < Addon
     matches.each.with_index do |match, i|
       str << "\n" if (i % @completions_per_line) == 0
       if @selected_index == i
-        str << sprintf("%s%-#{@longest_match}s%s%#{@num_spaces_between}s",
-          Color.negative,
-          "#{match.text}#{@post_decorators[match.type].call}",
-          Color.reset,
-          "")
+        str << style_text_for_selected_match(match)
       else
-        str << sprintf("%s%-#{@longest_match}s%s%#{@num_spaces_between}s",
-          @color_procs[match.type].call,
-          "#{match.text}#{@post_decorators[match.type].call}",
-          Color.reset,
-          "")
+        str << style_text_for_nonselected_match(match)
       end
     end
     editor.puts str
+  end
+
+  def display_text_for_match(match)
+    @display_procs[match.type].call(match.text.dup)
+  end
+
+  def style_text_for_selected_match(match)
+    styled_text = @style_procs[match.type].call(match.text.dup)
+    styled_text = @decoration_procs[match.type].call(styled_text.dup)
+    uncolored_text = Color.uncolored(styled_text)
+    text = @style_procs[:selected].call(uncolored_text.dup)
+    (@longest_match - uncolored_text.length).times { text << " " }
+    @num_spaces_between.times { text << " " }
+    text
+  end
+
+  def style_text_for_nonselected_match(match)
+    styled_text = @style_procs[match.type].call(match.text.dup)
+    styled_text = @decoration_procs[match.type].call(styled_text.dup)
+    uncolored_text = Color.uncolored styled_text
+    (@longest_match - uncolored_text.length).times { styled_text << " " }
+    @num_spaces_between.times { styled_text << " " }
+    styled_text
   end
 
   def preserve_cursor(&blk)
