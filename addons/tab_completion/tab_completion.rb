@@ -36,20 +36,24 @@ class TabCompletion < Addon
   # +pre_word_context+ is the "lib/" if the user hits tab after typing "ls lib/"
   # because the current word will be set to ""
   def pre_word_context
-    # Work our way backwards thru the text because we can stop as soon as
-    # see a word break character rather than having to keep track of them.
-    i = @before_text.length
-    str = ""
-    loop do
-      i -= 1
-      ch = @before_text[i]
-      if ch =~ filtered_work_break_characters_rgx && (i>0 && @before_text[i-1] != '\\')
-        break
-      else
-        str << ch
+    if @before_text.length == 0
+      ""
+    else
+      # Work our way backwards thru the text because we can stop as soon as
+      # see a word break character rather than having to keep track of them.
+      i = @before_text.length
+      str = ""
+      loop do
+        i -= 1
+        ch = @before_text[i]
+        if ch =~ filtered_work_break_characters_rgx && (i>0 && @before_text[i-1] != '\\')
+          break
+        else
+          str << ch
+        end
       end
+      str.reverse
     end
-    str.reverse
   end
 
   def get_filename_completion_matches
