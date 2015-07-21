@@ -1,10 +1,17 @@
 require 'term/ansicolor'
 
 class TabCompletion < Addon
+  require 'tab_completion/file_completion'
+
+  COMPLETIONS = [
+    FileCompletion
+  ]
+
   Color = Term::ANSIColor
 
   COLOR_PROCS = Hash.new{ |h,k| h[k] = ->{ "" } }.merge(
-    directory: -> { Color.bold + Color.red }
+    directory: -> { Color.bold + Color.red },
+    command: -> { Color.bold + Color.green }
   )
 
   POST_DECORATOR_PROCS = Hash.new{ |h,k| h[k] = ->{ "" } }.merge(
@@ -21,51 +28,15 @@ class TabCompletion < Addon
 
   def complete
     @completion_char = editor.char
-
+    @line_position = editor.line.position
     @word = editor.line.word
-    @user_position = editor.line.position
     @before_text = editor.line.text[0...@word[:start]]
     @after_text = editor.line.text[@word[:end]..-1]
-    @pre_word_text = pre_word_context
     @selected_index = nil
 
-    matches = get_filename_completion_matches
+    matches = COMPLETIONS.map { |klass| klass.new(editor:editor) }.map(&:completions).flatten
+
     cycle_matches matches
-  end
-
-  # +pre_word_context+ is the "lib/" if the user hits tab after typing "ls lib/"
-  # because the current word will be set to ""
-  def pre_word_context
-    if @before_text.length == 0
-      ""
-    else
-      # Work our way backwards thru the text because we can stop as soon as
-      # see a word break character rather than having to keep track of them.
-      i = @before_text.length
-      str = ""
-      loop do
-        i -= 1
-        ch = @before_text[i]
-        if ch =~ filtered_work_break_characters_rgx && (i>0 && @before_text[i-1] != '\\')
-          break
-        else
-          str << ch
-        end
-      end
-      str.reverse
-    end
-  end
-
-  def get_filename_completion_matches
-    glob = "#{@pre_word_text}#{@word[:text]}*"
-    Dir.glob(glob, File::FNM_CASEFOLD).map do |path|
-      text = path.gsub(filtered_work_break_characters_rgx, '\\\\\1')
-      if File.directory?(path)
-        OpenStruct.new(type: :directory, text: text.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
-      else
-        OpenStruct.new(type: :file, text: text.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
-      end
-    end
   end
 
   def cycle_matches(matches)
@@ -73,19 +44,16 @@ class TabCompletion < Addon
 
     @selected_index = nil
     last_printed_text = nil
-    continue_completion = true
 
     loop do
       if @selected_index
         if last_printed_text
-          last_printed_text.length.times {
-            editor.delete_left_character
-          }
+          last_printed_text.length.times { editor.delete_left_character }
         end
         match = matches[@selected_index]
         display_text = "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}"
 
-        modified_before_text = @before_text[0...(@user_position - @word[:text].length)]
+        modified_before_text = @before_text[0...(@line_position - @word[:text].length)]
         text = [modified_before_text, display_text, @after_text].join
         editor.overwrite_line text
 
@@ -169,15 +137,4 @@ class TabCompletion < Addon
     blk.call
     term_info.control "rc" # restore cursor position
   end
-
-  # Remove file separator and the back-slash from word break characters when determining
-  # the pre-word-context
-  def filtered_word_break_characters
-    editor.word_break_characters.sub(File::Separator, "").sub('\\', '')
-  end
-
-  def filtered_work_break_characters_rgx
-    /([#{Regexp.escape(filtered_word_break_characters)}])/
-  end
-
 end
