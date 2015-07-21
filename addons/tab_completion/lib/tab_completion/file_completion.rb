@@ -9,18 +9,26 @@ class TabCompletion
       @paths = path.split(":")
       @word = editor.line.word
       @before_text = editor.line.text[0...@word[:start]]
-      @pre_word_text = pre_word_context
+      @pre_word_context = determine_pre_word_context
+      @line_position = @editor.line.position
     end
 
     def completions
-      command_completion_matches + filename_completion_matches
+      completions = []
+      completions.concat command_completion_matches if looking_for_command?
+      completions.concat filename_completion_matches
+      completions
     end
 
     private
 
+    def looking_for_command?
+      "#{@pre_word_text}#{@word[:text]}".length == @line_position
+    end
+
     def command_completion_matches
       matches = @paths.inject([]) do |matches, path|
-        glob = File.join(path, "#{@pre_word_text}#{@word[:text]}*")
+        glob = File.join(path, "#{@pre_word_context}#{@word[:text]}*")
         arr = Dir[glob].select { |path| File.executable?(path) && File.file?(path) }
         arr.each { |path| matches << path }
         matches
@@ -31,13 +39,16 @@ class TabCompletion
     end
 
     def filename_completion_matches
-      glob = "#{@pre_word_text}#{@word[:text]}*"
+      glob = "#{@pre_word_context}#{@word[:text]}*"
       Dir.glob(glob, File::FNM_CASEFOLD).map do |path|
         text = path.gsub(filtered_work_break_characters_rgx, '\\\\\1')
+        text.sub!(/^#{Regexp.escape(@pre_word_context)}/, '')
         if File.directory?(path)
-          build_result(type: :directory, text: text.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
+          build_result(type: :directory, text: text)
+        elsif File.symlink?(path)
+          build_result(type: :symlink, text: text)
         else
-          build_result(type: :file, text: text.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
+          build_result(type: :file, text: text)
         end
       end
     end
@@ -58,7 +69,7 @@ class TabCompletion
 
     # +pre_word_context+ is the "lib/" if the user hits tab after typing "ls lib/"
     # because the current word will be set to ""
-    def pre_word_context
+    def determine_pre_word_context
       if @before_text.length == 0
         ""
       else
@@ -70,6 +81,8 @@ class TabCompletion
           i -= 1
           ch = @before_text[i]
           if ch =~ filtered_work_break_characters_rgx && (i>0 && @before_text[i-1] != '\\')
+            break
+          elsif i < 0
             break
           else
             str << ch
