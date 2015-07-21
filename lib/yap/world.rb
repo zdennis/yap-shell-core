@@ -22,10 +22,12 @@ module Yap
       @repl = Yap::Shell::Repl.new(world:self)
 
       @addons_by_name = addons.reduce(Hash.new) do |hsh, addon|
-        addon.initialize_world(self)
         hsh[addon.addon_name] = addon
         hsh
       end
+
+      # initialize after they are all loaded in case they reference each other.
+      addons.each { |addon| addon.initialize_world(self) }
     end
 
     def [](addon_name)
