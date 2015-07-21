@@ -11,11 +11,13 @@ class TabCompletion < Addon
 
   COLOR_PROCS = Hash.new{ |h,k| h[k] = ->{ "" } }.merge(
     directory: -> { Color.bold + Color.red },
-    command: -> { Color.bold + Color.green }
+    command: -> { Color.bold + Color.green },
+    symlink: -> { Color.bold + Color.cyan }
   )
 
   POST_DECORATOR_PROCS = Hash.new{ |h,k| h[k] = ->{ "" } }.merge(
-    directory: -> { "/" }
+    directory: -> { "/" },
+    symlink: -> { "@" }
   )
 
   attr_reader :editor
