@@ -130,6 +130,7 @@ class History < Addon
 
   def load_history
     @world.editor.history = @history = History::Buffer.new(Float::INFINITY)
+    @history_start_position = 0
 
     at_exit do
       File.open(history_file, "a") do |file|
