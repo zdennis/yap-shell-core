@@ -16,7 +16,7 @@ module Yap
 
     def initialize(addons:)
       @editor = RawLine::Editor.new do |editor|
-        editor.word_break_characters = " \t\n\"\\'`@$><=;|&{(/"
+        editor.word_break_characters = " \t\n\"\\'`@$><=;|&{()/"
       end
 
       @repl = Yap::Shell::Repl.new(world:self)
