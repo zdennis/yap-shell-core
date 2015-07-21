@@ -6,75 +6,88 @@ class TabCompletion < Addon
   COLOR_PROCS = Hash.new{ |h,k| h[k] = ->{ "" } }.merge(
     directory: -> { Color.bold + Color.red }
   )
-  
+
   POST_DECORATOR_PROCS = Hash.new{ |h,k| h[k] = ->{ "" } }.merge(
     directory: -> { "/" }
   )
 
+  attr_reader :editor
+
   def initialize_world(world)
     @world = world
-    @world.editor.bind(:tab){ complete }
+    @editor = @world.editor
+    @editor.bind(:tab){ complete }
   end
 
   def complete
-    matches = [
-      OpenStruct.new(type: :directory, text:"lib"),
-      OpenStruct.new(type: :directory, text:"Library"),
-      OpenStruct.new(type: :file, text:"License.txt"),
-      OpenStruct.new(type: :file, text:"legumes")
-    ]
-    editor = @world.editor
+    @completion_char = editor.char
 
-    break_on_bytes = [editor.terminal.keys[:ctrl_c]].flatten
+    @word = editor.line.word
+    @user_position = editor.line.position
+    @before_text = editor.line.text[0...@word[:start]]
+    @after_text = editor.line.text[@word[:end]..-1]
 
-    $z.puts "line: #{editor.line.inspect}"
+    word_break_characters = editor.word_break_characters.sub(File::Separator, "")
+    @pre_word_text = @before_text.sub(/^.*[#{Regexp.escape(word_break_characters)}]/, "")
+    @selected_index = nil
+
+    matches = get_filename_completion_matches
+
+    cycle_matches matches
+  end
+
+  def get_filename_completion_matches
+    glob = "#{@pre_word_text}#{@word[:text]}*"
+    Dir.glob(glob, File::FNM_CASEFOLD).map do |path|
+      if File.directory?(path)
+        OpenStruct.new(type: :directory, text: path.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
+      else
+        OpenStruct.new(type: :file, text: path.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
+      end
+    end
+  end
+
+  def cycle_matches(matches)
     @selected_index = nil
     last_printed_text = nil
 
-    t = TermInfo.new ENV["TERM"], editor.output
-    $z.puts t.inspect
-
-    loop do
-      show_the_user_matches matches, @selected_index
-
+    while editor.char == @completion_char do
       if @selected_index
         if last_printed_text
           last_printed_text.length.times {
             editor.delete_left_character
           }
         end
-        last_printed_text = matches[@selected_index].text
+        match = matches[@selected_index]
+        display_text = "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}"
 
-        before_text = editor.line.text[0...editor.line.position]
-        after_text = editor.line.text[editor.line.position..-1]
-        text = [before_text, last_printed_text, after_text].join
+        modified_before_text = @before_text[0...(@user_position - @word[:text].length)]
+        text = [modified_before_text, display_text, @after_text].join
         editor.overwrite_line text
+
+        last_printed_text = display_text
       end
 
-      byte = [editor.read_character].flatten.first
+      show_the_user_matches matches, @selected_index
 
-      if break_on_bytes.include?(byte)
-        return
-      elsif [?\n.ord, ?\r.ord].include?(byte)
-        preserve_cursor { editor.clear_screen_down }
-        editor.write " "
-
-        # This is so the read loop doesn't think we want to go to the next line of input.
+      @selected_index = @selected_index ? @selected_index+1 : 0
+      @selected_index = 0 if @selected_index == matches.length
+      editor.read_character
+      if [editor.terminal.keys[:return], editor.terminal.keys[:newline]].include?(editor.char)
+        # This is so we don't have a valid character to process. This keeps the user
+        # at the current line, essentially like they said "I want this match, but don't execute the command yet"
         editor.char = ""
         break
-      elsif [?\t.ord].include?(byte)
-        @selected_index = @selected_index ? @selected_index+1 : 0
-        @selected_index = 0 if @selected_index == matches.length
       end
     end
+
+    preserve_cursor { editor.clear_screen_down }
+    editor.process_character
   end
 
   def show_the_user_matches(matches, selected_index)
-    editor = @world.editor
-
-    if matches.length == 0
-      # display the first match as a possible selection
-      editor.print matches.first.text
+    if matches.length == 1
+      @selected_index = 0
       return
     end
 
@@ -87,7 +100,6 @@ class TabCompletion < Addon
     cursor_position = editor.cursor_position
     extra_lines_needed = (cursor_position.row + lines_needed) - editor.terminal_height
 
-    $z.puts "extra rows: #{extra_lines_needed}"
     (extra_lines_needed + 1).times { editor.puts }
 
     t = TermInfo.new(ENV["TERM"], editor.output)
@@ -102,7 +114,7 @@ class TabCompletion < Addon
         if selected_index == i
           str << sprintf("%s%-#{longest}s%s%#{num_spaces_between}s",
             Color.negative,
-            match.text,
+            "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}",
             Color.reset,
             "")
         else
@@ -120,7 +132,7 @@ class TabCompletion < Addon
   private
 
   def preserve_cursor(&blk)
-    term_info = TermInfo.new(ENV["TERM"], @world.editor.output)
+    term_info = TermInfo.new(ENV["TERM"], editor.output)
     term_info.control "sc" # store cursor position
     blk.call
     term_info.control "rc" # restore cursor position
