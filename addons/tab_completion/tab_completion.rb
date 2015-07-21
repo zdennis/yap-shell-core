@@ -62,7 +62,11 @@ class TabCompletion < Addon
         last_printed_text = display_text
       end
 
-      show_the_user_matches matches, @selected_index
+      displayed = show_the_user_matches matches, @selected_index
+      unless displayed
+        editor.char = ""
+        break
+      end
 
       @selected_index ||= -1
 
@@ -90,7 +94,7 @@ class TabCompletion < Addon
   def show_the_user_matches(matches, selected_index)
     if matches.length == 1
       @selected_index = 0
-      return
+      return true
     end
 
     longest = matches.map(&:text).map(&:length).max
@@ -101,6 +105,15 @@ class TabCompletion < Addon
 
     cursor_position = editor.cursor_position
     extra_lines_needed = (cursor_position.row + lines_needed) - editor.terminal_height
+
+    if lines_needed > editor.terminal_height
+      preserve_cursor do
+        editor.puts
+        editor.print "Do you wish to see all #{matches.length} possibilities? "
+        editor.read_character
+        return false unless [?y.ord, ?Y.ord].include?(editor.char)
+      end
+    end
 
     (extra_lines_needed + 1).times { editor.puts }
 
@@ -129,6 +142,8 @@ class TabCompletion < Addon
       end
       editor.puts str
     end
+
+    true
   end
 
   private
@@ -137,6 +152,7 @@ class TabCompletion < Addon
     term_info = TermInfo.new(ENV["TERM"], editor.output)
     term_info.control "sc" # store cursor position
     blk.call
+  ensure
     term_info.control "rc" # restore cursor position
   end
 end
