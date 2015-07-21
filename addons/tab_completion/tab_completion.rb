@@ -26,28 +26,45 @@ class TabCompletion < Addon
     @user_position = editor.line.position
     @before_text = editor.line.text[0...@word[:start]]
     @after_text = editor.line.text[@word[:end]..-1]
-
-    word_break_characters = editor.word_break_characters.sub(File::Separator, "")
-    @pre_word_text = @before_text.sub(/^.*[#{Regexp.escape(word_break_characters)}]/, "")
+    @pre_word_text = pre_word_context
     @selected_index = nil
 
     matches = get_filename_completion_matches
-
     cycle_matches matches
+  end
+
+  def pre_word_context
+    word_break_characters = editor.word_break_characters.sub(File::Separator, "").sub('\\', '')
+    word_break_character_rgx = /[#{Regexp.escape(word_break_characters)}]/
+    i = @before_text.length
+    @str = ""
+    loop do
+      i -= 1
+      ch = @before_text[i]
+      if ch =~ word_break_character_rgx && (i>0 && @before_text[i-1] != '\\')
+        break
+      else
+        @str << ch
+      end
+    end
+    @str.reverse
   end
 
   def get_filename_completion_matches
     glob = "#{@pre_word_text}#{@word[:text]}*"
     Dir.glob(glob, File::FNM_CASEFOLD).map do |path|
+      text = path.gsub(' ', '\ ')
       if File.directory?(path)
-        OpenStruct.new(type: :directory, text: path.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
+        OpenStruct.new(type: :directory, text: text.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
       else
-        OpenStruct.new(type: :file, text: path.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
+        OpenStruct.new(type: :file, text: text.sub(/^#{Regexp.escape(@pre_word_text)}/, ''))
       end
     end
   end
 
   def cycle_matches(matches)
+    return if matches.empty?
+
     @selected_index = nil
     last_printed_text = nil
 
