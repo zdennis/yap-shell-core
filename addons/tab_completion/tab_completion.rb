@@ -1,11 +1,11 @@
 require 'term/ansicolor'
 
 class TabCompletion < Addon
+  require 'tab_completion/input_fragment'
+  require 'tab_completion/custom_completion'
   require 'tab_completion/file_completion'
 
-  COMPLETIONS = [
-    FileCompletion
-  ]
+  COMPLETIONS = [ FileCompletion ]
 
   Color = Term::ANSIColor
 
@@ -26,17 +26,33 @@ class TabCompletion < Addon
     @world = world
     @editor = @world.editor
     @editor.bind(:tab){ complete }
+    @completions = COMPLETIONS.dup
+    @color_procs = COLOR_PROCS.dup
+    @post_decorators = POST_DECORATOR_PROCS.dup
+  end
+
+  def add_completion(match:nil, &blk)
+    raise ArgumentError, "Must supply block!" unless block_given?
+    @completions.push CustomCompletion.new(match:match, &blk)
+  end
+
+  def set_decoration(type, &blk)
+    raise ArgumentError, "Must supply block!" unless block_given?
+    @color_procs[type] = blk
   end
 
   def complete
     @completion_char = editor.char
-    @line_position = editor.line.position
-    @word = editor.line.word
-    @before_text = editor.line.text[0...@word[:start]]
-    @after_text = editor.line.text[@word[:end]..-1]
+    @input_fragment = InputFragment.new(editor.line, editor.word_break_characters)
     @selected_index = nil
 
-    matches = COMPLETIONS.map { |klass| klass.new(editor:editor) }.map(&:completions).flatten
+    matches = @completions.map do |completion|
+      if completion.respond_to?(:call)
+        completion.call
+      else
+        completion.new(input_fragment:@input_fragment).completions
+      end
+    end.flatten
 
     cycle_matches matches
   end
@@ -55,8 +71,8 @@ class TabCompletion < Addon
         match = matches[@selected_index]
         display_text = "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}"
 
-        modified_before_text = @before_text[0...(@line_position - @word[:text].length)]
-        text = [modified_before_text, display_text, @after_text].join
+        modified_before_text = @input_fragment.before_text[0...(@input_fragment.line_position - @input_fragment.word[:text].length)]
+        text = [modified_before_text, display_text, @input_fragment.after_text].join
         editor.overwrite_line text
 
         last_printed_text = display_text
@@ -138,13 +154,13 @@ class TabCompletion < Addon
       if @selected_index == i
         str << sprintf("%s%-#{@longest_match}s%s%#{@num_spaces_between}s",
           Color.negative,
-          "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}",
+          "#{match.text}#{@post_decorators[match.type].call}",
           Color.reset,
           "")
       else
         str << sprintf("%s%-#{@longest_match}s%s%#{@num_spaces_between}s",
-          COLOR_PROCS[match.type].call,
-          "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}",
+          @color_procs[match.type].call,
+          "#{match.text}#{@post_decorators[match.type].call}",
           Color.reset,
           "")
       end
