@@ -4,7 +4,7 @@
 # ENV["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.1.5:/Users/zdennis/.rvm/gems/ruby-2.1.5@global"
 
 require 'chronic'
-# require 'term/ansicolor'
+require 'term/ansicolor'
 require 'terminfo'
 
 #
@@ -12,6 +12,20 @@ require 'terminfo'
 # Proc like object that responds to #call. If it responds to call it will
 # be used every time the prompt is to be re-drawn
 #
+
+self[:tab_completion].instance_eval do
+  add_completion(match:"ls") do
+    [
+      OpenStruct.new(type: :hrm, text: "foo"),
+      OpenStruct.new(type: :hrm, text: "bar"),
+      OpenStruct.new(type: :file, text: "baz")
+    ]
+  end
+
+  set_decoration :hrm do |txt|
+    Term::ANSIColor.yellow(txt)
+  end
+end
 
 last_prompt = nil
 self.prompt = -> do
