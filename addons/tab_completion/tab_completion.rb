@@ -69,8 +69,9 @@ class TabCompletion < Addon
 
     @selected_index = nil
     last_printed_text = nil
+    continue_completion = true
 
-    while editor.char == @completion_char do
+    loop do
       if @selected_index
         if last_printed_text
           last_printed_text.length.times {
@@ -89,13 +90,21 @@ class TabCompletion < Addon
 
       show_the_user_matches matches, @selected_index
 
-      @selected_index = @selected_index ? @selected_index+1 : 0
-      @selected_index = 0 if @selected_index == matches.length
+      @selected_index ||= -1
+
       editor.read_character
       if [editor.terminal.keys[:return], editor.terminal.keys[:newline]].include?(editor.char)
         # This is so we don't have a valid character to process. This keeps the user
         # at the current line, essentially like they said "I want this match, but don't execute the command yet"
         editor.char = ""
+        break
+      elsif editor.terminal.keys[:left_arrow] == editor.char
+        @selected_index = matches.length if @selected_index == 0
+        @selected_index -= 1
+      elsif [editor.terminal.keys[:right_arrow], @completion_char].include?(editor.char)
+        @selected_index += 1
+        @selected_index = 0 if @selected_index == matches.length
+      elsif @completion_char != editor.char
         break
       end
     end
