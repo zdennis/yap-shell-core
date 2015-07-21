@@ -40,13 +40,17 @@ class TabCompletion
 
     def filename_completion_matches
       glob = "#{@pre_word_context}#{@word[:text]}*"
+      glob.gsub!("~", ENV["HOME"])
       Dir.glob(glob, File::FNM_CASEFOLD).map do |path|
         text = path.gsub(filtered_work_break_characters_rgx, '\\\\\1')
         text.sub!(/^#{Regexp.escape(@pre_word_context)}/, '')
+        text = File.basename(text)
         if File.directory?(path)
           build_result(type: :directory, text: text)
         elsif File.symlink?(path)
           build_result(type: :symlink, text: text)
+        elsif File.file?(path) && File.executable?(path)
+          build_result(type: :command, text: text)
         else
           build_result(type: :file, text: text)
         end
