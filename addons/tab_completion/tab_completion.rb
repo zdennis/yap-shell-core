@@ -62,7 +62,7 @@ class TabCompletion < Addon
         last_printed_text = display_text
       end
 
-      displayed = show_the_user_matches matches, @selected_index
+      displayed = show_the_user_matches matches
       unless displayed
         editor.char = ""
         break
@@ -91,17 +91,17 @@ class TabCompletion < Addon
     editor.process_character
   end
 
-  def show_the_user_matches(matches, selected_index)
+  def show_the_user_matches(matches)
     if matches.length == 1
       @selected_index = 0
       return true
     end
 
-    longest = matches.map(&:text).map(&:length).max
-    num_spaces_between = 2
+    @longest_match = matches.map(&:text).map(&:length).max
+    @num_spaces_between = 2
 
-    completions_per_line = editor.terminal_width / (longest + num_spaces_between)
-    lines_needed = (matches.length / completions_per_line.to_f).ceil
+    @completions_per_line = editor.terminal_width / (@longest_match + @num_spaces_between)
+    lines_needed = (matches.length / @completions_per_line.to_f).ceil
 
     cursor_position = editor.cursor_position
     extra_lines_needed = (cursor_position.row + lines_needed) - editor.terminal_height
@@ -113,40 +113,44 @@ class TabCompletion < Addon
         editor.read_character
         return false unless [?y.ord, ?Y.ord].include?(editor.char)
       end
-    end
-
-    (extra_lines_needed + 1).times { editor.puts }
-
-    t = TermInfo.new(ENV["TERM"], editor.output)
-    if extra_lines_needed > 0
-      editor.print t.control_string("cup", cursor_position.row - (extra_lines_needed + 2), cursor_position.column)
-    end
-
-    preserve_cursor do
-      str = ""
-      matches.each.with_index do |match, i|
-        str << "\n" if (i % completions_per_line) == 0
-        if selected_index == i
-          str << sprintf("%s%-#{longest}s%s%#{num_spaces_between}s",
-            Color.negative,
-            "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}",
-            Color.reset,
-            "")
-        else
-          str << sprintf("%s%-#{longest}s%s%#{num_spaces_between}s",
-            COLOR_PROCS[match.type].call,
-            "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}",
-            Color.reset,
-            "")
-        end
+      pretty_print_matches(matches)
+      editor.overwrite_line editor.line.text
+    elsif extra_lines_needed > 0
+      (extra_lines_needed + 1).times { editor.puts }
+      t = TermInfo.new(ENV["TERM"], editor.output)
+      if extra_lines_needed > 0
+        editor.print t.control_string("cup", cursor_position.row - (extra_lines_needed + 2), cursor_position.column)
       end
-      editor.puts str
+      preserve_cursor{ pretty_print_matches(matches) }
+    else
+      preserve_cursor{ pretty_print_matches(matches) }
     end
 
     true
   end
 
   private
+
+  def pretty_print_matches(matches)
+    str = ""
+    matches.each.with_index do |match, i|
+      str << "\n" if (i % @completions_per_line) == 0
+      if @selected_index == i
+        str << sprintf("%s%-#{@longest_match}s%s%#{@num_spaces_between}s",
+          Color.negative,
+          "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}",
+          Color.reset,
+          "")
+      else
+        str << sprintf("%s%-#{@longest_match}s%s%#{@num_spaces_between}s",
+          COLOR_PROCS[match.type].call,
+          "#{match.text}#{POST_DECORATOR_PROCS[match.type].call}",
+          Color.reset,
+          "")
+      end
+    end
+    editor.puts str
+  end
 
   def preserve_cursor(&blk)
     term_info = TermInfo.new(ENV["TERM"], editor.output)
