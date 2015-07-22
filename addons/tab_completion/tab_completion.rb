@@ -154,6 +154,18 @@ class TabCompletion < Addon
       preserve_cursor{ pretty_print_matches(matches) }
     end
 
+    #
+    # If a new row was added because the selection was on a long match that wrapped
+    # the line then we need to move the cursor up.
+    #
+    cursor_position = editor.cursor_position
+    additional_lines_needed = (editor.line.length + editor.line.prompt.length) / editor.terminal_width
+    cursor_rows_moved_up = (cursor_position.row + lines_needed + additional_lines_needed) - editor.terminal_height
+    if cursor_rows_moved_up >= 1
+      t = TermInfo.new(ENV["TERM"], editor.output)
+      cursor_rows_moved_up.times { t.control "cuu1" }
+    end
+
     true
   end
 
