@@ -1,9 +1,13 @@
 class TabCompletion
   class CustomCompletion
-    attr_reader :input_fragment
+    PRIORITY = 2
 
-    def initialize(match:nil, &blk)
-      @match = match
+    attr_reader :name, :pattern, :input_fragment, :priority
+
+    def initialize(name:nil, pattern:nil, priority:PRIORITY, &blk)
+      @name = name
+      @pattern = pattern
+      @priority = priority
       @blk = blk
     end
 
@@ -13,8 +17,9 @@ class TabCompletion
     end
 
     def completions
-      if input_fragment.before_text =~ match_rgx
-        @blk.call(input_fragment)
+      md = input_fragment.before_text.match(match_rgx)
+      if md
+        @blk.call(input_fragment, md)
       else
         []
       end
@@ -23,9 +28,9 @@ class TabCompletion
     private
 
     def match_rgx
-      return // if @match.nil?
-      return @match if @match.is_a?(Regexp)
-      /^#{Regexp.escape(@match.to_s)}\s/
+      return // if pattern.nil?
+      return pattern if pattern.is_a?(Regexp)
+      /^#{Regexp.escape(pattern.to_s)}\s/
     end
   end
 end

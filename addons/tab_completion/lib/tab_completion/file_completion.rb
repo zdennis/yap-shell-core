@@ -2,6 +2,11 @@ require 'ostruct'
 
 class TabCompletion
   class FileCompletion
+    class << self
+      attr_accessor :priority
+    end
+    self.priority = 1
+
     def initialize(input_fragment:, path:ENV["PATH"])
       @paths = path.split(":")
       @input_fragment = input_fragment
