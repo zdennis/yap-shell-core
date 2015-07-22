@@ -3,7 +3,7 @@ class History
     extend Forwardable
 
     def self.from_string(str)
-      Group.new(started_at:nil, items:[Item.from_string(str)])
+      Group.new(command:str, started_at:nil, items:[Item.from_string(str)])
     end
 
     def self.from_hash(hsh)
