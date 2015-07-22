@@ -12,9 +12,8 @@ module Yap::Shell
 
     def evaluate(input, &blk)
       @blk = blk
-      parser = Yap::Shell::Parser.new
-      input = recursively_find_and_replace_command_substitutions(parser, input)
-      ast = Yap::Shell::Parser.new.parse(input)
+      input = recursively_find_and_replace_command_substitutions(input)
+      ast = Parser.parse(input)
       ast.accept(self)
     end
 
@@ -26,12 +25,12 @@ module Yap::Shell
 
     # +recursively_find_and_replace_command_substitutions+ is responsible for recursively
     # finding and expanding command substitutions, in a depth first manner.
-    def recursively_find_and_replace_command_substitutions(parser, input)
+    def recursively_find_and_replace_command_substitutions(input)
       input = input.dup
-      parser.each_command_substitution_for(input) do |substitution_result, start_position, end_position|
+      Parser.each_command_substitution_for(input) do |substitution_result, start_position, end_position|
         result = recursively_find_and_replace_command_substitutions(parser, substitution_result.str)
         position = substitution_result.position
-        ast = parser.parse(result)
+        ast = Parser.parse(result)
         with_standard_streams do |stdin, stdout, stderr|
           r,w = IO.pipe
           @stdout = w
@@ -55,7 +54,7 @@ module Yap::Shell
         args = node.args.map(&:lvalue).map{ |arg| env_expand(arg) }
         if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
-          ast = Yap::Shell::Parser.new.parse([_alias].concat(args).join(" "))
+          ast = Parser.parse([_alias].concat(args).join(" "))
           @aliases_expanded.push(node.command)
           ast.accept(self)
           @aliases_expanded.pop
