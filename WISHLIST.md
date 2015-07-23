@@ -1,3 +1,7 @@
+CLI
+
+* yap install right-prompt
+
 
 * need to add custom tab completion for aliases, builtins, shell commands, and file system commands
 * support user-specified gems to install (so they're available for rc files)
@@ -38,3 +42,13 @@ Others requests.
 * @dylanized: themeable
 * @dylanized: browser-based
 * @dylanized: bookmarks
+
+
+### Tab completion
+* sort completions for printing
+* print completion in groups?
+* match on command, command with arguments, arguments, env var args
+* supply the completion text
+* supply the descriptive text
+* alias one completion for another
+* cache completions? invalidate cached completions
