@@ -3,7 +3,7 @@ require 'shellwords'
 
 module Yap::Shell
   module Builtins
-    builtin :alias do |*args|
+    builtin :alias do |args:, stdout:, **kwargs|
       output = []
       if args.empty?
         Yap::Shell::Aliases.instance.to_h.each_pair do |name, value|
@@ -19,7 +19,7 @@ module Yap::Shell
         name, command = name_eq_value.scan(/^(.*?)\s*=\s*(.*)$/).flatten
         Yap::Shell::Aliases.instance.set_alias name, command
       end
-      output.join("\n")
+      stdout.puts output.join("\n")
     end
   end
 end

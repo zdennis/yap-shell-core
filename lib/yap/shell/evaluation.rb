@@ -166,6 +166,7 @@ module Yap::Shell
 
     def visit_InternalEvalNode(node)
       command = CommandFactory.build_command_for(
+        world: world,
         command: node.command,
         args:    node.args,
         heredoc: node.heredoc,
