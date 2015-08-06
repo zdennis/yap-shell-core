@@ -7,9 +7,14 @@ class TabCompletion
     end
     self.priority = 1
 
-    def initialize(input_fragment:, path:ENV["PATH"])
-      @paths = path.split(":")
+    attr_reader :world
+
+    def initialize(world:, input_fragment:, path:nil)
+      @world = world
       @input_fragment = input_fragment
+
+      path ||= @world.env["PATH"]
+      @paths = path.split(":")
     end
 
     def completions
@@ -39,7 +44,7 @@ class TabCompletion
 
     def filename_completion_matches
       glob = "#{@input_fragment.pre_word_context}#{@input_fragment.word[:text]}*"
-      glob.gsub!("~", ENV["HOME"])
+      glob.gsub!("~", world.env["HOME"])
       Dir.glob(glob, File::FNM_CASEFOLD).map do |path|
         text = path.gsub(filtered_work_break_characters_rgx, '\\\\\1')
         text.sub!(/^#{Regexp.escape(@input_fragment.pre_word_context)}/, '')

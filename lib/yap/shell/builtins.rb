@@ -6,8 +6,8 @@ module Yap::Shell
       Yap::Shell::BuiltinCommand.add(name, &blk)
     end
 
-    def self.execute_builtin(name, args:, stdin:, stdout:, stderr:)
-      command = Yap::Shell::BuiltinCommand.new(str:name, args: args)
+    def self.execute_builtin(name, world:, args:, stdin:, stdout:, stderr:)
+      command = Yap::Shell::BuiltinCommand.new(world:world, str:name, args: args)
       command.execute(stdin:stdin, stdout:stdout, stderr:stderr)
     end
 

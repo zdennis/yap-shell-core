@@ -12,9 +12,15 @@ module Yap
     include Term::ANSIColor
     extend Forwardable
 
-    attr_accessor :prompt, :contents, :addons, :repl, :editor
+    attr_accessor :prompt, :contents, :addons, :repl, :editor, :env
+
+    def self.instance(*args)
+      @instance ||= new(*args)
+    end
 
     def initialize(addons:)
+      @env = ENV.to_h.dup
+
       @editor = RawLine::Editor.new do |editor|
         editor.word_break_characters = " \t\n\"\\'`@$><=;|&{()/"
       end

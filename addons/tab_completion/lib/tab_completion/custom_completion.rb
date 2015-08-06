@@ -4,15 +4,17 @@ class TabCompletion
 
     attr_reader :name, :pattern, :input_fragment, :priority
 
-    def initialize(name:nil, pattern:nil, priority:PRIORITY, &blk)
+    def initialize(world:, name:nil, pattern:nil, priority:PRIORITY, &blk)
+      @world = world
       @name = name
       @pattern = pattern
       @priority = priority
       @blk = blk
     end
 
-    def new(input_fragment:)
+    def new(world:, input_fragment:)
       @input_fragment = input_fragment
+      @world = world
       self
     end
 

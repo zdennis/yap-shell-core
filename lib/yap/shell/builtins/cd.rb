@@ -3,11 +3,11 @@ module Yap::Shell
     DIRECTORY_HISTORY = []
     DIRECTORY_FUTURE  = []
 
-    builtin :cd do |args:, stderr:, **|
-      path = args.first || ENV['HOME']
+    builtin :cd do |world:, args:, stderr:, **|
+      path = args.first || world.env['HOME']
       if Dir.exist?(path)
         DIRECTORY_HISTORY << Dir.pwd
-        ENV["PWD"] = File.expand_path(path)
+        world.env["PWD"] = File.expand_path(path)
         Dir.chdir(path)
         exit_status = 0
       else
@@ -16,14 +16,14 @@ module Yap::Shell
       end
     end
 
-    builtin :popd do |args:, stderr:, **keyword_args|
+    builtin :popd do |world:, args:, stderr:, **keyword_args|
       output = []
       if DIRECTORY_HISTORY.any?
         path = DIRECTORY_HISTORY.pop
         if Dir.exist?(path)
           DIRECTORY_FUTURE << Dir.pwd
           Dir.chdir(path)
-          ENV["PWD"] = Dir.pwd
+          world.env["PWD"] = Dir.pwd
           exit_status = 0
         else
           stderr.puts "popd: #{path}: No such file or directory"
@@ -35,14 +35,14 @@ module Yap::Shell
       end
     end
 
-    builtin :pushd do |args:, stderr:, **keyword_args|
+    builtin :pushd do |world:, args:, stderr:, **keyword_args|
       output = []
       if DIRECTORY_FUTURE.any?
         path = DIRECTORY_FUTURE.pop
         if Dir.exist?(path)
           DIRECTORY_HISTORY << Dir.pwd
           Dir.chdir(path)
-          ENV["PWD"] = Dir.pwd
+          world.env["PWD"] = Dir.pwd
           exit_status = 0
         else
           stderr.puts "pushd: #{path}: No such file or directory"

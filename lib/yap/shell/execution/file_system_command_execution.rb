@@ -40,7 +40,13 @@ module Yap::Shell::Execution
           $stdout.reopen stdout
           $stderr.reopen stderr
 
-          Kernel.exec command.to_executable_str
+          begin
+            before = ENV.to_h.dup
+            ENV.replace(@world.env)
+            Kernel.exec command.to_executable_str
+          ensure
+            ENV.replace(before)
+          end
         end
 
         # Put the child process into a process group of its own

@@ -4,6 +4,8 @@ require 'yap/shell/aliases'
 
 module Yap::Shell
   class Evaluation
+    attr_reader :world
+
     def initialize(stdin:, stdout:, stderr:, world:, last_result:nil)
       @stdin, @stdout, @stderr = stdin, stdout, stderr
       @world = world
@@ -62,6 +64,7 @@ module Yap::Shell
         else
           cmd2execute = env_expand(node.command)
           command = CommandFactory.build_command_for(
+            world: world,
             command: cmd2execute,
             args:    shell_expand(args),
             heredoc: node.heredoc,
@@ -199,7 +202,7 @@ module Yap::Shell
         when "?"
           @last_result ? @last_result.status_code.to_s : '0'
         else
-          ENV.fetch(var_name){ match }
+          world.env.fetch(var_name){ match }
         end
       end
     end
@@ -218,11 +221,11 @@ module Yap::Shell
 
         results = results.map! do |s|
           # Basic bash-style tilde expansion
-          s.gsub!(/\A~(.*)/, ENV["HOME"] + '\1')
+          s.gsub!(/\A~(.*)/, world.env["HOME"] + '\1')
 
           # Basic bash-style variable expansion
           if s =~ /^\$(.*)/
-            s = ENV.fetch($1, "")
+            s = world.env.fetch($1, "")
           end
 
           # Basic bash-style path-name expansion
@@ -262,12 +265,12 @@ module Yap::Shell
     end
 
     def with_env(&blk)
-      env = ENV.to_h
+      env = world.env.dup
       begin
         yield if block_given?
       ensure
-        ENV.clear
-        ENV.replace(env)
+        world.env.clear
+        world.env.replace(env)
       end
     end
   end

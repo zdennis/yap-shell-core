@@ -7,13 +7,13 @@ module Yap::Shell
   class CommandUnknownError < CommandError ; end
 
   class CommandFactory
-    def self.build_command_for(command:, args:, heredoc:, internally_evaluate:)
-      return RubyCommand.new(str:command) if internally_evaluate
+    def self.build_command_for(world:, command:, args:, heredoc:, internally_evaluate:)
+      return RubyCommand.new(world:world, str:command) if internally_evaluate
 
       case command
-      when ShellCommand then ShellCommand.new(str:command, args:args, heredoc:heredoc)
-      when BuiltinCommand then BuiltinCommand.new(str:command, args:args, heredoc:heredoc)
-      when FileSystemCommand  then FileSystemCommand.new(str:command, args:args, heredoc:heredoc)
+      when ShellCommand then ShellCommand.new(world:world, str:command, args:args, heredoc:heredoc)
+      when BuiltinCommand then BuiltinCommand.new(world:world, str:command, args:args, heredoc:heredoc)
+      when FileSystemCommand  then FileSystemCommand.new(world:world, str:command, args:args, heredoc:heredoc)
       else
         raise CommandUnknownError, "Don't know how to execute command: #{command}"
       end
@@ -21,10 +21,11 @@ module Yap::Shell
   end
 
   class Command
-    attr_accessor :str, :args
+    attr_accessor :world, :str, :args
     attr_accessor :heredoc
 
-    def initialize(str:, args:[], heredoc:nil)
+    def initialize(world:, str:, args:[], heredoc:nil)
+      @world = world
       @str = str
       @args = args
       @heredoc = heredoc
@@ -54,7 +55,7 @@ module Yap::Shell
 
     def execute(stdin:, stdout:, stderr:)
       action = self.class.builtins.fetch(str.to_sym){ raise("Missing proc for builtin: '#{builtin}' in #{str.inspect}") }
-      action.call args:args, stdin:stdin, stdout:stdout, stderr:stderr
+      action.call world:world, args:args, stdin:stdin, stdout:stdout, stderr:stderr
     end
 
     def type
@@ -67,6 +68,10 @@ module Yap::Shell
   end
 
   class FileSystemCommand < Command
+    def self.world
+      ::Yap::World.instance
+    end
+
     def self.===(other)
       command = other.split(/\s+/).detect{ |f| !f.include?("=") }
 
@@ -74,7 +79,7 @@ module Yap::Shell
       return true if File.executable?(command)
 
       # See if the command exists anywhere on the path
-      ENV["PATH"].split(":").detect do |path|
+      world.env["PATH"].split(":").detect do |path|
         File.executable?(File.join(path, command))
       end
     end

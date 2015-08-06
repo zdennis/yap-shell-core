@@ -26,7 +26,7 @@ class TabCompletion < Addon
     command:   -> (text){ text + "@" }
   )
 
-  attr_reader :editor
+  attr_reader :editor, :world
 
   def initialize_world(world)
     @world = world
@@ -42,7 +42,7 @@ class TabCompletion < Addon
 
   def add_completion(name, pattern, &blk)
     raise ArgumentError, "Must supply block!" unless block_given?
-    @completions.push CustomCompletion.new(name:name, pattern:pattern, &blk)
+    @completions.push CustomCompletion.new(name:name, pattern:pattern, world:world, &blk)
   end
 
   def set_decoration(type, &blk)
@@ -59,7 +59,7 @@ class TabCompletion < Addon
       if completion.respond_to?(:call)
         completion.call
       else
-        completion.new(input_fragment:@input_fragment).completions
+        completion.new(world:@world, input_fragment:@input_fragment).completions
       end
     end.flatten
 

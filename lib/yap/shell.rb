@@ -29,7 +29,7 @@ module Yap
         @stdout.sync = true
         @stderr.sync = true
 
-        @world = Yap::World.new(addons:addons)
+        @world = Yap::World.instance(addons:addons)
       end
 
       def repl
