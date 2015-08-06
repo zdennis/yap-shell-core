@@ -99,7 +99,7 @@ module Yap::Shell
     #
     def visit_EnvWrapperNode(node)
       with_env do
-        node.env.each_pair { |env_var_name,value| ENV[env_var_name] = value }
+        node.env.each_pair { |env_var_name,value| world.env[env_var_name] = env_expand(value) }
         node.node.accept(self)
       end
     end
@@ -116,7 +116,7 @@ module Yap::Shell
     #
     def visit_EnvNode(node)
       node.env.each_pair do |key,val|
-        ENV[key] = val
+        world.env[key] = env_expand(val)
       end
       Yap::Shell::Execution::Result.new(status_code:0, directory:Dir.pwd, n:1, of:1)
     end
