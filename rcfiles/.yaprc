@@ -19,10 +19,6 @@ Yap::Shell::Execution::Context.on(:after_execute) do |world, command:, **kwargs|
   end
 end
 
-#
-# env["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.2.2@tahi"
-# env["GEM_PATH"] = "/Users/zdennis/.rvm/gems/ruby-2.2.2@tahi:/Users/zdennis/.rvm/gems/ruby-2.2.2@global"
-
 completion_cache = {}
 
 # tab_completion_display do |matches|
