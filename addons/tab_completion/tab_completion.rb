@@ -106,7 +106,7 @@ class TabCompletion < Addon
 
         modified_before_text = @input_fragment.before_text[0...(@input_fragment.line_position - @input_fragment.word[:text].length)]
         text = [modified_before_text, display_text, @input_fragment.after_text].join
-        editor.overwrite_line text
+        editor.overwrite_line text, @input_fragment.line_position
 
         last_printed_text = display_text
       end
@@ -182,7 +182,7 @@ class TabCompletion < Addon
         return false unless [?y.ord, ?Y.ord].include?(editor.char)
       end
       pretty_print_matches(styled_matches)
-      editor.overwrite_line editor.line.text
+      editor.overwrite_line editor.line.text, @input_fragment.before_text.length
     elsif extra_lines_needed > 0
       (extra_lines_needed + 1).times { editor.puts }
       t = TermInfo.new(ENV["TERM"], editor.output)
