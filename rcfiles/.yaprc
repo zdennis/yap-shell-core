@@ -10,6 +10,13 @@ require 'terminfo'
 env.delete("BUNDLE_GEMFILE")
 env.delete("BUNDLE_BIN_PATH")
 
+func :reload! do |args:, stdin:, stdout:, stderr:|
+  stdout.puts "Reloading shell:"
+  stdout.print "  Saving history "
+  world.addons[:history].save
+  stdout.puts Term::ANSIColor.green("done")
+  exec File.expand_path($0)
+end
 
 Yap::Shell::Execution::Context.on(:after_execute) do |world, command:, **kwargs|
   if Dir.pwd =~ /tahi/

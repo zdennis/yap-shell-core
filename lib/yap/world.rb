@@ -12,7 +12,8 @@ module Yap
     include Term::ANSIColor
     extend Forwardable
 
-    attr_accessor :prompt, :contents, :addons, :repl, :editor, :env
+    attr_accessor :prompt, :contents, :repl, :editor, :env
+    attr_reader :addons
 
     def self.instance(*args)
       @instance ||= new(*args)
@@ -27,7 +28,7 @@ module Yap
 
       @repl = Yap::Shell::Repl.new(world:self)
 
-      @addons_by_name = addons.reduce(Hash.new) do |hsh, addon|
+      @addons = addons.reduce(Hash.new) do |hsh, addon|
         hsh[addon.addon_name] = addon
         hsh
       end
@@ -37,7 +38,7 @@ module Yap
     end
 
     def [](addon_name)
-      @addons_by_name.fetch(addon_name){ raise(ArgumentError, "No addon loaded registered as #{addon_name}") }
+      @addons.fetch(addon_name){ raise(ArgumentError, "No addon loaded registered as #{addon_name}") }
     end
 
     def func(name, &blk)
