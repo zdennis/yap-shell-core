@@ -7,7 +7,7 @@ class TabCompletion
       @line_position = line.position
       @word = line.word
       @before_text = line.text[0...@word[:start]]
-      @after_text = line.text[@word[:end]..-1]
+      @after_text = line.text[@word[:end]+1..-1]
       @pre_word_context = determine_pre_word_context
     end
 
