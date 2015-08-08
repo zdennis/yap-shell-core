@@ -121,9 +121,6 @@ class TabCompletion < Addon
 
       editor.read_character
       if [editor.terminal.keys[:return], editor.terminal.keys[:newline]].include?(editor.char)
-        # This is so we don't have a valid character to process. This keeps the user
-        # at the current line, essentially like they said "I want this match, but don't execute the command yet"
-        editor.char = ""
         break
       elsif editor.terminal.keys[:left_arrow] == editor.char
         @selected_index = matches.length if @selected_index == 0
