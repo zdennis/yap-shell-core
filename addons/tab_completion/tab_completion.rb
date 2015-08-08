@@ -67,7 +67,27 @@ class TabCompletion < Addon
       match.descriptive_text = match.text unless match.descriptive_text
     end
 
+    common_string = common_starting_string_amongst_all_matches(matches)
+    if common_string
+      pos = @input_fragment.line_position
+      modified_before_text = @input_fragment.before_text[0...(@input_fragment.line_position - @input_fragment.word[:text].length)]
+      text = [modified_before_text, common_string, @input_fragment.after_text].join
+      editor.overwrite_line text, @input_fragment.before_text.length + common_string.length
+      @input_fragment = InputFragment.new(editor.line, editor.word_break_characters)
+    end
+
     cycle_matches matches
+  end
+
+  def common_starting_string_amongst_all_matches(matches)
+    common_string = matches.map(&:text).inject do |common_string, string|
+      while common_string != string[0...common_string.length]
+        common_string = common_string.chop
+      end
+      common_string
+    end
+    return nil if common_string.to_s.length == 0
+    common_string
   end
 
   def cycle_matches(matches)
@@ -116,6 +136,7 @@ class TabCompletion < Addon
       end
     end
 
+    editor.move_to_end_of_line
     preserve_cursor { editor.clear_screen_down }
     editor.process_character
   end
