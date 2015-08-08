@@ -183,10 +183,10 @@ class TabCompletion < Addon
       end
       pretty_print_matches(styled_matches)
       editor.overwrite_line editor.line.text, @input_fragment.before_text.length
-    elsif extra_lines_needed > 0
+    elsif extra_lines_needed >= 0
       (extra_lines_needed + 1).times { editor.puts }
       t = TermInfo.new(ENV["TERM"], editor.output)
-      if extra_lines_needed > 0
+      if extra_lines_needed >= 0
         editor.print t.control_string("cup", cursor_position.row - (extra_lines_needed + 2), cursor_position.column)
         editor.print t.control_string "el"
         editor.print t.control_string "el1"
