@@ -222,7 +222,7 @@ module Yap::Shell
       puts "Beginning heredoc" if ENV["DEBUG"]
 
       loop do
-        str = editor.read(@world.prompt.update.text, false)
+        str = editor.read(@world.secondary_prompt.update.text, false)
         input << "#{str}\n"
         if str =~ /^#{Regexp.escape(marker)}$/
           puts "Ending heredoc" if ENV["DEBUG"]

@@ -12,7 +12,12 @@ module Yap
     include Term::ANSIColor
     extend Forwardable
 
-    attr_accessor :prompt, :contents, :repl, :editor, :env
+    DEFAULTS = {
+      primary_prompt_text: "yap> ",
+      secondary_prompt_text: "> "
+    }
+
+    attr_accessor :prompt, :secondary_prompt, :contents, :repl, :editor, :env
     attr_reader :addons
 
     def self.instance(*args)
@@ -25,6 +30,9 @@ module Yap
       @editor = RawLine::Editor.new do |editor|
         editor.word_break_characters = " \t\n\"\\'`@$><=;|&{()/"
       end
+
+      self.prompt = Yap::Shell::Prompt.new(text: DEFAULTS[:primary_prompt_text])
+      self.secondary_prompt = Yap::Shell::Prompt.new(text: DEFAULTS[:secondary_prompt_text])
 
       @repl = Yap::Shell::Repl.new(world:self)
 
