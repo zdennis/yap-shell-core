@@ -67,7 +67,7 @@ module Yap::Shell
             world: world,
             command: cmd2execute,
             args:    shell_expand(args),
-            heredoc: node.heredoc,
+            heredoc: (node.heredoc && node.heredoc.value),
             internally_evaluate: node.internally_evaluate?)
           @stdin, @stdout, @stderr = stream_redirections_for(node)
           @last_result = @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
