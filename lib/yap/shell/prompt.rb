@@ -4,10 +4,12 @@ module Yap::Shell
   class PromptRenderer
     include Term::ANSIColor
 
-    def initialize(text:text)
-      # @term_info = TermInfo.new("xterm-256color", STDOUT)
-      # @text = text
-      # @right_text = nil
+    attr_reader :editor
+
+    def initialize(text:text, editor:editor)
+      @editor = editor
+      @term_info = TermInfo.new("xterm-256color", STDOUT)
+      @text = text
       #
       # Signal.trap("SIGWINCH") do
       #   # clear to end of line (in case we're shortening the line)
@@ -17,7 +19,7 @@ module Yap::Shell
     end
 
     def redraw_prompt(text)
-      @text = text
+      editor.prompt = text
     end
     #
     # def redraw_right_prompt(text)
@@ -84,13 +86,15 @@ module Yap::Shell
   end
 
   class PromptController
+    attr_reader :world, :prompt
+
     def initialize(world:, prompt:)
       @world = world
       @prompt = prompt
-      @renderer = PromptRenderer.new(text:prompt.text)
+      @renderer = PromptRenderer.new(text:prompt.text, editor:world.editor)
       @events = []
 
-      # @prompt.on(:immediate_text_update){ |text| @renderer.redraw_prompt text }
+      @prompt.on(:immediate_text_update){ |text| @renderer.redraw_prompt text }
       @prompt.on(:text_update){ |text| @events << [:redraw_prompt, text] }
       # @prompt.on(:right_text_update){ |text| @events << [:redraw_right_prompt, text] }
 
