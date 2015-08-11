@@ -103,7 +103,7 @@ module Yap::Shell
 
         before_text.reverse.each_char.with_index do |ch, i|
           if ch =~ /\s/ && !have_only_seen_whitespace
-            position = before_text.length - (i + 1)
+            position = before_text.length - i
             break
           else
             have_only_seen_whitespace = false
