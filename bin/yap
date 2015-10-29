@@ -8,6 +8,9 @@ if File.symlink?(file)
   file = File.readlink(file)
 end
 
+$z = File.open("/tmp/z.log", "w+")
+$z.sync = true
+
 trap "SIGTSTP", "IGNORE"
 trap "SIGINT", "IGNORE"
 trap "SIGTTIN", "IGNORE"
