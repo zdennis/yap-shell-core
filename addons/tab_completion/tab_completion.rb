@@ -111,7 +111,10 @@ class TabCompletion < Addon
         last_printed_text = display_text
       end
 
-      displayed = show_the_user_matches matches
+      displayed = nil
+      # editor.output.synchronize do
+        displayed = show_the_user_matches matches
+      # end
       unless displayed
         editor.char = ""
         break
@@ -134,7 +137,7 @@ class TabCompletion < Addon
     end
 
     editor.move_to_end_of_line
-    preserve_cursor { editor.clear_screen_down }
+    editor.preserve_cursor { editor.clear_screen_down }
     editor.process_character
   end
 
@@ -172,7 +175,8 @@ class TabCompletion < Addon
     extra_lines_needed = (cursor_position.row + lines_needed) - terminal_height
 
     if lines_needed > terminal_height
-      preserve_cursor do
+      $z.puts "A"*20
+      editor.preserve_cursor do
         editor.puts
         editor.print "Do you wish to see all #{matches.length} possibilities? "
         editor.read_character
@@ -181,8 +185,9 @@ class TabCompletion < Addon
       pretty_print_matches(styled_matches)
       editor.overwrite_line editor.line.text, @input_fragment.before_text.length
     elsif extra_lines_needed >= 0
+      $z.puts "B"*20
       (extra_lines_needed + 1).times { editor.puts }
-      t = TermInfo.new(ENV["TERM"], editor.output)
+      t = TermInfo.new(ENV["TERM"], $stdout)
       if extra_lines_needed >= 0
         editor.print t.control_string("cup", cursor_position.row - (extra_lines_needed + 2), cursor_position.column)
         editor.print t.control_string "el"
@@ -191,9 +196,10 @@ class TabCompletion < Addon
         editor.print editor.line.prompt, editor.line.text
         editor.clear_screen_down
       end
-      preserve_cursor{ pretty_print_matches(styled_matches) }
+      editor.preserve_cursor{ pretty_print_matches(styled_matches) }
     else
-      preserve_cursor{ pretty_print_matches(styled_matches) }
+      $z.puts "C"*20
+      editor.preserve_cursor{ pretty_print_matches(styled_matches) }
     end
 
     #
@@ -204,8 +210,8 @@ class TabCompletion < Addon
     additional_lines_needed = (editor.line.length + editor.line.prompt.length) / terminal_width
     cursor_rows_moved_up = (cursor_position.row + lines_needed + additional_lines_needed) - terminal_height
     if cursor_rows_moved_up >= 1
-      t = TermInfo.new(ENV["TERM"], editor.output)
-      cursor_rows_moved_up.times { t.control "cuu1" }
+      t = TermInfo.new(ENV["TERM"], $stdout)
+      cursor_rows_moved_up.times { editor.print t.control_string("cuu1") }
     end
 
     true
@@ -214,6 +220,8 @@ class TabCompletion < Addon
   private
 
   def pretty_print_matches(styled_matches)
+    editor.print editor.terminal.term_info.control_string "hpa", 0
+
     str = ""
     styled_matches.each.with_index do |styled_match, i|
       str << "\n" if (i % @completions_per_line) == 0
@@ -222,6 +230,8 @@ class TabCompletion < Addon
       (@longest_match - Color.uncolored(text).length).times { str << " " }
       @num_spaces_between.times { str << " " }
     end
+    $z.puts
+    $z.puts str
     editor.puts str
   end
 
@@ -292,11 +302,4 @@ class TabCompletion < Addon
     end
   end
 
-  def preserve_cursor(&blk)
-    term_info = TermInfo.new(ENV["TERM"], editor.output)
-    term_info.control "sc" # store cursor position
-    blk.call
-  ensure
-    term_info.control "rc" # restore cursor position
-  end
 end

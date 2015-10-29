@@ -59,10 +59,10 @@ module Yap::Shell
       editor.bind(:return){ editor.newline }
 
       # Move to beginning of line
-      editor.bind(:ctrl_a) { editor.move_to_position 0 }
+      editor.bind(:ctrl_a) { editor.move_to_beginning_of_input }
 
       # Move to end of line
-      editor.bind(:ctrl_e) { editor.move_to_position editor.line.length }
+      editor.bind(:ctrl_e) { editor.move_to_end_of_input }
 
       # Move backward one word at a time
       editor.bind(:ctrl_b) {
@@ -82,14 +82,9 @@ module Yap::Shell
 
       # Yank text from the kill ring and insert it at the cursor position
       editor.bind(:ctrl_y){
-        yanked_text = kill_ring[-1]
-        if yanked_text
-          before_text =  editor.line.text[0...editor.line.position]
-          after_text = editor.line.text[editor.line.position..-1]
-          text = [before_text, yanked_text, after_text].join
-          position = editor.line.position + yanked_text.length
-          editor.overwrite_line text
-          editor.move_to_position position
+        text = kill_ring[-1]
+        if text
+          editor.yank_forward text
         end
       }
 
@@ -135,9 +130,7 @@ module Yap::Shell
 
       # Delete to end of line from cursor position
       editor.bind(:ctrl_k) {
-        kill_ring.push editor.line.text[editor.line.position..-1]
-        editor.overwrite_line editor.line.text[0...editor.line.position]
-        editor.move_to_position editor.line.length
+        kill_ring.push editor.kill_forward
       }
 
       # Delete to beginning of line from cursor position

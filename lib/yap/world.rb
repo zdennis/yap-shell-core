@@ -26,8 +26,12 @@ module Yap
 
     def initialize(addons:)
       @env = ENV.to_h.dup
+      @render_tree = build_editor_dom
 
       @editor = RawLine::Editor.new do |editor|
+        editor.dom = @render_tree
+        editor.prompt_box = @prompt_box
+        editor.input_box = @input_box
         editor.word_break_characters = " \t\n\"\\'`@$><=;|&{()/"
       end
 
@@ -71,6 +75,48 @@ module Yap
         @prompt = Yap::Shell::Prompt.new(text:prompt, &blk)
       end
       @prompt_controller = Yap::Shell::PromptController.new(world:self, prompt:@prompt)
+    end
+
+    def right_prompt_text=(str)
+      @right_status_float.width = str.length
+      @right_status_box.content = str
+    end
+
+    def build_editor_dom
+      @left_status_box = TerminalLayout::Box.new(content: "", style: {display: :inline})
+      @right_status_box = TerminalLayout::Box.new(content: "", style: {display: :inline})
+      @prompt_box = TerminalLayout::Box.new(content: "yap>", style: {display: :inline})
+      @input_box = TerminalLayout::InputBox.new(content: "", style: {display: :inline})
+
+      @hard_status_box = TerminalLayout::Box.new(content: "", style: {display: :block})
+      @bottom_left_status_box = TerminalLayout::Box.new(content: "", style: {display: :inline})
+      @bottom_right_status_box = TerminalLayout::Box.new(content: "", style: {display: :inline})
+
+      @right_status_float = TerminalLayout::Box.new(style: {display: :float, float: :right, width: @right_status_box.content.length},
+        children: [
+          @right_status_box
+        ]
+      )
+
+      return TerminalLayout::Box.new(
+        children:[
+          @right_status_float,
+          @left_status_box,
+          @prompt_box,
+          @input_box,
+          @hard_status_box,
+          TerminalLayout::Box.new(style: {display: :float, float: :left, width: @bottom_left_status_box.content.length},
+            children: [
+              @bottom_left_status_box
+            ]
+          ),
+          TerminalLayout::Box.new(style: {display: :float, float: :right, width: @bottom_right_status_box.content.length},
+            children: [
+              @bottom_right_status_box
+            ]
+          )
+        ]
+      )
     end
   end
 end
