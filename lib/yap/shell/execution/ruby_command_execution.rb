@@ -3,7 +3,7 @@ module Yap::Shell::Execution
     on_execute do |command:, n:, of:, wait:|
       result = nil
       stdin, stdout, stderr, world = @stdin, @stdout, @stderr, @world
-      t = Thread.new {
+      # t = Thread.new {
         exit_code = 0
         first_command = n == 1
 
@@ -72,13 +72,13 @@ module Yap::Shell::Execution
         # to be scheduled before we send back our status code. This could
         # probably use a more elaborate signal or message passing scheme,
         # but that's for another day.
-        Thread.pass
+        # Thread.pass
 
         # Make up an exit code
         result = Result.new(status_code:exit_code, directory:Dir.pwd, n:n, of:of)
-      }
-      t.abort_on_exception = true
-      t.join
+      # }
+      # t.abort_on_exception = true
+      # t.join
       result
     end
   end

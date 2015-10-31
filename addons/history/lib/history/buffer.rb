@@ -133,20 +133,19 @@ class History
 
     def search_back(matching_text:)
       command_history = map(&:command)
-      $z.puts "starting position: #{position.inspect} #{@position.inspect}"
       upto_index = (position || length) - 1
       current = get
 
-      $z.puts
-      $z.puts <<-EOS.gsub(/^\s*\|/, '')
-        |Search backward:
-        |    current:#{current.inspect}
-        |    history: #{command_history.inspect}
-        |    history position: #{position}
-        |    matching_text: #{matching_text.inspect}
-        |    upto_index: #{upto_index}
-        |    snapshot: #{command_history[0..upto_index].reverse.inspect}
-      EOS
+      # $z.puts
+      # $z.puts <<-EOS.gsub(/^\s*\|/, '')
+      #   |Search backward:
+      #   |    current:#{current.inspect}
+      #   |    history: #{command_history.inspect}
+      #   |    history position: #{position}
+      #   |    matching_text: #{matching_text.inspect}
+      #   |    upto_index: #{upto_index}
+      #   |    snapshot: #{command_history[0..upto_index].reverse.inspect}
+      # EOS
 
       return position unless upto_index >= 0
 
@@ -154,15 +153,15 @@ class History
       no_match = nil
 
       position = snapshot.each_with_index.reduce(no_match) do |no_match, (text, i)|
-        $z.print "    - matching #{text.inspect} =~ /^#{matching_text.to_s}/ && #{current} != #{text} : "
+        # $z.print "    - matching #{text.inspect} =~ /^#{matching_text.to_s}/ && #{current} != #{text} : "
         if text =~ /^#{Regexp.escape(matching_text.to_s)}/ && current != text
-          $z.puts "  match #{i}, returning position #{snapshot.length - (i + 1)}"
+          # $z.puts "  match #{i}, returning position #{snapshot.length - (i + 1)}"
 
           # convert to non-reversed indexing
           position = snapshot.length - (i + 1)
           break position
         else
-          $z.puts " no match."
+          # $z.puts " no match."
           no_match
         end
       end

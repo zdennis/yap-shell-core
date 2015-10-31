@@ -16,35 +16,24 @@ module Yap::Shell
       install_default_tab_completion_proc
     end
 
-    def loop_on_input(&blk)
+    def on_input(&blk)
       @blk = blk
 
-      loop do
-        heredoc = nil
-
-        begin
-          $stdout.flush
-          ensure_process_group_controls_the_tty
-          input = editor.read(@world.prompt.update.text, true)
-
-          next if input == ""
-
-          input = process_heredoc(input)
-
-          yield input
-        # rescue Errno::EIO => ex
-        #   # This happens when yap is no longer the foreground process
-        #   # but it tries to receive input/output from the tty. I believe it
-        #   # is a race condition when launching a child process.
-        rescue ::Yap::Shell::CommandUnknownError => ex
-          puts "  CommandError: #{ex.message}"
-        rescue Interrupt
-          puts "^C"
-          next
-        # rescue Exception => ex
-        #   require 'pry'
-        #   binding.pry
+      @world.editor.on_read_line do |event|
+        # editor.history = true?
+        line = event[:payload][:line]
+        if line != ""
+          begin
+            $stdin.cooked {
+              @blk.call(line)
+            }
+          rescue ::Yap::Shell::CommandUnknownError => ex
+            puts "  CommandError: #{ex.message}"
+          end
         end
+
+        ensure_process_group_controls_the_tty
+        @world.refresh_prompt
       end
     end
 
@@ -154,7 +143,10 @@ module Yap::Shell
         editor.clear_screen
       }
 
-      editor.bind(:ctrl_r) { editor.redo }
+      editor.bind(:ctrl_r) {
+        $r = $r ? false : true
+        #  editor.redo
+      }
       editor.bind(:left_arrow) { editor.move_left }
       editor.bind(:right_arrow) { editor.move_right }
       editor.bind(:up_arrow) { editor.history_back }

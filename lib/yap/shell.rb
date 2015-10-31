@@ -40,13 +40,29 @@ module Yap
         )
 
         last_result = nil
-        @world.repl.loop_on_input do |input|
+
+        @world.repl.on_input do |input|
           evaluation = Yap::Shell::Evaluation.new(stdin:@stdin, stdout:@stdout, stderr:@stderr, world:@world, last_result:last_result)
           evaluation.evaluate(input) do |command, stdin, stdout, stderr, wait|
             context.clear_commands
             context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr, wait:wait
             last_result = context.execute(world:@world)
           end
+          @world.editor.reset_line
+        end
+
+        begin
+          @world.interactive!
+        # rescue Errno::EIO => ex
+        #   # This happens when yap is no longer the foreground process
+        #   # but it tries to receive input/output from the tty. I believe it
+        #   # is a race condition when launching a child process.
+        rescue Interrupt
+          puts "^C"
+          retry
+        rescue Exception => ex
+          require 'pry'
+          binding.pry unless ex.is_a?(SystemExit)
         end
       end
     end

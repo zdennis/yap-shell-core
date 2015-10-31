@@ -1,17 +1,18 @@
 class RightPrompt < Addon
-  include Term::ANSIColor
-
   def self.load_addon
     @instance ||= new
   end
 
   def initialize_world(world)
     @world = world
-    Thread.new do
-      loop do
-        @world.right_prompt_text = Time.now.strftime("%H:%M:%S")
-        sleep 1
-      end
+
+    @world.subscribe(:refresh_right_prompt) do |event|
+      @world.right_prompt_text = Time.now.strftime("%H:%M:%S")
     end
+
+    @world.events.recur(
+      event: { name: "refresh_right_prompt", source: self },
+      interval_in_ms: 1_000
+    )
   end
 end

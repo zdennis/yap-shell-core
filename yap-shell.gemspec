@@ -22,6 +22,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "term-ansicolor", "~> 1.3"
   spec.add_dependency "ruby-termios", "~> 0.9.6"
   spec.add_dependency "ruby-terminfo"
+  spec.add_dependency "activesupport", "~> 4.2.4"
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake", "~> 10"

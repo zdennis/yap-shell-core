@@ -1,7 +1,7 @@
 require 'term/ansicolor'
 require 'forwardable'
 
-require 'yap/shell/repl/rawline'
+require 'rawline'
 require 'yap/shell/execution'
 require 'yap/shell/prompt'
 require 'yap/world/addons'
@@ -26,10 +26,10 @@ module Yap
 
     def initialize(addons:)
       @env = ENV.to_h.dup
-      @render_tree = build_editor_dom
+      build_editor_dom
 
       @editor = RawLine::Editor.new do |editor|
-        editor.dom = @render_tree
+        editor.dom = build_editor_dom
         editor.prompt_box = @prompt_box
         editor.input_box = @input_box
         editor.word_break_characters = " \t\n\"\\'`@$><=;|&{()/"
@@ -53,12 +53,21 @@ module Yap
       @addons.fetch(addon_name){ raise(ArgumentError, "No addon loaded registered as #{addon_name}") }
     end
 
+    def events
+      @editor.events
+    end
+
     def func(name, &blk)
       Yap::Shell::ShellCommand.define_shell_function(name, &blk)
     end
 
     def foreground?
       Process.getpgrp == Termios.tcgetpgrp($stdout)
+    end
+
+    def interactive!
+      refresh_prompt
+      @editor.start
     end
 
     def prompt
@@ -74,12 +83,19 @@ module Yap
       else # text
         @prompt = Yap::Shell::Prompt.new(text:prompt, &blk)
       end
-      @prompt_controller = Yap::Shell::PromptController.new(world:self, prompt:@prompt)
+    end
+
+    def refresh_prompt
+      @editor.prompt = @prompt.update.text
     end
 
     def right_prompt_text=(str)
       @right_status_float.width = str.length
       @right_status_box.content = str
+    end
+
+    def subscribe(*args, &blk)
+      @editor.subscribe(*args, &blk)
     end
 
     def build_editor_dom

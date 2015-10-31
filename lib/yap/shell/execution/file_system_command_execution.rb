@@ -105,7 +105,7 @@ module Yap::Shell::Execution
         args[:pid]
       end
 
-      self.instance_exec command:args[:command], n:args[:n], of:args[:of], resume_blk:resume_blk, &self.class.on_execute
+      self.instance_exec command:args[:command], n:args[:n], of:args[:of], resume_blk:resume_blk, wait:true, &self.class.on_execute
     end
 
     def suspended(command:, n:, of:, pid:)
