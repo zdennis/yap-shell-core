@@ -48,7 +48,6 @@ module Yap
             context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr, wait:wait
             last_result = context.execute(world:@world)
           end
-          @world.editor.reset_line
         end
 
         begin

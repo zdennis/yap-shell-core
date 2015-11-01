@@ -29,6 +29,8 @@ module Yap::Shell
             }
           rescue ::Yap::Shell::CommandUnknownError => ex
             puts "  CommandError: #{ex.message}"
+          ensure
+            @world.editor.reset_line
           end
         end
 
