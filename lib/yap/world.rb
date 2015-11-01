@@ -32,6 +32,7 @@ module Yap
         editor.dom = build_editor_dom
         editor.prompt_box = @prompt_box
         editor.input_box = @input_box
+        editor.content_box = @content_box
         editor.word_break_characters = " \t\n\"\\'`@$><=;|&{()/"
       end
 
@@ -104,7 +105,7 @@ module Yap
       @prompt_box = TerminalLayout::Box.new(content: "yap>", style: {display: :inline})
       @input_box = TerminalLayout::InputBox.new(content: "", style: {display: :inline})
 
-      @hard_status_box = TerminalLayout::Box.new(content: "", style: {display: :block})
+      @content_box = TerminalLayout::Box.new(content: "", style: {display: :block})
       @bottom_left_status_box = TerminalLayout::Box.new(content: "", style: {display: :inline})
       @bottom_right_status_box = TerminalLayout::Box.new(content: "", style: {display: :inline})
 
@@ -120,7 +121,7 @@ module Yap
           @left_status_box,
           @prompt_box,
           @input_box,
-          @hard_status_box,
+          @content_box,
           TerminalLayout::Box.new(style: {display: :float, float: :left, width: @bottom_left_status_box.content.length},
             children: [
               @bottom_left_status_box
