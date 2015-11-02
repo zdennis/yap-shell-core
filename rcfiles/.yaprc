@@ -35,15 +35,15 @@ completion_cache = {}
 tab_completion :rake, /^(rake|be rake)\s+(.*)/ do |input_fragment, match_data|
   # |config|
   # config.completions do |input_fragment, match_data|
-    results = completion_cache[Dir.pwd] ||= `bundle exec rake -T`.gsub(/^rake\s*/, '').split(/\n/)
+  results = completion_cache[Dir.pwd] ||= `bundle exec rake -T`.gsub(/^rake\s*/, '').split(/\n/)
 
-    task_rgx = /^#{Regexp.escape(input_fragment.word[:text])}/
-    results.grep(task_rgx).map do |text|
-      OpenStruct.new(
-        type: :rake,
-        text: text.gsub(/\s*#.*$/, ''),
-        descriptive_text: Term::ANSIColor.yellow(text)
-      )
+  task_rgx = /^#{Regexp.escape(input_fragment.word[:text])}/
+  results.grep(task_rgx).map do |text|
+    {
+      type: :rake,
+      text: text.gsub(/\s*#.*$/, ''),
+      descriptive_text: Term::ANSIColor.yellow(text)
+    }
     # end
   end
 end

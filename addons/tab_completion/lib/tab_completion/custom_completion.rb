@@ -2,7 +2,7 @@ class TabCompletion
   class CustomCompletion
     PRIORITY = 2
 
-    attr_reader :name, :pattern, :input_fragment, :priority
+    attr_reader :name, :pattern, :priority
 
     def initialize(world:, name:nil, pattern:nil, priority:PRIORITY, &blk)
       @world = world
@@ -12,19 +12,14 @@ class TabCompletion
       @blk = blk
     end
 
-    def new(world:, input_fragment:)
-      @input_fragment = input_fragment
+    def new(world:)
       @world = world
       self
     end
 
-    def completions
-      md = input_fragment.before_text.match(match_rgx)
-      if md
-        @blk.call(input_fragment, md)
-      else
-        []
-      end
+    def completions_for(word, line)
+      # TODO
+      return []
     end
 
     private

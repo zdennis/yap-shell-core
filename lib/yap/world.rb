@@ -33,7 +33,6 @@ module Yap
         editor.prompt_box = @prompt_box
         editor.input_box = @input_box
         editor.content_box = @content_box
-        editor.word_break_characters = " \t\n\"\\'`@$><=;|&{()/"
       end
 
       self.prompt = Yap::Shell::Prompt.new(text: DEFAULTS[:primary_prompt_text])

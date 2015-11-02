@@ -1,5 +1,3 @@
-require 'ostruct'
-
 class TabCompletion
   class FileCompletion
     class << self
@@ -9,66 +7,64 @@ class TabCompletion
 
     attr_reader :world
 
-    def initialize(world:, input_fragment:, path:nil)
+    def initialize(world:, word_break_characters:, path:nil)
       @world = world
-      @input_fragment = input_fragment
-
+      @word_break_characters = word_break_characters
       path ||= @world.env["PATH"]
       @paths = path.split(":")
     end
 
-    def completions
+    def completions_for(word, line)
       completions = []
-      completions.concat command_completion_matches if looking_for_command?
-      completions.concat filename_completion_matches
+      if looking_for_command?
+        completions.concat command_completion_matches_for(word, line)
+      end
+      completions.concat filename_completion_matches_for(word, line)
       completions
     end
 
     private
 
     def looking_for_command?
-      "#{@input_fragment.pre_word_context}#{@input_fragment.word[:text]}".length == @input_fragment.line_position
+      # TODO
+      false
     end
 
-    def command_completion_matches
+    def command_completion_matches_for(word, line)
       matches = @paths.inject([]) do |matches, path|
-        glob = File.join(path, "#{@input_fragment.pre_word_context}#{@input_fragment.word[:text]}*")
+        glob = "#{path}*"
         arr = Dir[glob].select { |path| File.executable?(path) && File.file?(path) }
         arr.each { |path| matches << path }
         matches
       end
+
       matches.map { |path| File.basename(path) }.sort.uniq.map do |command|
-        build_result(type: :command, text:command)
+        CompletionResult.new(type: :command, text:command)
       end
     end
 
-    def filename_completion_matches
-      glob = "#{@input_fragment.pre_word_context}#{@input_fragment.word[:text]}*"
+    def filename_completion_matches_for(word, line)
+      glob = "#{word}*"
       glob.gsub!("~", world.env["HOME"])
       Dir.glob(glob, File::FNM_CASEFOLD).map do |path|
         text = path.gsub(filtered_work_break_characters_rgx, '\\\\\1')
-        text.sub!(/^#{Regexp.escape(@input_fragment.pre_word_context)}/, '')
-        text = File.basename(text)
+        descriptive_text = File.basename(text)
         if File.directory?(path)
-          build_result(type: :directory, text: text)
+          CompletionResult.new(type: :directory, text: text, descriptive_text: descriptive_text)
         elsif File.symlink?(path)
-          build_result(type: :symlink, text: text)
+          CompletionResult.new(type: :symlink, text: text, descriptive_text: descriptive_text)
         elsif File.file?(path) && File.executable?(path)
-          build_result(type: :command, text: text)
+          CompletionResult.new(type: :command, text: text, descriptive_text: descriptive_text)
         else
-          build_result(type: :file, text: text)
+          CompletionResult.new(type: :file, text: text, descriptive_text: descriptive_text)
         end
       end
-    end
-
-    def build_result(type:, text:)
-      OpenStruct.new(type:type, text:text)
     end
 
     # Remove file separator and the back-slash from word break characters when determining
     # the pre-word-context
     def filtered_word_break_characters
-      @input_fragment.word_break_characters.sub(File::Separator, "").sub('\\', '')
+      @word_break_characters.sub(File::Separator, "").sub('\\', '')
     end
 
     def filtered_work_break_characters_rgx
