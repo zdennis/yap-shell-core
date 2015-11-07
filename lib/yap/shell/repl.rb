@@ -25,6 +25,7 @@ module Yap::Shell
         if line != ""
           begin
             $stdin.cooked {
+              $stdout.puts
               @blk.call(line)
             }
           rescue ::Yap::Shell::CommandUnknownError => ex
