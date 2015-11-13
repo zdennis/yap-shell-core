@@ -114,7 +114,6 @@ module Yap::Shell
           editor.overwrite_line ""
         end
       }
-      editor.bind(:up_arrow) { editor.history_back }
 
       editor.bind(:enter) { editor.newline }
       editor.bind(:tab) { editor.complete }
