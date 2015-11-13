@@ -18,7 +18,7 @@ class History
     attr_reader :command
 
     def initialize(command:, started_at:Time.now, stopped_at:nil, items:[])
-      @command = command
+      @command = command.is_a?(ANSIString) ? command.without_ansi : command
       @started_at = started_at
       @stopped_at = stopped_at
       @items = items
