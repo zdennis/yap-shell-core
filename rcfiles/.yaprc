@@ -8,7 +8,7 @@ require 'term/ansicolor'
 require 'terminfo'
 
 env.delete("BUNDLE_GEMFILE")
-env.delete("BUNDLE_BIN_PATH")
+# env.delete("BUNDLE_BIN_PATH")
 
 func :reload! do |args:, stdin:, stdout:, stderr:|
   stdout.puts "Reloading shell:"
@@ -18,11 +18,21 @@ func :reload! do |args:, stdin:, stdout:, stderr:|
   exec File.expand_path($0)
 end
 
+old_env = {}
 Yap::Shell::Execution::Context.on(:after_execute) do |world, command:, **kwargs|
   if Dir.pwd =~ /tahi/
-    env["PATH"] = "/Users/zdennis/.rvm/gems/ruby-2.2.2@tahi/bin:/Users/zdennis/.rvm/gems/ruby-2.2.2@global/bin:/Users/zdennis/.rvm/rubies/ruby-2.2.2/bin:/Users/zdennis/.rvm/bin:/Applications/Postgres.app/Contents/MacOS/bin:/usr/local/share/npm/bin:/usr/local/heroku/bin:/Users/zdennis/.bin:/usr/local/bin:/usr/local/sbin:/Users/zdennis/bin:/bin:/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/CrossPack-AVR/bin:/Users/zdennis/source/mhs_projects/tahi/.tidbits/bin:/Users/zdennis/source/playground/AdobeAir/AdobeAIRSDK/bin:/Users/zdennis/Downloads/adt-bundle-mac-x86_64-20130219/sdk/tools/"
-    env["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.2.2@tahi"
-    env["GEM_PATH"] = "/Users/zdennis/.rvm/gems/ruby-2.2.2@tahi:/Users/zdennis/.rvm/gems/ruby-2.2.2@global"
+    old_env = {
+      "PATH" => env["PATH"],
+      "GEM_HOME" => env["GEM_HOME"],
+      "GEM_PATH" => env["GEM_PATH"]
+    }
+
+    env["PATH"] = "/Users/zdennis/.rvm/gems/ruby-2.2.3@tahi/bin:/Users/zdennis/.rvm/gems/ruby-2.2.3@global/bin:/Users/zdennis/.rvm/rubies/ruby-2.2.3/bin:/Users/zdennis/.rvm/bin:/Applications/Postgres.app/Contents/MacOS/bin:/usr/local/share/npm/bin:/usr/local/heroku/bin:/Users/zdennis/.bin:/usr/local/bin:/usr/local/sbin:/Users/zdennis/bin:/bin:/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/CrossPack-AVR/bin:/Users/zdennis/source/mhs_projects/tahi/.tidbits/bin:/Users/zdennis/source/playground/AdobeAir/AdobeAIRSDK/bin:/Users/zdennis/Downloads/adt-bundle-mac-x86_64-20130219/sdk/tools/"
+    env["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.2.3@tahi"
+    env["GEM_PATH"] = "/Users/zdennis/.rvm/gems/ruby-2.2.3@tahi:/Users/zdennis/.rvm/gems/ruby-2.2.3@global"
+  else
+    env.merge!(old_env)
+    old_env.clear
   end
 end
 
