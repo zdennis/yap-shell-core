@@ -88,11 +88,79 @@ self.prompt = -> do
   last_prompt = "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
-func :upcase do |args:, stdin:, stdout:, stderr:|
+
+###############################################################################
+#                          USER-DEFINED FUNCTIONS
+#------------------------------------------------------------------------------
+# User-defined functions can be accessed in the shell like any command. They
+# take precedence over programs found on the file-system, but they do not
+# take precedent over user-defined aliases.
+#
+# For example, take `upcase` below:
+#
+#    func :upcase do |stdin:, stdout:|
+#      str = stdin.read
+#      stdout.puts str.upcase
+#    end
+#
+# You can issue "upcase" in the shell where-ever you'd expect to place the name
+# of a command.
+#
+# == Function Parameters
+#
+# User-defined functions can receive the following arguments:
+#
+#  * command: the name of the command the user-entered
+#  * args: the list of arguments supplied to the command
+#  * stdin: the way to access stdin (e.g. DO NOT CALL STDIN or $stdin)
+#  * stdout: the way to access stdout (e.g. DO NOT CALL STDOUT or $stdout)
+#  * stderr: the way to access stderr (e.g. DO NOT CALL STDERR or $stderr)
+#  * world: the Shell's currently known world
+#
+# These arguments are all optional. You only need to specify what your
+# function is going to use.
+#
+# Following, are a number of examples showcasing their power and flexibility.
+###############################################################################
+
+# upcase is reads from stdin and upcases every letter.
+#
+# Example:
+#   yap> echo "hi there" | upcase
+#   HI THERE
+func :upcase do |stdin:, stdout:|
   str = stdin.read
   stdout.puts str.upcase
 end
 
+# This shell function uses a  Regexp to match on a command of 2 or more dots.
+# It's for traversing up N directories. Two dots ("..") is the minimum and
+# is used to go to the parent. Every dot after that goes up one more directory
+# level.
+#
+# Example:
+#   ~/foo/bar/baz> ..
+#   ~/foo/bar> ...
+#   ~/
 func /^\.{2,}$/ do |command:|
   (command.length - 1).times { Dir.chdir("..") }
+end
+
+# This shell function uses a custom object that responds to the #match(...)
+# method. This is nothing more than an basic "history" implementation.
+#
+history_matcher = Object.new
+def history_matcher.match(command)
+  command == ".h"
+end
+
+# Allows for a single numeric argument which will be used to determine
+# how many history items to show (not including this command). If no argument
+# if provided then it will show the entire shell history.
+func history_matcher do |world:, args:, stdout:|
+  num_commands = args.first.to_i
+  num_commands = world.history.length - 1 if num_commands == 0
+  world.history[-(num_commands + 1)...-1].each_with_index do |command, i|
+    stdout.puts "    #{i}   #{command}"
+  end
 end

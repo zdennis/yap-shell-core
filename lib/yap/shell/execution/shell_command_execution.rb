@@ -6,7 +6,8 @@ module Yap::Shell::Execution
         args: command.args,
         stdin: @stdin,
         stdout: @stdout,
-        stderr: @stderr
+        stderr: @stderr,
+        world: @world
       }
 
       func = command.to_proc

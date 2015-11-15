@@ -65,6 +65,10 @@ module Yap
       Process.getpgrp == Termios.tcgetpgrp($stdout)
     end
 
+    def history
+      @editor.history
+    end
+
     def interactive!
       refresh_prompt
       @editor.start
