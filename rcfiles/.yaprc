@@ -92,3 +92,7 @@ func :upcase do |args:, stdin:, stdout:, stderr:|
   str = stdin.read
   stdout.puts str.upcase
 end
+
+func /^\.{2,}$/ do |command:|
+  (command.length - 1).times { Dir.chdir("..") }
+end

@@ -101,13 +101,17 @@ module Yap::Shell
       (@registered_functions ||= {}).freeze
     end
 
-    def self.define_shell_function(name, &blk)
-      raise ArgumentError, "Must provided block when defining a shell function" unless blk
-      (@registered_functions ||= {})[name.to_sym] = blk
+    def self.define_shell_function(name_or_pattern, &blk)
+      raise ArgumentError, "Must provide block when defining a shell function" unless blk
+      name_or_pattern = name_or_pattern.to_s if name_or_pattern.is_a?(Symbol)
+      name_or_pattern = /^#{Regexp.escape(name_or_pattern)}$/ if name_or_pattern.is_a?(String)
+      (@registered_functions ||= {})[name_or_pattern] = blk
     end
 
-    def self.===(other)
-      registered_functions.include?(other.to_sym)
+    def self.===(command)
+      registered_functions.detect do |name_or_pattern, *_|
+        name_or_pattern.match(command)
+      end
     end
 
     def type
@@ -115,9 +119,10 @@ module Yap::Shell
     end
 
     def to_proc
-      self.class.registered_functions.fetch(str.to_sym){
-        raise "Shell function #{str} was not found!"
-      }
+      self.class.registered_functions.detect do |name_or_pattern, function_body|
+        return function_body if name_or_pattern.match(str)
+      end
+      raise "Shell function #{str} was not found!"
     end
   end
 
