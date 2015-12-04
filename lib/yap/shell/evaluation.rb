@@ -53,25 +53,29 @@ module Yap::Shell
 
     def visit_CommandNode(node)
       @aliases_expanded ||= []
+      @command_node_args_stack ||= []
       with_standard_streams do |stdin, stdout, stderr|
         args = node.args.map(&:lvalue).map{ |arg| variable_expand(arg) }
         if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
-          ast = Parser.parse([_alias].concat(args).join(" "))
+          @command_node_args_stack << args
+          ast = Parser.parse(_alias)
           @aliases_expanded.push(node.command)
           ast.accept(self)
           @aliases_expanded.pop
           @suppress_events = false
         else
           cmd2execute = variable_expand(node.command)
+          final_args = (args + @command_node_args_stack).flatten.shelljoin
           command = CommandFactory.build_command_for(
             world: world,
             command: cmd2execute,
-            args:    shell_expand(args),
+            args:    shell_expand(final_args),
             heredoc: (node.heredoc && node.heredoc.value),
             internally_evaluate: node.internally_evaluate?)
           @stdin, @stdout, @stderr = stream_redirections_for(node)
           @last_result = @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
+          @command_node_args_stack.clear
         end
       end
     end

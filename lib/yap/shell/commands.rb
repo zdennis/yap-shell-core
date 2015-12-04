@@ -91,7 +91,7 @@ module Yap::Shell
     def to_executable_str
       [
         str,
-        args.map(&:shellescape).join(' ')
+        args.join(' ')
       ].join(' ')
     end
   end
