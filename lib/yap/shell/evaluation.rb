@@ -1,6 +1,7 @@
 require 'yap/shell/parser'
 require 'yap/shell/commands'
 require 'yap/shell/aliases'
+require 'yap/shell/evaluation/shell_expansions'
 
 module Yap::Shell
   class Evaluation
@@ -53,7 +54,7 @@ module Yap::Shell
     def visit_CommandNode(node)
       @aliases_expanded ||= []
       with_standard_streams do |stdin, stdout, stderr|
-        args = node.args.map(&:lvalue).map{ |arg| env_expand(arg) }
+        args = node.args.map(&:lvalue).map{ |arg| variable_expand(arg) }
         if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
           ast = Parser.parse([_alias].concat(args).join(" "))
@@ -62,7 +63,7 @@ module Yap::Shell
           @aliases_expanded.pop
           @suppress_events = false
         else
-          cmd2execute = env_expand(node.command)
+          cmd2execute = variable_expand(node.command)
           command = CommandFactory.build_command_for(
             world: world,
             command: cmd2execute,
@@ -102,7 +103,7 @@ module Yap::Shell
     #
     def visit_EnvWrapperNode(node)
       with_env do
-        node.env.each_pair { |env_var_name,value| world.env[env_var_name] = env_expand(value) }
+        node.env.each_pair { |env_var_name,value| world.env[env_var_name] = variable_expand(value) }
         node.node.accept(self)
       end
     end
@@ -119,7 +120,7 @@ module Yap::Shell
     #
     def visit_EnvNode(node)
       node.env.each_pair do |key,val|
-        world.env[key] = env_expand(val)
+        world.env[key] = variable_expand(val)
       end
       Yap::Shell::Execution::Result.new(status_code:0, directory:Dir.pwd, n:1, of:1)
     end
@@ -187,57 +188,16 @@ module Yap::Shell
       @pipeline_stack ||= []
     end
 
-    def alias_expand(input, aliases:Aliases.instance)
-      head, *tail = input.split(/\s/, 2).first
-      if new_head=aliases.fetch_alias(head)
-        [new_head].concat(tail).join(" ")
-      else
-        input
-      end
+    def alias_expand(input)
+      ShellExpansions.new(world: world).expand_aliases_in(input)
     end
 
-    def env_expand(input)
-      input.gsub(/\$(\S+)/) do |match,*args|
-        var_name = match[1..-1]
-        case var_name
-        when "?"
-          @last_result ? @last_result.status_code.to_s : '0'
-        else
-          world.env.fetch(var_name){ match }
-        end
-      end
+    def variable_expand(input)
+      ShellExpansions.new(world: world).expand_variables_in(input)
     end
 
     def shell_expand(input)
-      [input].flatten.inject([]) do |results,str|
-        # Basic bash-style brace expansion
-        expansions = str.scan(/\{([^\}]+)\}/).flatten.first
-        if expansions
-          expansions.split(",").each do |expansion|
-            results << str.sub(/\{([^\}]+)\}/, expansion)
-          end
-        else
-          results << str
-        end
-
-        results = results.map! do |s|
-          # Basic bash-style tilde expansion
-          s.gsub!(/\A~(.*)/, world.env["HOME"] + '\1')
-
-          # Basic bash-style variable expansion
-          if s =~ /^\$(.*)/
-            s = world.env.fetch($1, "")
-          end
-
-          # Basic bash-style path-name expansion
-          expansions = Dir[s]
-          if expansions.any?
-            expansions
-          else
-            s
-          end
-        end.flatten
-      end.flatten
+      ShellExpansions.new(world: world).expand_words_in(input)
     end
 
     def with_standard_streams(&blk)
