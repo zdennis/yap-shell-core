@@ -55,7 +55,7 @@ module Yap::Shell
       @aliases_expanded ||= []
       @command_node_args_stack ||= []
       with_standard_streams do |stdin, stdout, stderr|
-        args = node.args.map(&:lvalue).map{ |arg| variable_expand(arg) }
+        args = node.args.map(&:lvalue).map{ |arg| shell_expand(arg) }
         if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
           @command_node_args_stack << args
