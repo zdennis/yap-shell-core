@@ -1,3 +1,5 @@
+require 'uri'
+
 module Yap::Shell::Execution
   class Context
     def self.on(event=nil, &blk)
@@ -59,7 +61,28 @@ module Yap::Shell::Execution
 
           @saved_tty_attrs = Termios.tcgetattr(STDIN)
           self.class.fire :before_execute, world, command: command
-          result = execution_context.execute(command:command, n:i, of:of, wait:wait)
+
+          begin
+            result = execution_context.execute(command:command, n:i, of:of, wait:wait)
+          rescue Exception => ex
+            raise(ex) if ex.is_a?(SystemExit)
+            puts <<-ERROR.gsub(/^\s*\|/, '')
+              |******************************
+              |\e[31mWhoops! An unexpected error has occurred\e[0m
+              |******************************
+              |
+              |The error was:
+              |  #{ex.message}
+              |
+              |Backtrace:
+              |#{ex.backtrace.join("\n")}
+              |
+              |Report this to yap-shell on github:
+              |   https://github.com/zdennis/yap-shell/issues/new?title=#{URI.escape(ex.message)}
+              |
+            ERROR
+          end
+
           self.class.fire :after_execute, world, command: command, result: result
 
           results << process_execution_result(execution_context:execution_context, result:result)
