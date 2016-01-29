@@ -111,6 +111,7 @@ class History < Addon
 
   def start_group(started_at)
     last_command = history[-1]
+    return if last_command.is_a?(Group)
     history[-1] = Group.new(started_at:started_at, command:last_command)
   end
 

@@ -44,7 +44,12 @@ class History
       arr.join(" ")
     end
 
+    def is_executing?
+      @is_executing
+    end
+
     def executing(command:, started_at:)
+      @is_executing = true
       @items.push Item.new(command:command, started_at:started_at)
     end
 
@@ -53,7 +58,7 @@ class History
       item = @items.reverse.detect do |item|
         command == item.command && !item.finished?
       end
-      item.finished!(stopped_at)
+      item.finished!(stopped_at) if item
     end
 
     def last_executed_item
@@ -62,6 +67,8 @@ class History
 
     def stopped_at(time)
       @stopped_at ||= time
+    ensure
+      @is_executing = false
     end
 
     def to_s
