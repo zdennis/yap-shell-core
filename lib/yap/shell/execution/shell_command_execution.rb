@@ -7,7 +7,8 @@ module Yap::Shell::Execution
         stdin: @stdin,
         stdout: @stdout,
         stderr: @stderr,
-        world: @world
+        world: @world,
+        line: command.line
       }
 
       func = command.to_proc

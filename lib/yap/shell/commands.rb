@@ -7,11 +7,11 @@ module Yap::Shell
   class CommandUnknownError < CommandError ; end
 
   class CommandFactory
-    def self.build_command_for(world:, command:, args:, heredoc:, internally_evaluate:)
+    def self.build_command_for(world:, command:, args:, heredoc:, internally_evaluate:, line:)
       return RubyCommand.new(world:world, str:command) if internally_evaluate
 
       case command
-      when ShellCommand then ShellCommand.new(world:world, str:command, args:args, heredoc:heredoc)
+      when ShellCommand then ShellCommand.new(world:world, str:command, args:args, heredoc:heredoc, line:line)
       when BuiltinCommand then BuiltinCommand.new(world:world, str:command, args:args, heredoc:heredoc)
       when FileSystemCommand  then FileSystemCommand.new(world:world, str:command, args:args, heredoc:heredoc)
       else
@@ -21,14 +21,15 @@ module Yap::Shell
   end
 
   class Command
-    attr_accessor :world, :str, :args
+    attr_accessor :world, :str, :args, :line
     attr_accessor :heredoc
 
-    def initialize(world:, str:, args:[], heredoc:nil)
+    def initialize(world:, str:, args:[], line:nil, heredoc:nil)
       @world = world
       @str = str
       @args = args
       @heredoc = heredoc
+      @line = line
     end
 
     def to_executable_str

@@ -15,8 +15,8 @@ module Yap::Shell
 
     def evaluate(input, &blk)
       @blk = blk
-      input = recursively_find_and_replace_command_substitutions(input)
-      ast = Parser.parse(input)
+      @input = recursively_find_and_replace_command_substitutions(input)
+      ast = Parser.parse(@input)
       ast.accept(self)
     end
 
@@ -72,7 +72,8 @@ module Yap::Shell
             command: cmd2execute,
             args:    shell_expand(final_args),
             heredoc: (node.heredoc && node.heredoc.value),
-            internally_evaluate: node.internally_evaluate?)
+            internally_evaluate: node.internally_evaluate?,
+            line: @input)
           @stdin, @stdout, @stderr = stream_redirections_for(node)
           @last_result = @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
           @command_node_args_stack.clear
@@ -175,7 +176,8 @@ module Yap::Shell
         command: node.command,
         args:    node.args,
         heredoc: node.heredoc,
-        internally_evaluate: node.internally_evaluate?)
+        internally_evaluate: node.internally_evaluate?,
+        line: @input)
       @last_result = @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
     end
 

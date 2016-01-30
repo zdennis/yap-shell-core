@@ -128,6 +128,49 @@ func /^\.{2,}$/ do |command:|
   (command.length - 1).times { Dir.chdir("..") }
 end
 
+func /^\+(.*)/ do |command:, args:|
+  puts command
+  puts args.inspect
+end
+
+func /^\d+.times\s*/ do |line:|
+  line =~ /^(\d+).times(?:\s+as\s+([A-z0-9]+))?\s*:\s*(.*)$/
+  num = $1.to_i
+  as_counter = $2
+  statement = $3
+
+  last_result = nil
+  (1..num).each do |n|
+    if as_counter
+      statement2 = statement.gsub("$#{as_counter}", n.to_s)
+      last_result = shell statement2, last_result: last_result
+    else
+      last_result = shell statement, last_result: last_result
+    end
+  end
+
+  last_result
+end
+
+func /^(\d+\.\.\d+)/ do |line:|
+  line =~ /^(\d+)\.\.(\d+)(?:\s+as\s+([A-z0-9]+))?\s*:\s*(.*)$/
+  start, stop = $1.to_i, $2.to_i
+  as_counter = $3
+  statement = $4
+
+  last_result = nil
+  (start..stop).each do |n|
+    if as_counter
+      statement2 = statement.gsub("$#{as_counter}", n.to_s)
+      last_result = shell statement2, last_result: last_result
+    else
+      last_result = shell statement, last_result: last_result
+    end
+  end
+
+  last_result
+end
+
 # This shell function uses a custom object that responds to the #match(...)
 # method. This is nothing more than an basic "history" implementation.
 #
