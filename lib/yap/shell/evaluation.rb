@@ -31,7 +31,7 @@ module Yap::Shell
     def recursively_find_and_replace_command_substitutions(input)
       input = input.dup
       Parser.each_command_substitution_for(input) do |substitution_result, start_position, end_position|
-        result = recursively_find_and_replace_command_substitutions(parser, substitution_result.str)
+        result = recursively_find_and_replace_command_substitutions(substitution_result.str)
         position = substitution_result.position
         ast = Parser.parse(result)
         with_standard_streams do |stdin, stdout, stderr|
