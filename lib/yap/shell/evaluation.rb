@@ -81,6 +81,21 @@ module Yap::Shell
       end
     end
 
+    def visit_NumericalRangeNode(node)
+      node.range.each do |n|
+        if node.tail
+          if node.reference
+            with_env do
+              world.env[node.reference.value] = n.to_s
+              node.tail.accept(self)
+            end
+          else
+            node.tail.accept(self)
+          end
+        end
+      end
+    end
+
     def visit_StatementsNode(node)
       Yap::Shell::Execution::Context.fire :before_statements_execute, @world unless @suppress_events
       node.head.accept(self)

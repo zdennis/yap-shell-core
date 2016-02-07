@@ -133,43 +133,60 @@ func /^\+(.*)/ do |command:, args:|
   puts args.inspect
 end
 
-func /^\d+.times\s*/ do |line:|
-  line =~ /^(\d+).times(?:\s+as\s+([A-z0-9]+))?\s*:\s*(.*)$/
-  num = $1.to_i
-  as_counter = $2
-  statement = $3
-
-  last_result = nil
-  (1..num).each do |n|
-    if as_counter
-      statement2 = statement.gsub("$#{as_counter}", n.to_s)
-      last_result = shell statement2, last_result: last_result
-    else
-      last_result = shell statement, last_result: last_result
-    end
-  end
-
-  last_result
-end
-
-func /^(\d+\.\.\d+)/ do |line:|
-  line =~ /^(\d+)\.\.(\d+)(?:\s+as\s+([A-z0-9]+))?\s*:\s*(.*)$/
-  start, stop = $1.to_i, $2.to_i
-  as_counter = $3
-  statement = $4
-
-  last_result = nil
-  (start..stop).each do |n|
-    if as_counter
-      statement2 = statement.gsub("$#{as_counter}", n.to_s)
-      last_result = shell statement2, last_result: last_result
-    else
-      last_result = shell statement, last_result: last_result
-    end
-  end
-
-  last_result
-end
+# func /^for$/ do |line:, args:|
+#   args.first =~ /^(.*)\s*as\s*([A-z0-9]+)\s*:(?:\s*)(.*)$/
+#   var_name = $2
+#   statement = $3
+#   paths = $1.split(/(?<!\\\\)\s|,/) # split on non-escaped spaces
+#
+#   last_result = nil
+#   paths.each do |path|
+#     Dir[path].each do |file|
+#       statement2 = statement.gsub("$#{var_name}", file).shellescape
+#       last_result = shell statement2, last_result: last_result
+#     end
+#   end
+#   last_result
+# end
+#
+#
+# func /^\d+.times\s*/ do |line:|
+#   line =~ /^(\d+).times(?:\s+as\s+([A-z0-9]+))?\s*:\s*(.*)$/
+#   num = $1.to_i
+#   as_counter = $2
+#   statement = $3
+#
+#   last_result = nil
+#   (1..num).each do |n|
+#     if as_counter
+#       statement2 = statement.gsub("$#{as_counter}", n.to_s)
+#       last_result = shell statement2, last_result: last_result
+#     else
+#       last_result = shell statement, last_result: last_result
+#     end
+#   end
+#
+#   last_result
+# end
+#
+# func /^(\d+\.\.\d+)/ do |line:|
+#   line =~ /^(\d+)\.\.(\d+)(?:\s+as\s+([A-z0-9]+))?\s*:\s*(.*)$/
+#   start, stop = $1.to_i, $2.to_i
+#   as_counter = $3
+#   statement = $4
+#
+#   last_result = nil
+#   (start..stop).each do |n|
+#     if as_counter
+#       statement2 = statement.gsub("$#{as_counter}", n.to_s)
+#       last_result = shell statement2, last_result: last_result
+#     else
+#       last_result = shell statement, last_result: last_result
+#     end
+#   end
+#
+#   last_result
+# end
 
 # This shell function uses a custom object that responds to the #match(...)
 # method. This is nothing more than an basic "history" implementation.
