@@ -81,6 +81,26 @@ module Yap::Shell
       end
     end
 
+    def visit_RangeNode(node)
+      range = node.head.value
+      range.each_with_index do |n, i|
+        if node.tail
+          with_env do
+            @current_range_values = [n.to_s]
+            node.tail.accept(self)
+            @current_range_values = []
+          end
+        end
+      end
+    end
+
+    def visit_BlockNode(node)
+      node.params.each_with_index do |param, i|
+        world.env[param] = @current_range_values[i]
+      end
+      node.head.accept(self)
+    end
+
     def visit_NumericalRangeNode(node)
       node.range.each do |n|
         if node.tail
