@@ -83,22 +83,53 @@ module Yap::Shell
 
     def visit_RangeNode(node)
       range = node.head.value
-      range.each_with_index do |n, i|
-        if node.tail
-          with_env do
-            @current_range_values = [n.to_s]
-            node.tail.accept(self)
-            @current_range_values = []
-          end
-        end
+      if node.tail
+        @current_range_values = range.to_a
+        node.tail.accept(self)
+        @current_range_values = nil
+      else
+        @stdout.puts range.to_a.join(' ')
       end
     end
 
     def visit_BlockNode(node)
-      node.params.each_with_index do |param, i|
-        world.env[param] = @current_range_values[i]
+      with_standard_streams do |stdin, stdout, stderr|
+        # Modify @stdout and @stderr for the first command
+        stdin, @stdout = IO.pipe
+
+        # Don't modify @stdin for the first command in the pipeline.
+        values = []
+        if node.head
+          node.head.accept(self)
+          values = stdin.read.split(/\s+/)
+        else
+          # assume range for now
+          values = @current_range_values
+        end
+
+        evaluate_block = lambda {
+          with_standard_streams do |stdin2, stdout2, stderr2|
+            @stdout = stdout
+            node.tail.accept(self)
+          end
+        }
+
+        if node.params.any?
+          values.each_slice(node.params.length).each do |_slice|
+            with_env do
+              Hash[ node.params.zip(_slice) ].each_pair do |k,v|
+                world.env[k] = v.to_s
+              end
+              evaluate_block.call
+            end
+          end
+        else
+          values.each do
+            evaluate_block.call
+          end
+        end
       end
-      node.head.accept(self)
+
     end
 
     def visit_NumericalRangeNode(node)
