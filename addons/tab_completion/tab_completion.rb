@@ -70,15 +70,33 @@ class TabCompletion < Addon
       actual_completion = event[:payload][:completion]
       possible_completions = event[:payload][:possible_completions]
 
-      str = possible_completions.map.with_index do |completion, i|
+      semi_formatted_possibilities = possible_completions.map.with_index do |completion, i|
         if completion == actual_completion
           style_text_for_selected_match(completion)
         else
           style_text_for_nonselected_match(completion)
         end
-      end.join("  ")
+      end
 
-      editor.content_box.content = str
+      max_width = @editor.terminal_width
+      max_item_width = semi_formatted_possibilities.map(&:length).max + 2
+      most_per_line = max_width / max_item_width
+      padding_at_the_end = max_width % max_item_width
+
+      formatted_possibilities = semi_formatted_possibilities.map.with_index do |str, i|
+        spaces_to_pad = max_item_width - str.length
+        nstr = str + (" " * spaces_to_pad)
+        if i % most_per_line == 3
+          nstr += (" " * padding_at_the_end)
+        end
+        nstr
+      end
+      results = []
+      formatted_possibilities.each_slice(4) do |strs|
+        results.push strs.join
+      end
+
+      editor.content_box.content = results.join
     end
 
     editor.on_word_complete_no_match do |event|
@@ -123,20 +141,21 @@ class TabCompletion < Addon
   private
 
   def display_text_for_match(match)
-    @display_procs[match.type].call(match.text.dup)
+    ANSIString.new @display_procs[match.type].call(match.text.dup)
   end
 
   def style_text_for_selected_match(match)
     styled_text = @style_procs[match.type].call(match.descriptive_text.dup).to_s
     styled_text = @decoration_procs[match.type].call(styled_text).to_s
     uncolored_text = Color.uncolored(styled_text)
-    @style_procs[:selected].call(uncolored_text).to_s
+    ANSIString.new @style_procs[:selected].call(uncolored_text)
   end
 
   def style_text_for_nonselected_match(match)
-    @decoration_procs[match.type].call(
-      @style_procs[match.type].call(match.descriptive_text.dup).to_s
+    str = @decoration_procs[match.type].call(
+      @style_procs[match.type].call(match.descriptive_text.dup)
     )
+    ANSIString.new str
   end
 
 end
