@@ -2,6 +2,7 @@ require 'readline'
 require 'yaml'
 require 'yap/shell/version'
 require 'yap/shell/builtins'
+require 'fcntl'
 
 module Yap
   module Shell
@@ -22,6 +23,12 @@ module Yap
 
     class Impl
       def initialize(addons:)
+        @original_file_descriptor_flags = {
+          stdin: $stdin.fcntl(Fcntl::F_GETFL, 0),
+          stdout: $stdout.fcntl(Fcntl::F_GETFL, 0),
+          stderr: $stderr.fcntl(Fcntl::F_GETFL, 0)
+        }
+
         @stdin = $stdin
         @stdout = $stdout
         @stderr = $stderr
@@ -30,6 +37,27 @@ module Yap
         @stderr.sync = true
 
         @world = Yap::World.instance(addons:addons)
+      end
+
+      # Yields to the passed in block after restoring the file descriptor
+      # flags that Yap started in. This ensures that any changes Yap has
+      # made to run the shell don't interfere with child processes.
+      def with_original_file_descriptor_flags(&block)
+        current_file_descriptor_flags = {
+          stdin: $stdin.fcntl(Fcntl::F_GETFL, 0),
+          stdout: $stdout.fcntl(Fcntl::F_GETFL, 0),
+          stderr: $stderr.fcntl(Fcntl::F_GETFL, 0)
+        }
+
+        $stdin.fcntl(Fcntl::F_SETFL, @original_file_descriptor_flags[:stdin])
+        $stdout.fcntl(Fcntl::F_SETFL, @original_file_descriptor_flags[:stdout])
+        $stderr.fcntl(Fcntl::F_SETFL, @original_file_descriptor_flags[:stderr])
+
+        yield
+      ensure
+        $stdin.fcntl(Fcntl::F_SETFL, current_file_descriptor_flags[:stdin])
+        $stdout.fcntl(Fcntl::F_SETFL, current_file_descriptor_flags[:stdout])
+        $stderr.fcntl(Fcntl::F_SETFL, current_file_descriptor_flags[:stderr])
       end
 
       def repl
@@ -46,7 +74,10 @@ module Yap
           evaluation.evaluate(input) do |command, stdin, stdout, stderr, wait|
             context.clear_commands
             context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr, wait:wait
-            last_result = context.execute(world:@world)
+
+            with_original_file_descriptor_flags do
+              last_result = context.execute(world:@world)
+            end
           end
         end
 
