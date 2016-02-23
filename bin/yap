@@ -2,6 +2,7 @@
 
 require 'bundler'
 Bundler.setup
+require 'pry'
 
 file = __FILE__
 if File.symlink?(file)
