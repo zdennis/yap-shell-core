@@ -67,16 +67,14 @@ module Yap
           stderr: @stderr
         )
 
-        last_result = nil
-
         @world.repl.on_input do |input|
-          evaluation = Yap::Shell::Evaluation.new(stdin:@stdin, stdout:@stdout, stderr:@stderr, world:@world, last_result:last_result)
+          evaluation = Yap::Shell::Evaluation.new(stdin:@stdin, stdout:@stdout, stderr:@stderr, world:@world)
           evaluation.evaluate(input) do |command, stdin, stdout, stderr, wait|
             context.clear_commands
             context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr, wait:wait
 
             with_original_file_descriptor_flags do
-              last_result = context.execute(world:@world)
+              context.execute(world:@world)
             end
           end
         end

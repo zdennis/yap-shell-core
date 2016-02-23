@@ -34,7 +34,7 @@ module Yap::Shell
           var_name = match[1..-1]
           case var_name
           when "?"
-            @last_result ? @last_result.status_code.to_s : '0'
+            world.last_result ? world.last_result.status_code.to_s : '0'
           else
             world.env.fetch(var_name){ match }
           end

@@ -7,10 +7,9 @@ module Yap::Shell
   class Evaluation
     attr_reader :world
 
-    def initialize(stdin:, stdout:, stderr:, world:, last_result:nil)
+    def initialize(stdin:, stdout:, stderr:, world:)
       @stdin, @stdout, @stderr = stdin, stdout, stderr
       @world = world
-      @last_result = last_result
     end
 
     def evaluate(input, &blk)
@@ -20,8 +19,8 @@ module Yap::Shell
       ast.accept(self)
     end
 
-    def status_code
-      @last_result.status_code
+    def set_last_result(result)
+      @world.last_result = result
     end
 
     private
@@ -75,7 +74,7 @@ module Yap::Shell
             internally_evaluate: node.internally_evaluate?,
             line: @input)
           @stdin, @stdout, @stderr = stream_redirections_for(node)
-          @last_result = @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
+          set_last_result @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
           @command_node_args_stack.clear
         end
       end
@@ -89,6 +88,23 @@ module Yap::Shell
         @current_range_values = nil
       else
         @stdout.puts range.to_a.join(' ')
+      end
+    end
+
+    def visit_RedirectionNode(node)
+      filename = node.target
+
+      if File.directory?(filename)
+        puts <<-ERROR.gsub(/^\s*/m, '').lines.join(' ')
+          Whoops, #{filename.inspect} is a directory! Those can't be redirected to.
+        ERROR
+        set_last_result Yap::Shell::Execution::Result.new(status_code:1, directory:Dir.pwd, n:1, of:1)
+      elsif node.kind == ">"
+        File.write(filename, "")
+        set_last_result Yap::Shell::Execution::Result.new(status_code:0, directory:Dir.pwd, n:1, of:1)
+      else
+        puts "Sorry, #{node.kind} redirection isn't a thing, but >#{filename} is!"
+        set_last_result Yap::Shell::Execution::Result.new(status_code:2, directory:Dir.pwd, n:1, of:1)
       end
     end
 
@@ -244,7 +260,7 @@ module Yap::Shell
         heredoc: node.heredoc,
         internally_evaluate: node.internally_evaluate?,
         line: @input)
-      @last_result = @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
+      set_last_result @blk.call command, @stdin, @stdout, @stderr, pipeline_stack.empty?
     end
 
     ######################################################################

@@ -20,6 +20,8 @@ module Yap
     attr_accessor :prompt, :secondary_prompt, :contents, :repl, :editor, :env
     attr_reader :addons
 
+    attr_accessor :last_result
+
     def self.instance(*args)
       @instance ||= new(*args)
     end
@@ -61,28 +63,29 @@ module Yap
       Yap::Shell::ShellCommand.define_shell_function(name, &blk)
     end
 
-    def shell(statement, last_result: nil)
+    def shell(statement)
       context = Yap::Shell::Execution::Context.new(
         stdin:  $stdin,
         stdout: $stdout,
         stderr: $stderr
       )
       if statement.nil?
-        last_result = Yap::Shell::Execution::Result.new(
+        @last_result = Yap::Shell::Execution::Result.new(
           status_code: 1,
           directory: Dir.pwd,
           n: 1,
           of: 1
         )
       else
-        evaluation = Yap::Shell::Evaluation.new(stdin:$stdin, stdout:$stdout, stderr:$stderr, world:self, last_result:last_result)
+        evaluation = Yap::Shell::Evaluation.new(stdin:$stdin, stdout:$stdout, stderr:$stderr, world:self)
         evaluation.evaluate(statement) do |command, stdin, stdout, stderr, wait|
           context.clear_commands
           context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr, wait:wait
-          last_result = context.execute(world:self)
+          @last_result = context.execute(world:self)
         end
       end
-      last_result
+
+      @last_result
     end
 
     def foreground?
