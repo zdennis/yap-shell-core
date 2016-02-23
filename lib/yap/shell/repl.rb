@@ -22,17 +22,15 @@ module Yap::Shell
       @world.editor.on_read_line do |event|
         # editor.history = true?
         line = event[:payload][:line]
-        if line != ""
-          begin
-            $stdin.cooked {
-              $stdout.puts
-              @blk.call(line)
-            }
-          rescue ::Yap::Shell::CommandUnknownError => ex
-            puts "  CommandError: #{ex.message}"
-          ensure
-            @world.editor.reset_line
-          end
+        begin
+          $stdin.cooked {
+            $stdout.puts
+            @blk.call(line)
+          }
+        rescue ::Yap::Shell::CommandUnknownError => ex
+          puts "  CommandError: #{ex.message}"
+        ensure
+          @world.editor.reset_line
         end
 
         ensure_process_group_controls_the_tty
