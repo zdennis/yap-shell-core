@@ -216,12 +216,12 @@ module Yap::Shell
       case node.operator
       when '&&'
         node.expr1.accept self
-        if @last_result.status_code == 0
+        if @world.last_result.status_code == 0
           node.expr2.accept self
         end
       when '||'
         node.expr1.accept self
-        if @last_result.status_code != 0
+        if @world.last_result.status_code != 0
           node.expr2.accept self
         end
       else
