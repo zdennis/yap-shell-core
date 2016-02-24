@@ -65,7 +65,7 @@ class History
     def get
       return nil unless length > 0
       return nil unless @position
-      at(@position).command.dup
+      at(@position).dup
     end
 
     #
@@ -86,24 +86,26 @@ class History
     # Decrement <tt>@position</tt>. By default the history will become
     # positioned at the previous item.
     #
-    def back(options={})
+    def back(matching_text: nil)
       return nil unless length > 0
-      @position = search_back(options) || @position
+      @position = search_back(matching_text: matching_text) || @position
     end
 
     #
     # Increment <tt>@position</tt>. By default the history will become
     # positioned at the next item.
     #
-    def forward(options={})
+    def forward(matching_text: nil)
       return nil unless length > 0
-      @position = search_forward(options) || @position
+      @position = search_forward(matching_text: matching_text) || @position
     end
 
     #
     # Add a new item to the buffer.
     #
     def push(item)
+      item = item.without_ansi if item.respond_to?(:without_ansi)
+
       if !@duplicates && self[-1] == item
         # skip adding this line
         return
@@ -132,7 +134,13 @@ class History
     private
 
     def search_back(matching_text:)
-      command_history = map(&:command)
+      if !matching_text
+        matching_text = ""
+      elsif matching_text.respond_to?(:without_ansi)
+        matching_text = matching_text.without_ansi
+      end
+
+      command_history = self
       upto_index = (position || length) - 1
       current = get
 
@@ -154,7 +162,7 @@ class History
 
       position = snapshot.each_with_index.reduce(no_match) do |no_match, (text, i)|
         # $z.print "    - matching #{text.inspect} =~ /^#{matching_text.to_s}/ && #{current} != #{text} : "
-        if text =~ /^#{Regexp.escape(matching_text.to_s)}/ && current != text
+        if text =~ /^#{Regexp.escape(matching_text)}/ && current != text
           # $z.puts "  match #{i}, returning position #{snapshot.length - (i + 1)}"
 
           # convert to non-reversed indexing
@@ -168,7 +176,13 @@ class History
     end
 
     def search_forward(matching_text:)
-      command_history = map(&:command)
+      if !matching_text
+        matching_text = ""
+      elsif matching_text.respond_to?(:without_ansi)
+        matching_text = matching_text.without_ansi
+      end
+
+      command_history = self
       return nil unless position
 
       start_index = position + 1

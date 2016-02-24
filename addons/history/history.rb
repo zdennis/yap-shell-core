@@ -3,8 +3,6 @@ require 'term/ansicolor'
 require 'ostruct'
 
 class History < Addon
-  require 'history/group'
-  require 'history/item'
   require 'history/buffer'
   require 'history/events'
 
@@ -64,59 +62,16 @@ class History < Addon
 
     pos = editor.line.position
     text = editor.line.text
-    editor.puts
-
-    history_items = history.map.with_index do |group, i|
-      OpenStruct.new(
-        command:group.command,
-        duration:group.duration,
-        position:(i+1).to_s
-      )
-    end
-
-    term_width = editor.terminal_width
-    max_position_width = history_items.map(&:position).map(&:length).max
-    max_duration_width = history_items.map(&:duration).compact.map(&:length).max
-    max_command_width = history_items.map(&:command).map(&:length).max
-
-    history_items.each do |item|
-      next if ignore_history_item.call(item:item)
-      editor.puts history_item_formatter.call(item:item, options:{
-        term_width: term_width,
-        max_position_width: max_position_width,
-        max_duration_width: max_duration_width,
-        max_command_width: max_command_width
-      })
-    end
 
     editor.overwrite_line(text, pos) if redraw_prompt
   end
 
   def executing(command:, started_at:)
-    raise "Cannot acknowledge execution beginning of a command when no group has been started!" unless history.last
-    history.last.executing command:command, started_at:started_at
+    # raise "Cannot acknowledge execution beginning of a command when no group has been started!" unless history.last
   end
 
   def executed(command:, stopped_at:)
-    raise "Cannot complete execution of a command when no group has been started!" unless history.last
-    history.last.executed command:command, stopped_at:stopped_at
-  end
-
-  def last_executed_item
-    history.reverse.each do |group|
-      last_run = group.last_executed_item
-      break last_run if last_run
-    end
-  end
-
-  def start_group(started_at)
-    last_command = history[-1]
-    return if last_command.is_a?(Group)
-    history[-1] = Group.new(started_at:started_at, command:last_command)
-  end
-
-  def stop_group(stopped_at)
-    history.last.stopped_at(stopped_at)
+    # raise "Cannot complete execution of a command when no command has been started!" unless history.last
   end
 
   def save
@@ -146,17 +101,6 @@ class History < Addon
     return unless File.exists?(history_file) && File.readable?(history_file)
 
     history_elements = YAML.load_file(history_file) || []
-    history_elements.map! do |element|
-      case element
-      when String
-        Group.from_string(element)
-      when Hash
-        Group.from_hash(element)
-      else
-        raise "Don't know how to load history from #{element.inspect}"
-      end
-    end
-
     @history_start_position = history_elements.length
     @world.editor.history.replace(history_elements)
   end
