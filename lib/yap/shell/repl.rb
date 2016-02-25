@@ -74,7 +74,7 @@ module Yap::Shell
       editor.bind(:ctrl_y){
         text = kill_ring[-1]
         if text
-          editor.yank_forward text
+          editor.yank_forward text.without_ansi
         end
       }
 
