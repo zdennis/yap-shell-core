@@ -72,9 +72,9 @@ class TabCompletion < Addon
 
       semi_formatted_possibilities = possible_completions.map.with_index do |completion, i|
         if completion == actual_completion
-          style_text_for_selected_match(completion)
+          style_text_for_selected_match(completion) + "\e[0m"
         else
-          style_text_for_nonselected_match(completion)
+          style_text_for_nonselected_match(completion) + "\e[0m"
         end
       end
 
@@ -83,30 +83,26 @@ class TabCompletion < Addon
       most_per_line = max_width / max_item_width
       padding_at_the_end = max_width % max_item_width
 
-      formatted_possibilities = semi_formatted_possibilities.map.with_index do |str, i|
-        spaces_to_pad = max_item_width - str.length
-        nstr = str + (" " * spaces_to_pad)
-        if i % most_per_line == 3
-          nstr += (" " * padding_at_the_end)
-        end
-        nstr
-      end
-      results = []
-      formatted_possibilities.each_slice(4) do |strs|
-        results.push strs.join
+      formatted_possibilities = semi_formatted_possibilities.map.with_index do |completion, i|
+        spaces_to_pad = max_item_width - completion.length
+        completion + (" " * spaces_to_pad)
       end
 
-      editor.content_box.content = results.join
+      editor.content_box.children = formatted_possibilities.map do |str|
+        TerminalLayout::Box.new(content: str, style: { display: :float, float: :left, height: 1, width: max_item_width })
+      end
     end
 
     editor.on_word_complete_no_match do |event|
       sub_word = event[:payload][:sub_word]
       word = event[:payload][:word]
+      editor.content_box.children = []
       # editor.content_box.content = "Failed to find a match to complete #{sub_word} portion of #{word}"
     end
 
     editor.on_word_complete_done do |event|
-      editor.content_box.content = ""
+      # TODO: add a better way to clear content
+      editor.content_box.children = []
     end
   end
 
