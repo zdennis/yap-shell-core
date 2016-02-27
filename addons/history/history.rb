@@ -57,13 +57,7 @@ class History < Addon
   end
 
   def show_history(editor, redraw_prompt:true, ignore_history_item:nil, history_item_formatter:nil)
-    ignore_history_item ||= self.class.ignore_history_item
-    history_item_formatter ||= self.class.history_item_formatter
-
-    pos = editor.line.position
-    text = editor.line.text
-
-    editor.overwrite_line(text, pos) if redraw_prompt
+    editor.puts @history
   end
 
   def executing(command:, started_at:)
