@@ -23,10 +23,8 @@ module Yap::Shell
         # editor.history = true?
         line = event[:payload][:line]
         begin
-          $stdin.cooked {
-            $stdout.puts
-            @blk.call(line)
-          }
+          @blk.call(line)
+          @world.editor.redraw_prompt
         rescue ::Yap::Shell::CommandUnknownError => ex
           puts "  CommandError: #{ex.message}"
         ensure
