@@ -28,14 +28,9 @@ module Yap
 
     def initialize(addons:)
       @env = ENV.to_h.dup
-      build_editor_dom
+      dom = build_editor_dom
 
-      @editor = RawLine::Editor.new do |editor|
-        editor.dom = build_editor_dom
-        editor.prompt_box = @prompt_box
-        editor.input_box = @input_box
-        editor.content_box = @content_box
-      end
+      @editor = RawLine::Editor.create(dom: dom)
 
       self.prompt = Yap::Shell::Prompt.new(text: DEFAULTS[:primary_prompt_text])
       self.secondary_prompt = Yap::Shell::Prompt.new(text: DEFAULTS[:secondary_prompt_text])
@@ -145,7 +140,7 @@ module Yap
         ]
       )
 
-      return TerminalLayout::Box.new(
+      RawLine::DomTree.new(
         children:[
           @right_status_float,
           @left_status_box,
@@ -163,7 +158,11 @@ module Yap
             ]
           )
         ]
-      )
+      ).tap do |dom|
+        dom.prompt_box = @prompt_box
+        dom.input_box = @input_box
+        dom.content_box = @content_box
+      end
     end
   end
 end
