@@ -72,6 +72,49 @@ end
 
 
 ###############################################################################
+#                               KEYBOARD MACROS
+#------------------------------------------------------------------------------
+# Keyboard macros allow you to define key/byte sequences that run code
+# when typed. Perhaps the simpest macro is one that takes the tediousness
+# out of typing a long command. For example, pressing "Ctrl-g l" might
+# type in "git log --name-status -n100" just as if the user had typed it.
+#
+# There are five things to know about macros in Yap:
+#
+# * Macros are initialized by a trigger key. The default is Ctrl-g.
+# * Macros require at least one character/key/byte sequence beyond the trigger \
+#   key in order to fire
+# * Macros can be bound to code blocks or a string.
+# * When a macro returns a string that string is inserted as user input \
+#   at the current cursor position
+# * When a macro returns a string that ends in a new line it will process the \
+#   line as if the user hit enter
+#
+# == Example
+#
+#    world.addons[:keyboard_macros].configure(trigger_key: :ctrl_g) do |macros|
+#      macros.define :z, 'git open-pull'
+#      macros.define 'l', "git log -n1\n"
+#    end
+#
+# It's a little bit wordy right now to setup because macros are not special
+# in Yap. They are provided as a standard yap-addon. You could even provide
+# your own macro addon replacement if you so desired.
+#
+# Following, are a few examples showcasing macros.
+###############################################################################
+
+world.addons[:keyboard_macros].configure(trigger_key: :ctrl_g) do |macros|
+  macros.define :z, 'git open-pull'
+  macros.define 'l1', "git log -n1\n"
+end
+
+world.addons[:keyboard_macros].configure(trigger_key: :ctrl_h) do |macros|
+  macros.define 'h1', -> { 'echo this was with a code block' }
+end
+
+
+###############################################################################
 #                          USER-DEFINED FUNCTIONS
 #------------------------------------------------------------------------------
 # User-defined functions can be accessed in the shell like any command. They
