@@ -54,6 +54,16 @@ module Yap
       @editor.events
     end
 
+    def bind(key, &blk)
+      @editor.bind(key) do
+        blk.call self
+      end
+    end
+
+    def unbind(key)
+      @editor.unbind(key)
+    end
+
     def func(name, &blk)
       Yap::Shell::ShellCommand.define_shell_function(name, &blk)
     end
