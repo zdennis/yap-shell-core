@@ -19,7 +19,7 @@ class KeyboardMacros < Addon
   def configure(trigger_key=DEFAULT_TRIGGER_KEY, &blk)
     @trigger_key = trigger_key
 
-    definitions = DefinitionMap.new
+    definitions = DefinitionMap.new(keymap: @world.editor.terminal.keys)
     blk.call definitions if blk
 
     world.unbind(trigger_key)
@@ -51,8 +51,9 @@ class KeyboardMacros < Addon
   end
 
   class DefinitionMap
-    def initialize
+    def initialize(keymap: {})
       @storage = {}
+      @keymap = keymap
     end
 
     def keys
@@ -60,19 +61,13 @@ class KeyboardMacros < Addon
     end
 
     def [](byte)
-      @storage.each_pair do |key, value|
-        case key
-        when Regexp
-          return value if key.match(byte.chr)
-        else
-          return value if key == byte
-        end
+      @storage.values.detect do |definition|
+        definition.matches?(byte)
       end
-      nil
     end
 
-    def []=(byte, val)
-      @storage[byte] = val
+    def []=(byte, definition)
+      @storage[byte] = definition
     end
 
     def define(sequence, result, &blk)
@@ -82,10 +77,17 @@ class KeyboardMacros < Addon
       end
 
       case sequence
-      when String, Symbol
+      when String
         recursively_define_sequence_for_bytes(
           self,
-          sequence.to_s.bytes,
+          sequence.bytes,
+          result,
+          &blk
+        )
+      when Symbol
+        recursively_define_sequence_for_bytes(
+          self,
+          @keymap[sequence],
           result,
           &blk
         )
@@ -126,18 +128,31 @@ class KeyboardMacros < Addon
 
     def initialize(sequence, result=nil, &blk)
       @sequence = sequence
-      @bytes = sequence.to_s.bytes
       @result = result
       @definitions = DefinitionMap.new
       blk.call(@definitions) if blk
     end
 
-    def first_byte
-      @bytes.first
+    def matches?(byte)
+      if @sequence.is_a?(Regexp)
+        @match_data = @sequence.match(byte.chr)
+      else
+        @sequence == byte
+      end
     end
 
-    def process(captures: nil)
-      @result.call(captures: captures) if @result
+    def process
+      if @result
+        if @match_data
+          if @match_data.captures.empty?
+            @result.call(@match_data[0])
+          else
+            @result.call(*@match_data.captures)
+          end
+        else
+          @result.call
+        end
+      end
     end
   end
 
@@ -151,16 +166,16 @@ class KeyboardMacros < Addon
     bytes.each do |byte|
       definition = definitions[byte]
       break unless definition
-      @definitions = definition.definitions
+      @definitions = definitions = definition.definitions
       result = definition.process
       if @definitions
         if @event_id
           @world.editor.event_loop.clear @event_id
           @event_id = queue_up_remove_input_processor
         end
-        @world.editor.write result if result
+        @world.editor.write result if result.is_a?(String)
       else
-        @world.editor.write result if result
+        @world.editor.write result if result.is_a?(String)
         break
       end
     end
