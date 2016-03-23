@@ -1,5 +1,6 @@
 class KeyboardMacros < Addon
   DEFAULT_TRIGGER_KEY = :ctrl_g
+  DEFAULT_CANCELLATION_TRIGGER_KEY = :tab
 
   def self.load_addon
     @instance ||= new
@@ -13,13 +14,33 @@ class KeyboardMacros < Addon
     @configurations = []
     @stack = []
     @triggered_by_key = nil
-    @timeout_in_ms = 1_000
+    @timeout_in_ms = nil
+  end
+
+  class Cancellation
+    attr_reader :trigger_key
+
+    def initialize(trigger_key=DEFAULT_CANCELLATION_TRIGGER_KEY, &blk)
+      @trigger_key = trigger_key
+      @blk = blk
+    end
+
+    def call
+      @blk.call
+    end
   end
 
   def configure(trigger_key=DEFAULT_TRIGGER_KEY, &blk)
+    cancel_blk = lambda do
+      world.editor.event_loop.clear @event_id
+      cancel_processing
+      nil
+    end
+
     configuration = Configuration.new(
       keymap: world.editor.terminal.keys,
-      trigger_key: trigger_key
+      trigger_key: trigger_key,
+      cancellation: Cancellation.new(&cancel_blk)
     )
 
     blk.call configuration if blk
@@ -47,7 +68,10 @@ class KeyboardMacros < Addon
     configuration = @stack.last
     bytes.each do |byte|
       definition = configuration[byte]
-      break unless definition
+      if !definition
+        cancel_processing
+        break
+      end
       configuration = definition.configuration
       if configuration
         configuration.start.call if configuration.start
@@ -65,31 +89,44 @@ class KeyboardMacros < Addon
   private
 
   def queue_up_remove_input_processor(&blk)
+    return unless @timeout_in_ms
+
     event_args = {
       name: 'remove_input_processor',
       source: self,
       interval_in_ms: @timeout_in_ms,
     }
-    @event_id = world.editor.event_loop.once(event_args) do |event|
-      @event_id = nil
-      @stack.reverse.each do |configuration|
-        configuration.stop.call if configuration.stop
-      end
-      @stack.clear
-      if world.editor.keyboard_input_processors.last == self
-        world.editor.keyboard_input_processors.pop
-        world.editor.input.restore_default_timeout
-      end
+    @event_id = world.editor.event_loop.once(event_args) do
+      cancel_processing
+    end
+  end
+
+  def cancel_processing
+    @event_id = nil
+    @stack.reverse.each do |configuration|
+      configuration.stop.call if configuration.stop
+    end
+    @stack.clear
+    if world.editor.keyboard_input_processors.last == self
+      world.editor.keyboard_input_processors.pop
+      world.editor.input.restore_default_timeout
     end
   end
 
   class Configuration
-    def initialize(keymap: {}, trigger_key: nil)
+    attr_reader :cancellation, :trigger_key, :keymap
+
+    def initialize(keymap: {}, trigger_key: nil, cancellation: nil)
       @keymap = keymap
       @trigger_key = trigger_key
+      @cancellation = cancellation
       @storage = {}
       @on_start_blk = nil
       @on_stop_blk = nil
+
+      if @cancellation
+        define @cancellation.trigger_key, -> { @cancellation.call }
+      end
     end
 
     def start(&blk)
@@ -143,7 +180,12 @@ class KeyboardMacros < Addon
     private
 
     def define_sequence_for_regex(regex, result, &blk)
-      @storage[regex] = Definition.new(sequence: regex, result: result, &blk)
+      @storage[regex] = Definition.new(
+        configuration: Configuration.new(keymap: @keymap, cancellation: @cancellation),
+        sequence: regex,
+        result: result,
+        &blk
+      )
     end
 
     # macro.define 'abc', 'echo abc'
@@ -155,7 +197,7 @@ class KeyboardMacros < Addon
       byte, rest = bytes[0], bytes[1..-1]
       if rest.any?
         definition = Definition.new(
-          configuration: Configuration.new(keymap: @keymap),
+          configuration: Configuration.new(keymap: @keymap, cancellation: @cancellation),
           sequence: byte,
           result: nil,
           &blk
@@ -169,7 +211,7 @@ class KeyboardMacros < Addon
         )
       else
         configuration[byte] = Definition.new(
-          configuration: Configuration.new,
+          configuration: Configuration.new(keymap: @keymap),
           sequence: byte,
           result: result,
           &blk
