@@ -126,14 +126,35 @@ end
 ###############################################################################
 
 world.addons[:keyboard_macros].configure(:ctrl_g) do |macro|
+  macro.start do
+    world.editor.content_box.children = [
+      TerminalLayout::Box.new(content: "am i floating1?", style: {display: :float, float: :right, height: 1, width: "am i floating1?".length}),
+      TerminalLayout::Box.new(content: "What up12?", style: {display: :block}),
+      TerminalLayout::Box.new(content: "Not much21", style: {display: :block}),
+      TerminalLayout::Box.new(content: "am i floating3?", style: {display: :float, float: :left, height: 1, width: "am i floating1?".length}),
+    ]
+  end
+
+  macro.stop do
+    world.editor.content_box.children = []
+  end
+
   macro.define 'z', 'git open-pull'
   # macro.define 'abc', 'echo abc'
   # macro.define 'u', -> { world.editor.undo }
-  macro.define :up_arrow, -> { "git cycle thru branches?" }
+  macro.define :up_arrow, -> {   }
 
   macro.define 'l', 'git log ' do |macro|
     macro.define 'n', '--name-status '
   end
+
+  macro.define 'd', 'git diff ' do |macro|
+    macro.define 'n', '--name-status ' do |macro|
+      macro.define 'm', "master..HEAD"
+    end
+    macro.define 'm', "master..HEAD"
+  end
+
   #   macro.define /\d/, -> (a) { " -n #{a}" }
   #   macro.define '1', ' -n1' do |macro|
   #     macro.define '2', ' -n2' do |macro|

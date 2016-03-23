@@ -12,8 +12,7 @@ class KeyboardMacros < Addon
     @world = world
     @trigger_key = DEFAULT_TRIGGER_KEY
     @triggered_by_key = nil
-    @timeout_in_ms = 500
-    @bindings_by_trigger_key = Hash.new { |h,k| h[k] = {} }
+    @timeout_in_ms = 1_000
   end
 
   def configure(trigger_key=DEFAULT_TRIGGER_KEY, &blk)
@@ -22,27 +21,33 @@ class KeyboardMacros < Addon
     definitions = DefinitionMap.new(keymap: @world.editor.terminal.keys)
     blk.call definitions if blk
 
+    @start_blk = definitions.start
+    @stop_blk = definitions.stop
+
     world.unbind(trigger_key)
     world.bind(trigger_key) do
       begin
+        @start_blk.call
         @triggered_by_key = trigger_key
         @definitions = definitions
+
         world.editor.keyboard_input_processors.push(self)
         world.editor.input.wait_timeout_in_seconds = 0.1
       ensure
-        queue_up_remove_input_processor
+        queue_up_remove_input_processor(&definitions.stop)
       end
     end
   end
 
-  def queue_up_remove_input_processor
+  def queue_up_remove_input_processor(&blk)
     event_args = {
       name: 'remove_input_processor',
       source: self,
-      interval_in_ms: @timeout_in_ms
+      interval_in_ms: @timeout_in_ms,
     }
     @event_id = world.editor.event_loop.once(event_args) do |event|
       @event_id = nil
+      @stop_blk.call
       if world.editor.keyboard_input_processors.last == self
         world.editor.keyboard_input_processors.pop
         world.editor.input.restore_default_timeout
@@ -54,6 +59,8 @@ class KeyboardMacros < Addon
     def initialize(keymap: {})
       @storage = {}
       @keymap = keymap
+      @start_blk = -> { }
+      @stop_blk = -> { }
     end
 
     def keys
@@ -68,6 +75,16 @@ class KeyboardMacros < Addon
 
     def []=(byte, definition)
       @storage[byte] = definition
+    end
+
+    def start(&blk)
+      @start_blk = blk if blk
+      @start_blk
+    end
+
+    def stop(&blk)
+      @stop_blk = blk if blk
+      @stop_blk
     end
 
     def define(sequence, result, &blk)
