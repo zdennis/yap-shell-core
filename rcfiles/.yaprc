@@ -146,6 +146,7 @@ world.addons[:keyboard_macros].configure(:ctrl_g) do |macro|
 
   macro.define 'l', 'git log ' do |macro|
     macro.define 'n', '--name-status '
+    macro.define /\d/, -> (a) { "-n #{a}" }
   end
 
   macro.define 'd', 'git diff ' do |macro|

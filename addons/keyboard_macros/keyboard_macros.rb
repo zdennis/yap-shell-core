@@ -10,34 +10,59 @@ class KeyboardMacros < Addon
 
   def initialize_world(world)
     @world = world
-    @trigger_key = DEFAULT_TRIGGER_KEY
+    @configurations = []
+    @stack = []
     @triggered_by_key = nil
     @timeout_in_ms = 1_000
   end
 
   def configure(trigger_key=DEFAULT_TRIGGER_KEY, &blk)
-    @trigger_key = trigger_key
+    configuration = Configuration.new(
+      keymap: world.editor.terminal.keys,
+      trigger_key: trigger_key
+    )
 
-    definitions = DefinitionMap.new(keymap: @world.editor.terminal.keys)
-    blk.call definitions if blk
-
-    @start_blk = definitions.start
-    @stop_blk = definitions.stop
+    blk.call configuration if blk
 
     world.unbind(trigger_key)
     world.bind(trigger_key) do
       begin
-        @start_blk.call
-        @triggered_by_key = trigger_key
-        @definitions = definitions
-
+        @stack << configuration
+        configuration.start.call if configuration.start
         world.editor.keyboard_input_processors.push(self)
         world.editor.input.wait_timeout_in_seconds = 0.1
       ensure
-        queue_up_remove_input_processor(&definitions.stop)
+        queue_up_remove_input_processor(&configuration.stop)
       end
     end
+
+    @configurations << configuration
   end
+
+  #
+  # InputProcessor Methods
+  #
+
+  def read_bytes(bytes)
+    configuration = @stack.last
+    bytes.each do |byte|
+      definition = configuration[byte]
+      break unless definition
+      configuration = definition.configuration
+      if configuration
+        configuration.start.call if configuration.start
+        @stack << configuration
+      end
+      result = definition.process
+      if @event_id
+        world.editor.event_loop.clear @event_id
+        @event_id = queue_up_remove_input_processor
+      end
+      world.editor.write result if result.is_a?(String)
+    end
+  end
+
+  private
 
   def queue_up_remove_input_processor(&blk)
     event_args = {
@@ -47,7 +72,10 @@ class KeyboardMacros < Addon
     }
     @event_id = world.editor.event_loop.once(event_args) do |event|
       @event_id = nil
-      @stop_blk.call
+      @stack.reverse.each do |configuration|
+        configuration.stop.call if configuration.stop
+      end
+      @stack.clear
       if world.editor.keyboard_input_processors.last == self
         world.editor.keyboard_input_processors.pop
         world.editor.input.restore_default_timeout
@@ -55,36 +83,23 @@ class KeyboardMacros < Addon
     end
   end
 
-  class DefinitionMap
-    def initialize(keymap: {})
-      @storage = {}
+  class Configuration
+    def initialize(keymap: {}, trigger_key: nil)
       @keymap = keymap
-      @start_blk = -> { }
-      @stop_blk = -> { }
-    end
-
-    def keys
-      @storage.keys
-    end
-
-    def [](byte)
-      @storage.values.detect do |definition|
-        definition.matches?(byte)
-      end
-    end
-
-    def []=(byte, definition)
-      @storage[byte] = definition
+      @trigger_key = trigger_key
+      @storage = {}
+      @on_start_blk = nil
+      @on_stop_blk = nil
     end
 
     def start(&blk)
-      @start_blk = blk if blk
-      @start_blk
+      @on_start_blk = blk if blk
+      @on_start_blk
     end
 
     def stop(&blk)
-      @stop_blk = blk if blk
-      @stop_blk
+      @on_stop_blk = blk if blk
+      @on_stop_blk
     end
 
     def define(sequence, result, &blk)
@@ -109,45 +124,68 @@ class KeyboardMacros < Addon
           &blk
         )
       when Regexp
-        define_sequence_for_regex(self, sequence, result, &blk)
+        define_sequence_for_regex(sequence, result, &blk)
       else
         raise NotImplementedError, <<-EOT.gsub(/^\s*/, '')
-          Don't know how to define macro for sequence#{sequence.inspect}
+          Don't know how to define macro for sequence: #{sequence.inspect}
         EOT
       end
     end
 
-    private
-
-    def define_sequence_for_regex(definitions, regex, result, &blk)
-      @storage[regex] = Definition.new(regex, result, &blk)
+    def [](byte)
+      @storage.values.detect { |definition| definition.matches?(byte) }
     end
 
-    def recursively_define_sequence_for_bytes(definitions, bytes, result, &blk)
+    def []=(key, definition)
+      @storage[key] = definition
+    end
+
+    private
+
+    def define_sequence_for_regex(regex, result, &blk)
+      @storage[regex] = Definition.new(sequence: regex, result: result, &blk)
+    end
+
+    # macro.define 'abc', 'echo abc'
+    # 1) recur: self, 'abc', 'echo abc'
+    #       self['a'] = Definition.new('a', nil)
+    #       r
+    # 2) recur:
+    def recursively_define_sequence_for_bytes(configuration, bytes, result, &blk)
       byte, rest = bytes[0], bytes[1..-1]
       if rest.any?
-        definition = Definition.new(byte, nil, &blk)
-        definitions[byte] = definition
+        definition = Definition.new(
+          configuration: Configuration.new(keymap: @keymap),
+          sequence: byte,
+          result: nil,
+          &blk
+        )
+        configuration[byte] = definition
         recursively_define_sequence_for_bytes(
-          definition.definitions,
+          definition.configuration,
           rest,
           result,
           &blk
         )
       else
-        definitions[byte] = Definition.new(byte, result, &blk)
+        configuration[byte] = Definition.new(
+          configuration: Configuration.new,
+          sequence: byte,
+          result: result,
+          &blk
+        )
       end
     end
   end
 
   class Definition
-    attr_reader :bytes, :definitions, :result, :sequence
+    attr_reader :bytes, :configuration, :result, :sequence
 
-    def initialize(sequence, result=nil, &blk)
+    def initialize(configuration: nil, sequence:, result: nil, &blk)
+      @configuration = configuration
       @sequence = sequence
       @result = result
-      @definitions = DefinitionMap.new
-      blk.call(@definitions) if blk
+      blk.call(@configuration) if blk
     end
 
     def matches?(byte)
@@ -173,28 +211,4 @@ class KeyboardMacros < Addon
     end
   end
 
-  #
-  # InputProcessor Methods
-  #
-
-  def read_bytes(bytes)
-    definition = nil
-    definitions = @definitions
-    bytes.each do |byte|
-      definition = definitions[byte]
-      break unless definition
-      @definitions = definitions = definition.definitions
-      result = definition.process
-      if @definitions
-        if @event_id
-          @world.editor.event_loop.clear @event_id
-          @event_id = queue_up_remove_input_processor
-        end
-        @world.editor.write result if result.is_a?(String)
-      else
-        @world.editor.write result if result.is_a?(String)
-        break
-      end
-    end
-  end
 end
