@@ -86,7 +86,7 @@ module Yap
         #   # but it tries to receive input/output from the tty. I believe it
         #   # is a race condition when launching a child process.
         rescue Interrupt
-          puts "^C"
+          @world.editor.puts "^C"
           retry
         rescue Exception => ex
           require 'pry'
