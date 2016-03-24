@@ -201,11 +201,6 @@ class KeyboardMacros < Addon
       )
     end
 
-    # macro.define 'abc', 'echo abc'
-    # 1) recur: self, 'abc', 'echo abc'
-    #       self['a'] = Definition.new('a', nil)
-    #       r
-    # 2) recur:
     def recursively_define_sequence_for_bytes(configuration, bytes, result, &blk)
       byte, rest = bytes[0], bytes[1..-1]
       if rest.any?
