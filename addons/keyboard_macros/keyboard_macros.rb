@@ -73,6 +73,7 @@ class KeyboardMacros < Addon
         @stack << configuration
       end
       result = definition.process
+      @stack.pop if definition.fragment?
       if @event_id
         world.editor.event_loop.clear @event_id
         @event_id = queue_up_remove_input_processor
@@ -145,6 +146,12 @@ class KeyboardMacros < Addon
     def stop(&blk)
       @on_stop_blk = blk if blk
       @on_stop_blk
+    end
+
+    def fragment(sequence, result)
+      define(sequence, result).tap do |definition|
+        definition.fragment!
+      end
     end
 
     def define(sequence, result, &blk)
@@ -235,10 +242,19 @@ class KeyboardMacros < Addon
     attr_reader :bytes, :configuration, :result, :sequence
 
     def initialize(configuration: nil, sequence:, result: nil, &blk)
+      @fragment = false
       @configuration = configuration
       @sequence = sequence
       @result = result
       blk.call(@configuration) if blk
+    end
+
+    def fragment?
+      @fragment
+    end
+
+    def fragment!
+      @fragment = true
     end
 
     def matches?(byte)

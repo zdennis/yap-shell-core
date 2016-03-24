@@ -161,8 +161,9 @@ world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
   macro.define :up_arrow, -> {   }
 
   macro.define 'l', 'git log ' do |macro|
-    macro.define 'n', '--name-status '
-    macro.define /\d/, -> (a) { "-n #{a}" }
+    macro.fragment 'n', '--name-status '
+    macro.fragment 'o', '--oneline '
+    macro.fragment /\d/, -> (a) { "-n#{a} " }
   end
 
   macro.define 'd', 'git diff ' do |macro|
@@ -171,15 +172,6 @@ world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
     end
     macro.define 'm', "master..HEAD"
   end
-
-  #   macro.define /\d/, -> (a) { " -n #{a}" }
-  #   macro.define '1', ' -n1' do |macro|
-  #     macro.define '2', ' -n2' do |macro|
-  #       macro.define '3', ' -n3' do |macro|
-  #       end
-  #     end
-  #   end
-  # end
 end
 
 # world.addons[:keyboard_macros].configure(trigger_key: :ctrl_h) do |macros|
