@@ -72,8 +72,20 @@ class KeyboardMacros < Addon
         configuration.start.call if configuration.start
         @stack << configuration
       end
+
       result = definition.process
+
+      if result =~ /\n$/
+        world.editor.write result.chomp
+        world.editor.event_loop.clear @event_id if @event_id
+        cancel_processing
+        world.editor.newline # add_to_history
+        world.editor.process_line
+        break
+      end
+
       @stack.pop if definition.fragment?
+
       if @event_id
         world.editor.event_loop.clear @event_id
         @event_id = queue_up_remove_input_processor
