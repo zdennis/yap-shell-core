@@ -1,36 +1,31 @@
 class KeyboardMacros < Addon
   DEFAULT_TRIGGER_KEY = :ctrl_g
-  DEFAULT_CANCELLATION_TRIGGER_KEY = :tab
+  DEFAULT_CANCEL_KEY = " "
+  DEFAULT_TIMEOUT_IN_MS = 500
 
   def self.load_addon
     @instance ||= new
   end
 
   attr_reader :world
-  attr_accessor :trigger_key
+  attr_accessor :timeout_in_ms
+  attr_accessor :cancel_key, :trigger_key
+  attr_accessor :cancel_on_unknown_sequences
 
   def initialize_world(world)
     @world = world
     @configurations = []
     @stack = []
-    @triggered_by_key = nil
-    @timeout_in_ms = nil
+    @timeout_in_ms = DEFAULT_TIMEOUT_IN_MS
+    @cancel_key = DEFAULT_CANCEL_KEY
+    @trigger_key = DEFAULT_TRIGGER_KEY
+    @cancel_on_unknown_sequences = false
   end
 
-  class Cancellation
-    attr_reader :trigger_key
+  def configure(cancel_key: nil, trigger_key: nil, &blk)
+    cancel_key ||= @cancel_key
+    trigger_key ||= @trigger_key
 
-    def initialize(trigger_key=DEFAULT_CANCELLATION_TRIGGER_KEY, &blk)
-      @trigger_key = trigger_key
-      @blk = blk
-    end
-
-    def call
-      @blk.call
-    end
-  end
-
-  def configure(trigger_key=DEFAULT_TRIGGER_KEY, &blk)
     cancel_blk = lambda do
       world.editor.event_loop.clear @event_id
       cancel_processing
@@ -40,7 +35,7 @@ class KeyboardMacros < Addon
     configuration = Configuration.new(
       keymap: world.editor.terminal.keys,
       trigger_key: trigger_key,
-      cancellation: Cancellation.new(&cancel_blk)
+      cancellation: Cancellation.new(cancel_key: cancel_key, &cancel_blk)
     )
 
     blk.call configuration if blk
@@ -69,7 +64,7 @@ class KeyboardMacros < Addon
     bytes.each do |byte|
       definition = configuration[byte]
       if !definition
-        cancel_processing
+        cancel_processing if cancel_on_unknown_sequences
         break
       end
       configuration = definition.configuration
@@ -113,19 +108,32 @@ class KeyboardMacros < Addon
     end
   end
 
+  class Cancellation
+    attr_reader :cancel_key
+
+    def initialize(cancel_key: , &blk)
+      @cancel_key = cancel_key
+      @blk = blk
+    end
+
+    def call
+      @blk.call
+    end
+  end
+
   class Configuration
     attr_reader :cancellation, :trigger_key, :keymap
 
-    def initialize(keymap: {}, trigger_key: nil, cancellation: nil)
+    def initialize(cancellation: nil, keymap: {}, trigger_key: nil)
+      @cancellation = cancellation
       @keymap = keymap
       @trigger_key = trigger_key
-      @cancellation = cancellation
       @storage = {}
       @on_start_blk = nil
       @on_stop_blk = nil
 
       if @cancellation
-        define @cancellation.trigger_key, -> { @cancellation.call }
+        define @cancellation.cancel_key, -> { @cancellation.call }
       end
     end
 
@@ -156,7 +164,9 @@ class KeyboardMacros < Addon
       when Symbol
         recursively_define_sequence_for_bytes(
           self,
-          @keymap[sequence],
+          @keymap.fetch(sequence){
+            fail "Cannot bind unknown sequence #{sequence.inspect}"
+          },
           result,
           &blk
         )
@@ -181,7 +191,10 @@ class KeyboardMacros < Addon
 
     def define_sequence_for_regex(regex, result, &blk)
       @storage[regex] = Definition.new(
-        configuration: Configuration.new(keymap: @keymap, cancellation: @cancellation),
+        configuration: Configuration.new(
+          cancellation: @cancellation,
+          keymap: @keymap
+        ),
         sequence: regex,
         result: result,
         &blk
@@ -197,7 +210,10 @@ class KeyboardMacros < Addon
       byte, rest = bytes[0], bytes[1..-1]
       if rest.any?
         definition = Definition.new(
-          configuration: Configuration.new(keymap: @keymap, cancellation: @cancellation),
+          configuration: Configuration.new(
+            cancellation: @cancellation,
+            keymap: @keymap
+          ),
           sequence: byte,
           result: nil,
           &blk

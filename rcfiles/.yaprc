@@ -125,7 +125,23 @@ end
 # Following, are a few examples showcasing macros.
 ###############################################################################
 
-world.addons[:keyboard_macros].configure(:ctrl_g) do |macro|
+# Sets the default trigger key for all keyboard macros
+world.addons[:keyboard_macros].trigger_key = ?\C-g
+
+# Sets the default cancel key for all keyboard macros
+world.addons[:keyboard_macros].cancel_key = " "
+
+# Sets the default timeout for macros. When set to nil you will have to
+# use the cancel key to exit out of macros.
+world.addons[:keyboard_macros].timeout_in_ms = nil
+
+# Forgiveness-mode: Automatically cancel if the sequence is unknown. When
+# set to false you can keep attempting to type in your macro.
+world.addons[:keyboard_macros].cancel_on_unknown_sequences = true
+
+# Or, you can set the trigger key for a particular set of macros
+# by specifying it when you call .configure(...).
+world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
   macro.start do
     world.editor.content_box.children = [
       TerminalLayout::Box.new(content: "am i floating1?", style: {display: :float, float: :right, height: 1, width: "am i floating1?".length}),
@@ -166,7 +182,7 @@ world.addons[:keyboard_macros].configure(:ctrl_g) do |macro|
   # end
 end
 
-# world.addons[:keyboard_macros].configure(:ctrl_h) do |macros|
+# world.addons[:keyboard_macros].configure(trigger_key: :ctrl_h) do |macros|
 #   macros.define 'h123', -> {
 #     box = TerminalLayout::Box.new(content: "Right?", style: { display: :block, float: :right, height: 1, width: 50 })
 #     world.editor.content_box.children = [box]
