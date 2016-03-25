@@ -54,7 +54,9 @@ module Yap::Shell
       @aliases_expanded ||= []
       @command_node_args_stack ||= []
       with_standard_streams do |stdin, stdout, stderr|
-        args = node.args.map(&:lvalue).map{ |arg| shell_expand(arg) }
+        args = node.args.map(&:lvalue).map do |arg|
+          shell_expand(arg, escape_directory_expansions: false)
+        end
         if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
           @command_node_args_stack << args
@@ -66,10 +68,11 @@ module Yap::Shell
         else
           cmd2execute = variable_expand(node.command)
           final_args = (args + @command_node_args_stack).flatten.shelljoin
+          expanded_args = shell_expand(final_args)
           command = CommandFactory.build_command_for(
             world: world,
             command: cmd2execute,
-            args:    shell_expand(final_args),
+            args:    expanded_args,
             heredoc: (node.heredoc && node.heredoc.value),
             internally_evaluate: node.internally_evaluate?,
             line: @input)
@@ -288,8 +291,11 @@ module Yap::Shell
       ShellExpansions.new(world: world).expand_variables_in(input)
     end
 
-    def shell_expand(input)
-      ShellExpansions.new(world: world).expand_words_in(input)
+    def shell_expand(input, escape_directory_expansions: true)
+      ShellExpansions.new(world: world).expand_words_in(
+        input,
+        escape_directory_expansions: escape_directory_expansions
+      )
     end
 
     def with_standard_streams(&blk)
