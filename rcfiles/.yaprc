@@ -3,6 +3,27 @@
 # ENV["PATH"] = "/Applications/Postgres.app/Contents/MacOS/bin:/usr/local/share/npm/bin/:/usr/local/heroku/bin:/Users/zdennis/.bin:/Users/zdennis/.rvm/gems/ruby-2.1.5/bin:/Users/zdennis/.rvm/gems/ruby-2.1.5@global/bin:/Users/zdennis/.rvm/rubies/ruby-2.1.5/bin:/usr/local/bin:/usr/local/sbin:/Users/zdennis/bin:/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/CrossPack-AVR/bin:/private/tmp/.tidbits/bin:/Users/zdennis/source/playground/AdobeAir/AdobeAIRSDK/bin:/Users/zdennis/.rvm/bin:/Users/zdennis/Downloads/adt-bundle-mac-x86_64-20130219/sdk/tools/:/Users/zdennis/.rvm/bin"
 # ENV["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.1.5:/Users/zdennis/.rvm/gems/ruby-2.1.5@global"
 
+# This is only necessary when starting yap from another shell as it inherits that shell's
+# environment.
+keys2keep = %w(COLORFGBG DISPLAY EDITOR HOME LANG LOGNAME MAIL PATH PS1 PWD SHELL SHLVL SSH_AUTH_SOCK SUDO_COMMAND SUDO_GID SUDO_UID SUDO_USER TERM USER USERNAME _ __CF_USER_TEXT_ENCODING)
+world.env.keys.sort.each do |key|
+  unless keys2keep.include?(key)
+    world.env.delete(key)
+  end
+end
+
+world.env["PATH"] = [
+  world.env["HOME"] + "/.rbenv/shims",
+  "/usr/local/bin",
+  world.env["PATH"]
+].join(":")
+
+world.env.delete("RBENV_DIR")
+world.env.delete("RBENV_DIR")
+world.env.delete("RBENV_HOOK_PATH")
+world.env.delete("RBENV_ROOT")
+world.env.delete("RBENV_VERSION")
+
 require 'chronic'
 require 'term/ansicolor'
 require 'terminfo'
@@ -72,6 +93,97 @@ end
 
 
 ###############################################################################
+#                               KEYBOARD MACROS
+#------------------------------------------------------------------------------
+# Keyboard macros allow you to define key/byte sequences that run code
+# when typed. Perhaps the simpest macro is one that takes the tediousness
+# out of typing a long command. For example, pressing "Ctrl-g l" might
+# type in "git log --name-status -n100" just as if the user had typed it.
+#
+# There are five things to know about macros in Yap:
+#
+# * Macros are initialized by a trigger key. The default is Ctrl-g.
+# * Macros require at least one character/key/byte sequence beyond the trigger \
+#   key in order to fire
+# * Macros can be bound to code blocks or a string.
+# * When a macro returns a string that string is inserted as user input \
+#   at the current cursor position
+# * When a macro returns a string that ends in a new line it will process the \
+#   line as if the user hit enter
+#
+# == Example
+#
+#    world.addons[:keyboard_macros].configure(trigger_key: :ctrl_g) do |macros|
+#      macros.define :z, 'git open-pull'
+#      macros.define 'l', "git log -n1\n"
+#    end
+#
+# It's a little bit wordy right now to setup because macros are not special
+# in Yap. They are provided as a standard yap-addon. You could even provide
+# your own macro addon replacement if you so desired.
+#
+# Following, are a few examples showcasing macros.
+###############################################################################
+
+# Sets the default trigger key for all keyboard macros
+world.addons[:keyboard_macros].trigger_key = ?\C-g
+
+# Sets the default cancel key for all keyboard macros
+world.addons[:keyboard_macros].cancel_key = " "
+
+# Sets the default timeout for macros. When set to nil you will have to
+# use the cancel key to exit out of macros.
+world.addons[:keyboard_macros].timeout_in_ms = nil
+
+# Forgiveness-mode: Automatically cancel if the sequence is unknown. When
+# set to false you can keep attempting to type in your macro.
+world.addons[:keyboard_macros].cancel_on_unknown_sequences = true
+
+# Or, you can set the trigger key for a particular set of macros
+# by specifying it when you call .configure(...).
+world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
+  macro.start do
+    world.editor.content_box.children = [
+      TerminalLayout::Box.new(content: "am i floating1?", style: {display: :float, float: :right, height: 1, width: "am i floating1?".length}),
+      TerminalLayout::Box.new(content: "What up12?", style: {display: :block}),
+      TerminalLayout::Box.new(content: "Not much21", style: {display: :block}),
+      TerminalLayout::Box.new(content: "am i floating3?", style: {display: :float, float: :left, height: 1, width: "am i floating1?".length}),
+    ]
+  end
+
+  macro.stop do
+    world.editor.content_box.children = []
+  end
+
+  macro.define 'z', 'git open-pull'
+  # macro.define 'abc', 'echo abc'
+  # macro.define 'u', -> { world.editor.undo }
+  macro.define :up_arrow, -> {   }
+
+  macro.define 'l', 'git log ' do |macro|
+    macro.fragment 'n', '--name-status '
+    macro.fragment 'o', '--oneline '
+    macro.fragment /\d/, -> (a) { "-n#{a} " }
+  end
+
+  macro.define 'd', 'git diff ' do |macro|
+    macro.define 'n', '--name-status ' do |macro|
+      macro.define 'm', "master..HEAD"
+    end
+    macro.define 'm', "master..HEAD"
+  end
+end
+
+# world.addons[:keyboard_macros].configure(trigger_key: :ctrl_h) do |macros|
+#   macros.define 'h123', -> {
+#     box = TerminalLayout::Box.new(content: "Right?", style: { display: :block, float: :right, height: 1, width: 50 })
+#     world.editor.content_box.children = [box]
+#     'echo this was with a code block'
+#   }
+# end
+
+
+###############################################################################
 #                          USER-DEFINED FUNCTIONS
 #------------------------------------------------------------------------------
 # User-defined functions can be accessed in the shell like any command. They
@@ -113,6 +225,14 @@ end
 func :upcase do |stdin:, stdout:|
   str = stdin.read
   stdout.puts str.upcase
+end
+
+func :'run-modified-specs' do |stdin:, stdout:|
+  str = `git status`
+  specs = str.scan(/\S+_spec.rb/)
+  cmd = "bundle exec rspec #{specs.join(' ')}"
+  stdout.puts cmd
+  shell cmd
 end
 
 # This shell function uses a  Regexp to match on a command of 2 or more dots.

@@ -17,9 +17,12 @@ module Yap::Shell
         end
       end
 
-      def expand_words_in(input)
+      def expand_words_in(input, escape_directory_expansions: true)
         [input].flatten.inject([]) do |results,str|
-          results << process_expansions(word_expand(str))
+          results << process_expansions(
+            word_expand(str),
+            escape_directory_expansions: escape_directory_expansions
+          )
         end.flatten
       end
 
@@ -56,7 +59,7 @@ module Yap::Shell
         return [str]
       end
 
-      def process_expansions(expansions)
+      def process_expansions(expansions, escape_directory_expansions: true)
         expansions.map do |s|
           # Basic bash-style tilde expansion
           s.gsub!(/\A~(.*)/, world.env["HOME"] + '\1')
@@ -67,7 +70,11 @@ module Yap::Shell
           # Basic bash-style path-name expansion
           expansions = Dir[s]
           if expansions.any?
-            expansions
+            if escape_directory_expansions
+              expansions.map(&:shellescape)
+            else
+              expansions
+            end
           else
             s
           end
