@@ -22,7 +22,7 @@ class PromptUpdates < Addon
   private
 
   def determine_branch
-    `git branch`.scan(/\*\s*(.*)$/).flatten.first
+    `git branch 2>/dev/null`.scan(/\*\s*(.*)$/).flatten.first
   end
 
 end
