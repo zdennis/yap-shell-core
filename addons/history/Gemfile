@@ -1,2 +1,2 @@
-gem "chronic"
-gem "term-ansicolor"
+gem "chronic", "~> 0.10.2"
+gem "term-ansicolor", "~> 1.3.2"
