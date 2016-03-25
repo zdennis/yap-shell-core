@@ -4,7 +4,7 @@ module Yap::Shell
     DIRECTORY_FUTURE  = []
 
     builtin :cd do |world:, args:, stderr:, **|
-      path = args.first || world.env['HOME']
+      path = (args.first || world.env['HOME']).shellsplit.join
       if Dir.exist?(path)
         DIRECTORY_HISTORY << Dir.pwd
         world.env["PWD"] = File.expand_path(path)

@@ -67,7 +67,7 @@ module Yap::Shell
           @suppress_events = false
         else
           cmd2execute = variable_expand(node.command)
-          final_args = (args + @command_node_args_stack).flatten.shelljoin
+          final_args = (args + @command_node_args_stack).flatten.map(&:shellescape)
           expanded_args = shell_expand(final_args)
           command = CommandFactory.build_command_for(
             world: world,
