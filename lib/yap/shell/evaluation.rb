@@ -80,6 +80,10 @@ module Yap::Shell
       end
     end
 
+    def visit_CommentNode(node)
+      # no-op, do nothing
+    end
+
     def visit_RangeNode(node)
       range = node.head.value
       if node.tail
