@@ -43,7 +43,7 @@ class KeyboardMacros < Addon
     world.unbind(trigger_key)
     world.bind(trigger_key) do
       begin
-        @stack << configuration
+        @stack << OpenStruct.new(configuration: configuration)
         configuration.start.call if configuration.start
         world.editor.keyboard_input_processors.push(self)
         world.editor.input.wait_timeout_in_seconds = 0.1
@@ -60,18 +60,21 @@ class KeyboardMacros < Addon
   #
 
   def read_bytes(bytes)
-    configuration = @stack.last
-    bytes.each do |byte|
+    if @stack.last
+      current_definition = @stack.last
+      configuration = current_definition.configuration
+    end
+
+    bytes.each_with_index do |byte, i|
       definition = configuration[byte]
       if !definition
         cancel_processing if cancel_on_unknown_sequences
         break
       end
+
       configuration = definition.configuration
-      if configuration
-        configuration.start.call if configuration.start
-        @stack << configuration
-      end
+      configuration.start.call if configuration.start
+      @stack << definition
 
       result = definition.process
 
@@ -84,7 +87,11 @@ class KeyboardMacros < Addon
         break
       end
 
-      @stack.pop if definition.fragment?
+      if i == bytes.length - 1
+        while @stack.last && @stack.last.fragment?
+          @stack.pop
+        end
+      end
 
       if @event_id
         world.editor.event_loop.clear @event_id
@@ -111,8 +118,8 @@ class KeyboardMacros < Addon
 
   def cancel_processing
     @event_id = nil
-    @stack.reverse.each do |configuration|
-      configuration.stop.call if configuration.stop
+    @stack.reverse.each do |definition|
+      definition.configuration.stop.call if definition.configuration.stop
     end
     @stack.clear
     if world.editor.keyboard_input_processors.last == self
@@ -161,12 +168,10 @@ class KeyboardMacros < Addon
     end
 
     def fragment(sequence, result)
-      define(sequence, result).tap do |definition|
-        definition.fragment!
-      end
+      define(sequence, result, fragment: true)
     end
 
-    def define(sequence, result, &blk)
+    def define(sequence, result=nil, fragment: false, &blk)
       unless result.respond_to?(:call)
         string_result = result
         result = -> { string_result }
@@ -178,6 +183,7 @@ class KeyboardMacros < Addon
           self,
           sequence.bytes,
           result,
+          fragment: fragment,
           &blk
         )
       when Symbol
@@ -187,10 +193,11 @@ class KeyboardMacros < Addon
             fail "Cannot bind unknown sequence #{sequence.inspect}"
           },
           result,
+          fragment: fragment,
           &blk
         )
       when Regexp
-        define_sequence_for_regex(sequence, result, &blk)
+        define_sequence_for_regex(sequence, result, fragment: fragment, &blk)
       else
         raise NotImplementedError, <<-EOT.gsub(/^\s*/, '')
           Don't know how to define macro for sequence: #{sequence.inspect}
@@ -206,67 +213,82 @@ class KeyboardMacros < Addon
       @storage[key] = definition
     end
 
+    def inspect
+      str = @storage.map{ |k,v| "#{k}=#{v.inspect}" }.join("\n  ")
+      num_items = @storage.reduce(0) { |s, arr| s + arr.length }
+      "<Configuration num_items=#{num_items} stored_keys=#{str}>"
+    end
+
     private
 
-    def define_sequence_for_regex(regex, result, &blk)
+    def define_sequence_for_regex(regex, result, fragment: false, &blk)
       @storage[regex] = Definition.new(
         configuration: Configuration.new(
           cancellation: @cancellation,
           keymap: @keymap
         ),
+        fragment: fragment,
         sequence: regex,
         result: result,
         &blk
       )
     end
 
-    def recursively_define_sequence_for_bytes(configuration, bytes, result, &blk)
+    def recursively_define_sequence_for_bytes(configuration, bytes, result, fragment: false, &blk)
       byte, rest = bytes[0], bytes[1..-1]
       if rest.any?
-        definition = Definition.new(
-          configuration: Configuration.new(
-            cancellation: @cancellation,
-            keymap: @keymap
-          ),
-          sequence: byte,
-          result: nil,
-          &blk
-        )
+        definition = if configuration[byte]
+          configuration[byte]
+        else
+          Definition.new(
+            configuration: Configuration.new(
+              cancellation: @cancellation,
+              keymap: @keymap
+            ),
+            fragment: fragment,
+            sequence: byte,
+            result: nil
+          )
+        end
+        blk.call(definition.configuration) if blk
         configuration[byte] = definition
         recursively_define_sequence_for_bytes(
           definition.configuration,
           rest,
           result,
+          fragment: fragment,
           &blk
         )
       else
-        configuration[byte] = Definition.new(
+        definition = Definition.new(
           configuration: Configuration.new(keymap: @keymap),
+          fragment: fragment,
           sequence: byte,
-          result: result,
-          &blk
+          result: result
         )
+        configuration[byte] = definition
+        blk.call(definition.configuration) if blk
+        definition
       end
     end
   end
 
   class Definition
-    attr_reader :bytes, :configuration, :result, :sequence
+    attr_reader :configuration, :result, :sequence
 
-    def initialize(configuration: nil, sequence:, result: nil, &blk)
-      @fragment = false
+    def initialize(configuration: nil, fragment: false, sequence:, result: nil)
+      @fragment = fragment
       @configuration = configuration
       @sequence = sequence
       @result = result
-      blk.call(@configuration) if blk
+    end
+
+    def inspect
+      "<Definition fragment=#{@fragment.inspect} sequence=#{@sequence.inspect} result=#{@result.inspect} configuration=#{@configuration.inspect}>"
     end
 
     def fragment?
       @fragment
-    end
-
-    def fragment!
-      @fragment = true
     end
 
     def matches?(byte)

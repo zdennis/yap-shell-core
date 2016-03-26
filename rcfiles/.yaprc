@@ -160,6 +160,31 @@ world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
   # macro.define 'u', -> { world.editor.undo }
   macro.define :up_arrow, -> {   }
 
+  cycle_thru_recent_branches = Module.new do
+    def self.up
+      @index ||= 0
+      recents = `git recent`.lines.map(&:chomp)
+      @index = 0 if @index >= recents.length
+      recents[@index].tap { @index += 1 }
+    end
+
+    def self.down
+      @index ||= 0
+      recents = `git recent`.lines.map(&:chomp)
+      @index = recents.length - 1 if @index < 0
+      recents[@index].tap { @index -= 1 }
+    end
+
+    def self.reset ; @index = 0 ; end
+  end
+  macro.define 'b' do |macro|
+    macro.start { cycle_thru_recent_branches.reset }
+    # macro.stop { cycle_thru_recent_branches.reset }
+
+    macro.fragment :up_arrow, -> { cycle_thru_recent_branches.up }
+    macro.fragment :down_arrow, -> { cycle_thru_recent_branches.down }
+  end
+
   macro.define 'l', 'git log ' do |macro|
     macro.fragment 'n', '--name-status '
     macro.fragment 'o', '--oneline '
