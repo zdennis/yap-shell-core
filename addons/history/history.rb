@@ -3,7 +3,6 @@ require 'term/ansicolor'
 require 'ostruct'
 
 class History < Addon
-  require 'history/buffer'
   require 'history/events'
 
   Color = Object.extend Term::ANSIColor
@@ -57,7 +56,7 @@ class History < Addon
   end
 
   def show_history(editor, redraw_prompt:true, ignore_history_item:nil, history_item_formatter:nil)
-    editor.puts @history
+    editor.puts @world.history
   end
 
   def executing(command:, started_at:)
@@ -72,22 +71,23 @@ class History < Addon
     File.open(history_file, "a") do |file|
       # Don't write the YAML header because we're going to append to the
       # history file, not overwrite. YAML works fine without it.
-      file.write @world.editor.history.to_yaml(@history_start_position..-1).gsub(/^---.*/, '')
+      contents = @world.editor.history
+        .to_a[@history_start_position..-1]
+        .each_with_object([]) { |line, arr| arr << line unless line == arr.last  }
+        .map { |str| str.respond_to?(:raw) ? str.raw : str }
+        .to_yaml
+        .gsub(/^---.*?^/m, '')
+      file.write contents
     end
   end
 
   private
-
-  def history
-    @history
-  end
 
   def history_file
     @history_file ||= File.expand_path('~') + '/.yap-history'
   end
 
   def load_history
-    @world.editor.history = @history = History::Buffer.new(Float::INFINITY)
     @history_start_position = 0
 
     at_exit { save }
