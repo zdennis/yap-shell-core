@@ -4,7 +4,7 @@ class TabCompletion < Addon
   require 'tab_completion/completer'
   require 'tab_completion/dsl_methods'
   require 'tab_completion/custom_completion'
-  require 'tab_completion/file_completion'
+  require 'tab_completion/basic_completion'
 
   class CompletionResult
     attr_accessor :text, :type, :descriptive_text
@@ -28,7 +28,7 @@ class TabCompletion < Addon
     end
   end
 
-  COMPLETIONS = [ FileCompletion ]
+  COMPLETIONS = [ BasicCompletion ]
 
   Color = Term::ANSIColor
 
@@ -37,15 +37,19 @@ class TabCompletion < Addon
   )
 
   STYLE_PROCS = Hash.new{ |h,k| h[k] = ->(text){ text } }.merge(
+    alias:     -> (text){ Color.bold(Color.color("#ff00d7"){ text } ) },
+    builtin:   -> (text){ Color.bold(Color.color("#d7af00"){ text } ) },
     directory: -> (text){ Color.bold(Color.red(text)) },
     command:   -> (text){ Color.bold(Color.green(text)) },
+    shell_command: -> (text){ Color.bold(Color.color("#ffafff"){ text } ) },
     symlink:   -> (text){ Color.bold(Color.cyan(text)) },
     selected:  -> (text){ Color.negative(text) }
   )
 
   DECORATION_PROCS = Hash.new{ |h,k| h[k] = ->(text){ text } }.merge(
     directory: -> (text){ text + "/" },
-    command:   -> (text){ text + "@" }
+    command:   -> (text){ text + "@" },
+    shell_command: -> (text) { text + "🐚" }
   )
 
   attr_reader :editor, :world
@@ -54,8 +58,8 @@ class TabCompletion < Addon
     @world = world
     @world.extend TabCompletion::DslMethods
     @editor = @world.editor
-    @editor.completion_proc = -> (word, line){
-      complete(word, line)
+    @editor.completion_proc = -> (word, line, word_index){
+      complete(word, line, word_index)
     }
     @editor.bind(:tab){ @editor.complete }
     @completions = COMPLETIONS.dup
@@ -116,7 +120,7 @@ class TabCompletion < Addon
     @style_procs[type] = blk
   end
 
-  def complete(word, line)
+  def complete(word, words, word_index)
     matches = @completions.sort_by(&:priority).reverse.map do |completion|
       if completion.respond_to?(:call)
         completion.call
@@ -124,7 +128,7 @@ class TabCompletion < Addon
         completions = completion.new(
           world: @world,
           word_break_characters: editor.word_break_characters
-        ).completions_for(word, line)
+        ).completions_for(word, words, word_index)
         completions.each do |completion|
           completion.text = display_text_for_match(completion)
         end

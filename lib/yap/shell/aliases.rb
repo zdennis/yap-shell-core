@@ -13,6 +13,10 @@ module Yap::Shell
       end
     end
 
+    def names
+      @aliases.keys
+    end
+
     def fetch_alias(name)
       @aliases[name]
     end
@@ -31,7 +35,7 @@ module Yap::Shell
     end
 
     def to_h
-      @aliases.keys.sort.inject(Hash.new) do |h,k|
+      @aliases.keys.compact.sort.inject(Hash.new) do |h,k|
         h[k] = @aliases[k]
         h
       end
