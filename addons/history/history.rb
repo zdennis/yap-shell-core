@@ -48,15 +48,15 @@ class History < Addon
             item.command !~ /#{first_arg}/
           end
         end
-        show_history(world.editor, redraw_prompt:false, ignore_history_item:ignore_history_item)
+        show_history(world.editor, stdout: stdout, redraw_prompt:false, ignore_history_item:ignore_history_item)
       else
-        show_history(world.editor, redraw_prompt:false)
+        show_history(world.editor, stdout: stdout, redraw_prompt:false)
       end
     end
   end
 
-  def show_history(editor, redraw_prompt:true, ignore_history_item:nil, history_item_formatter:nil)
-    editor.puts @world.history
+  def show_history(editor, stdout:, redraw_prompt:true, ignore_history_item:nil, history_item_formatter:nil)
+    stdout.puts @world.history
   end
 
   def executing(command:, started_at:)
