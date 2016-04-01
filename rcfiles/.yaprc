@@ -31,6 +31,10 @@ require 'terminfo'
 env.delete("BUNDLE_GEMFILE")
 # env.delete("BUNDLE_BIN_PATH")
 
+# Resize history to be infinite
+infinity = 1 / 0.0
+world.history.resize(infinity)
+
 func :reload! do |args:, stdin:, stdout:, stderr:|
   stdout.puts "Reloading shell:"
   stdout.print "  Saving history "
