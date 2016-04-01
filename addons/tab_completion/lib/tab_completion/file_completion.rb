@@ -14,32 +14,61 @@ class TabCompletion
       @paths = path.split(":")
     end
 
-    def completions_for(word, line)
-      completions = []
-      if looking_for_command?
-        completions.concat command_completion_matches_for(word, line)
+    def completions_for(word, words, word_index)
+      completions_by_name = {}
+      if looking_for_command?(word, words, word_index)
+        # Lowest Priority
+        completions_by_name.merge! command_completion_matches_for(word, words)
+
+        # Medium Priority
+        completions_by_name.merge! builtin_completion_matches_for(word, words)
+
+        # Highest Priority
+        completions_by_name.merge! alias_completion_matches_for(word, words)
+      else
+        completions_by_name.merge! filename_completion_matches_for(word, words)
       end
-      completions.concat filename_completion_matches_for(word, line)
-      completions
+      completions_by_name.values
     end
 
     private
 
-    def looking_for_command?
-      # TODO
+    def looking_for_command?(word, words, word_index)
+      return true if word_index == 0
+      return true if words[word_index - 1] =~ /[;&]/
       false
     end
 
-    def command_completion_matches_for(word, line)
-      matches = @paths.inject([]) do |matches, path|
-        glob = "#{path}*"
-        arr = Dir[glob].select { |path| File.executable?(path) && File.file?(path) }
-        arr.each { |path| matches << path }
-        matches
-      end
 
-      matches.map { |path| File.basename(path) }.sort.uniq.map do |command|
-        CompletionResult.new(type: :command, text:command)
+    def alias_completion_matches_for(word, words)
+      @world.aliases.names.each_with_object({}) do |name, result|
+        if name =~ /^#{Regexp.escape(word)}/
+          result[name] ||=  CompletionResult.new(
+            type: :alias,
+            text: name
+          )
+        end
+      end
+    end
+
+    def builtin_completion_matches_for(word, words)
+      @world.builtins.each_with_object({}) do |builtin, result|
+        if builtin =~ /^#{Regexp.escape(word)}/
+          result[builtin] ||=  CompletionResult.new(
+            type: :builtin,
+            text: builtin
+          )
+        end
+      end
+    end
+
+    def command_completion_matches_for(word, line)
+      @paths.each_with_object({}) do |path, matches|
+        glob = File.join(path, "#{word}*")
+        arr = Dir[glob].select { |path| File.executable?(path) && File.file?(path) }
+        arr.map { |path| File.basename(path) }.uniq.each do |command|
+          matches[command] = CompletionResult.new(type: :command, text: command)
+        end
       end
     end
 

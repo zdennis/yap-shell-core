@@ -37,6 +37,8 @@ class TabCompletion < Addon
   )
 
   STYLE_PROCS = Hash.new{ |h,k| h[k] = ->(text){ text } }.merge(
+    alias:     -> (text){ Color.bold(Color.color("#ff00d7"){ text } ) },
+    builtin:   -> (text){ Color.bold(Color.color("#d7af00"){ text } ) },
     directory: -> (text){ Color.bold(Color.red(text)) },
     command:   -> (text){ Color.bold(Color.green(text)) },
     symlink:   -> (text){ Color.bold(Color.cyan(text)) },
@@ -54,8 +56,8 @@ class TabCompletion < Addon
     @world = world
     @world.extend TabCompletion::DslMethods
     @editor = @world.editor
-    @editor.completion_proc = -> (word, line){
-      complete(word, line)
+    @editor.completion_proc = -> (word, line, word_index){
+      complete(word, line, word_index)
     }
     @editor.bind(:tab){ @editor.complete }
     @completions = COMPLETIONS.dup
@@ -116,7 +118,7 @@ class TabCompletion < Addon
     @style_procs[type] = blk
   end
 
-  def complete(word, line)
+  def complete(word, words, word_index)
     matches = @completions.sort_by(&:priority).reverse.map do |completion|
       if completion.respond_to?(:call)
         completion.call
@@ -124,7 +126,7 @@ class TabCompletion < Addon
         completions = completion.new(
           world: @world,
           word_break_characters: editor.word_break_characters
-        ).completions_for(word, line)
+        ).completions_for(word, words, word_index)
         completions.each do |completion|
           completion.text = display_text_for_match(completion)
         end

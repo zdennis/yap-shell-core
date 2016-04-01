@@ -50,6 +50,14 @@ module Yap
       @addons.fetch(addon_name){ raise(ArgumentError, "No addon loaded registered as #{addon_name}") }
     end
 
+    def aliases
+      Yap::Shell::Aliases.instance
+    end
+
+    def builtins
+      Yap::Shell::BuiltinCommand.builtins.keys.map(&:to_s)
+    end
+
     def events
       @editor.events
     end
