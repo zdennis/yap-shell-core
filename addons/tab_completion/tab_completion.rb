@@ -4,7 +4,7 @@ class TabCompletion < Addon
   require 'tab_completion/completer'
   require 'tab_completion/dsl_methods'
   require 'tab_completion/custom_completion'
-  require 'tab_completion/file_completion'
+  require 'tab_completion/basic_completion'
 
   class CompletionResult
     attr_accessor :text, :type, :descriptive_text
@@ -28,7 +28,7 @@ class TabCompletion < Addon
     end
   end
 
-  COMPLETIONS = [ FileCompletion ]
+  COMPLETIONS = [ BasicCompletion ]
 
   Color = Term::ANSIColor
 

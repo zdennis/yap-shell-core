@@ -1,5 +1,5 @@
 class TabCompletion
-  class FileCompletion
+  class BasicCompletion
     class << self
       attr_accessor :priority
     end
