@@ -38,6 +38,7 @@ class TabCompletion
     private
 
     def looking_for_command?(word, words, word_index)
+      return false unless word_index
       return true if word_index == 0
       return true if words[word_index - 1] =~ /[;&]/
       false
