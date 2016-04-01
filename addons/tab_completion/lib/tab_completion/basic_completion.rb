@@ -23,11 +23,15 @@ class TabCompletion
         # Medium Priority
         completions_by_name.merge! builtin_completion_matches_for(word, words)
 
+        # High Priority
+        completions_by_name.merge! shell_command_completion_matches_for(word, words)
+
         # Highest Priority
         completions_by_name.merge! alias_completion_matches_for(word, words)
       else
         completions_by_name.merge! filename_completion_matches_for(word, words)
       end
+      completions_by_name.merge! environment_variable_completions_for(word, words)
       completions_by_name.values
     end
 
@@ -38,7 +42,6 @@ class TabCompletion
       return true if words[word_index - 1] =~ /[;&]/
       false
     end
-
 
     def alias_completion_matches_for(word, words)
       @world.aliases.names.each_with_object({}) do |name, result|
@@ -54,7 +57,7 @@ class TabCompletion
     def builtin_completion_matches_for(word, words)
       @world.builtins.each_with_object({}) do |builtin, result|
         if builtin =~ /^#{Regexp.escape(word)}/
-          result[builtin] ||=  CompletionResult.new(
+          result[builtin] ||= CompletionResult.new(
             type: :builtin,
             text: builtin
           )
@@ -62,7 +65,7 @@ class TabCompletion
       end
     end
 
-    def command_completion_matches_for(word, line)
+    def command_completion_matches_for(word, words)
       @paths.each_with_object({}) do |path, matches|
         glob = File.join(path, "#{word}*")
         arr = Dir[glob].select { |path| File.executable?(path) && File.file?(path) }
@@ -72,13 +75,37 @@ class TabCompletion
       end
     end
 
+    def environment_variable_completions_for(word, words)
+      return {} unless word =~ /^\$/
+      prefix, word_sans_prefix = word[0], word[1..-1]
+      @world.env.keys.each_with_object({}) do |env_var, result|
+        if env_var =~ /^#{Regexp.escape(word_sans_prefix)}/
+          result[env_var] ||= CompletionResult.new(
+            type: :env_var,
+            text: prefix + env_var
+          )
+        end
+      end
+    end
+
+    def shell_command_completion_matches_for(word, words)
+      @world.shell_commands.each_with_object({}) do |shell_command, result|
+        if shell_command =~ /^#{Regexp.escape(word)}/
+          result[shell_command] ||= CompletionResult.new(
+            type: :shell_command,
+            text: shell_command
+          )
+        end
+      end
+    end
+
     def filename_completion_matches_for(word, line)
       glob = "#{word}*"
       glob.gsub!("~", world.env["HOME"])
-      Dir.glob(glob, File::FNM_CASEFOLD).map do |path|
+      Dir.glob(glob, File::FNM_CASEFOLD).each_with_object({}) do |path, result|
         text = path.gsub(filtered_work_break_characters_rgx, '\\\\\1')
         descriptive_text = File.basename(text)
-        if File.directory?(path)
+        result[path] = if File.directory?(path)
           CompletionResult.new(type: :directory, text: text, descriptive_text: descriptive_text)
         elsif File.symlink?(path)
           CompletionResult.new(type: :symlink, text: text, descriptive_text: descriptive_text)

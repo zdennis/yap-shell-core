@@ -41,13 +41,15 @@ class TabCompletion < Addon
     builtin:   -> (text){ Color.bold(Color.color("#d7af00"){ text } ) },
     directory: -> (text){ Color.bold(Color.red(text)) },
     command:   -> (text){ Color.bold(Color.green(text)) },
+    shell_command: -> (text){ Color.bold(Color.color("#ffafff"){ text } ) },
     symlink:   -> (text){ Color.bold(Color.cyan(text)) },
     selected:  -> (text){ Color.negative(text) }
   )
 
   DECORATION_PROCS = Hash.new{ |h,k| h[k] = ->(text){ text } }.merge(
     directory: -> (text){ text + "/" },
-    command:   -> (text){ text + "@" }
+    command:   -> (text){ text + "@" },
+    shell_command: -> (text) { text + "🐚" }
   )
 
   attr_reader :editor, :world

@@ -102,10 +102,9 @@ module Yap::Shell
       (@registered_functions ||= {}).freeze
     end
 
-    def self.define_shell_function(name_or_pattern, &blk)
+    def self.define_shell_function(name_or_pattern, name: nil, &blk)
       raise ArgumentError, "Must provide block when defining a shell function" unless blk
       name_or_pattern = name_or_pattern.to_s if name_or_pattern.is_a?(Symbol)
-      name_or_pattern = /^#{Regexp.escape(name_or_pattern)}$/ if name_or_pattern.is_a?(String)
       (@registered_functions ||= {})[name_or_pattern] = blk
     end
 
