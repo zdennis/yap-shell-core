@@ -43,6 +43,7 @@ func :reload! do |args:, stdin:, stdout:, stderr:|
   exec File.expand_path($0)
 end
 
+
 completion_cache = {}
 
 # tab_completion_display do |matches|
@@ -159,28 +160,40 @@ world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
     world.editor.content_box.children = []
   end
 
-  macro.define 'z', 'git open-pull'
-  # macro.define 'abc', 'echo abc'
-  # macro.define 'u', -> { world.editor.undo }
-  macro.define :up_arrow, -> {   }
+  macro.define 'z', "git open-pull\n"
+  macro.define 'abc', 'echo abc'
+  macro.define 'u', -> { world.editor.undo }
 
-  cycle_thru_recent_branches = Module.new do
-    def self.up
+  class Cycle
+    attr_reader :world
+
+    def initialize(world)
+      @world = world
+    end
+
+    def up
+      world.editor.undo unless @index.nil?
       @index ||= 0
       recents = `git recent`.lines.map(&:chomp)
       @index = 0 if @index >= recents.length
+      s = recents[@index].tap { @index += 1 }
       recents[@index].tap { @index += 1 }
     end
 
-    def self.down
+    def down
+      world.editor.undo unless @index.nil?
       @index ||= 0
       recents = `git recent`.lines.map(&:chomp)
       @index = recents.length - 1 if @index < 0
       recents[@index].tap { @index -= 1 }
     end
 
-    def self.reset ; @index = 0 ; end
+    def reset
+      @index = nil
+    end
   end
+
+  cycle_thru_recent_branches = Cycle.new(world)
   macro.define 'b' do |macro|
     macro.start { cycle_thru_recent_branches.reset }
     # macro.stop { cycle_thru_recent_branches.reset }
@@ -191,15 +204,16 @@ world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
 
   macro.define 'l', 'git log ' do |macro|
     macro.fragment 'n', '--name-status '
+    macro.fragment 'm', 'master..HEAD '
     macro.fragment 'o', '--oneline '
     macro.fragment /\d/, -> (a) { "-n#{a} " }
   end
 
   macro.define 'd', 'git diff ' do |macro|
-    macro.define 'n', '--name-status ' do |macro|
-      macro.define 'm', "master..HEAD"
-    end
-    macro.define 'm', "master..HEAD"
+    macro.fragment 'n', '--name-status '
+    macro.fragment 'm', 'master..HEAD '
+    macro.fragment 'o', '--oneline '
+    macro.fragment /\d/, -> (a) { "-n#{a} " }
   end
 end
 
@@ -296,7 +310,9 @@ end
 func history_matcher do |world:, args:, stdout:|
   num_commands = args.first.to_i
   num_commands = world.history.length - 1 if num_commands == 0
+  history_size = world.history.length
   world.history[-(num_commands + 1)...-1].each_with_index do |command, i|
-    stdout.puts "    #{i}   #{command}"
+    position = history_size - num_commands + i
+    stdout.puts "    #{position}   #{command}"
   end
 end
