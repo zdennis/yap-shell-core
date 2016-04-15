@@ -1,4 +1,6 @@
 class KeyboardMacros < Addon
+  require 'keyboard_macros/cycle'
+
   DEFAULT_TRIGGER_KEY = :ctrl_g
   DEFAULT_CANCEL_KEY = " "
   DEFAULT_TIMEOUT_IN_MS = 500
@@ -35,7 +37,8 @@ class KeyboardMacros < Addon
     configuration = Configuration.new(
       keymap: world.editor.terminal.keys,
       trigger_key: trigger_key,
-      cancellation: Cancellation.new(cancel_key: cancel_key, &cancel_blk)
+      cancellation: Cancellation.new(cancel_key: cancel_key, &cancel_blk),
+      editor: world.editor,
     )
 
     blk.call configuration if blk
@@ -43,6 +46,7 @@ class KeyboardMacros < Addon
     world.unbind(trigger_key)
     world.bind(trigger_key) do
       begin
+        @previous_result = nil
         @stack << OpenStruct.new(configuration: configuration)
         configuration.start.call if configuration.start
         world.editor.keyboard_input_processors.push(self)
@@ -79,7 +83,7 @@ class KeyboardMacros < Addon
       result = definition.process
 
       if result =~ /\n$/
-        world.editor.write result.chomp
+        world.editor.write result.chomp, add_to_line_history: false
         world.editor.event_loop.clear @event_id if @event_id
         cancel_processing
         world.editor.newline # add_to_history
@@ -97,7 +101,11 @@ class KeyboardMacros < Addon
         world.editor.event_loop.clear @event_id
         @event_id = queue_up_remove_input_processor
       end
-      world.editor.write result if result.is_a?(String)
+
+      if result.is_a?(String)
+        world.editor.write result, add_to_line_history: false
+        @previous_result = result
+      end
     end
   end
 
@@ -144,13 +152,15 @@ class KeyboardMacros < Addon
   class Configuration
     attr_reader :cancellation, :trigger_key, :keymap
 
-    def initialize(cancellation: nil, keymap: {}, trigger_key: nil)
+    def initialize(cancellation: nil, editor:, keymap: {}, trigger_key: nil)
       @cancellation = cancellation
+      @editor = editor
       @keymap = keymap
       @trigger_key = trigger_key
       @storage = {}
       @on_start_blk = nil
       @on_stop_blk = nil
+      @cycles = {}
 
       if @cancellation
         define @cancellation.cancel_key, -> { @cancellation.call }
@@ -165,6 +175,20 @@ class KeyboardMacros < Addon
     def stop(&blk)
       @on_stop_blk = blk if blk
       @on_stop_blk
+    end
+
+    def cycle(name, &cycle_thru_blk)
+      if block_given?
+        cycle = KeyboardMacros::Cycle.new(
+          cycle_proc: cycle_thru_blk,
+          on_cycle_proc: -> (old_value, new_value) {
+            @editor.delete_n_characters(old_value.to_s.length)
+          }
+        )
+        @cycles[name] = cycle
+      else
+        @cycles.fetch(name)
+      end
     end
 
     def fragment(sequence, result)
@@ -225,7 +249,8 @@ class KeyboardMacros < Addon
       @storage[regex] = Definition.new(
         configuration: Configuration.new(
           cancellation: @cancellation,
-          keymap: @keymap
+          keymap: @keymap,
+          editor: @editor
         ),
         fragment: fragment,
         sequence: regex,
@@ -243,7 +268,8 @@ class KeyboardMacros < Addon
           Definition.new(
             configuration: Configuration.new(
               cancellation: @cancellation,
-              keymap: @keymap
+              keymap: @keymap,
+              editor: @editor
             ),
             fragment: fragment,
             sequence: byte,
@@ -261,7 +287,10 @@ class KeyboardMacros < Addon
         )
       else
         definition = Definition.new(
-          configuration: Configuration.new(keymap: @keymap),
+          configuration: Configuration.new(
+            keymap: @keymap,
+            editor: @editor
+          ),
           fragment: fragment,
           sequence: byte,
           result: result

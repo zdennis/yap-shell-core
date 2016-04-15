@@ -164,42 +164,12 @@ world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
   macro.define 'abc', 'echo abc'
   macro.define 'u', -> { world.editor.undo }
 
-  class Cycle
-    attr_reader :world
-
-    def initialize(world)
-      @world = world
-    end
-
-    def up
-      world.editor.undo unless @index.nil?
-      @index ||= 0
-      recents = `git recent`.lines.map(&:chomp)
-      @index = 0 if @index >= recents.length
-      s = recents[@index].tap { @index += 1 }
-      recents[@index].tap { @index += 1 }
-    end
-
-    def down
-      world.editor.undo unless @index.nil?
-      @index ||= 0
-      recents = `git recent`.lines.map(&:chomp)
-      @index = recents.length - 1 if @index < 0
-      recents[@index].tap { @index -= 1 }
-    end
-
-    def reset
-      @index = nil
-    end
-  end
-
-  cycle_thru_recent_branches = Cycle.new(world)
   macro.define 'b' do |macro|
-    macro.start { cycle_thru_recent_branches.reset }
-    # macro.stop { cycle_thru_recent_branches.reset }
+    macro.start { macro.cycle(:recent_git_branches).reset }
 
-    macro.fragment :up_arrow, -> { cycle_thru_recent_branches.up }
-    macro.fragment :down_arrow, -> { cycle_thru_recent_branches.down }
+    macro.cycle(:recent_git_branches) { `git recent`.lines.map(&:chomp) }
+    macro.fragment :up_arrow, -> { macro.cycle(:recent_git_branches).next }
+    macro.fragment :down_arrow, -> { macro.cycle(:recent_git_branches).previous }
   end
 
   macro.define 'l', 'git log ' do |macro|
