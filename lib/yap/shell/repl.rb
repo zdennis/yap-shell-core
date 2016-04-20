@@ -21,10 +21,13 @@ module Yap::Shell
 
       @world.editor.on_read_line do |event|
         # editor.history = true?
-        line = event[:payload][:line]
+        line = event[:payload][:line] << "\n"
         begin
           @blk.call(line)
           @world.editor.redraw_prompt
+        rescue Yap::Shell::Parser::Lexer::NonterminatedString
+          line << read_another_line_of_input
+          retry
         rescue ::Yap::Shell::CommandUnknownError => ex
           puts "  CommandError: #{ex.message}"
         ensure
@@ -37,6 +40,11 @@ module Yap::Shell
     end
 
     private
+
+    def read_another_line_of_input
+      print @world.secondary_prompt.update.text
+      gets
+    end
 
     def kill_ring
       @kill_ring ||= []

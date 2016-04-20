@@ -96,6 +96,14 @@ self.prompt = -> do
   last_prompt = "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
 end
 
+#
+# The secondary_prompt is equivalent to the PS2 prompt in bash. It is what
+# is displayed when entering a multiline command. It can be set to a string
+# or a proc. It defaults to '> '
+#
+# To see it in action, type "echo 'foo" with no completing single quote and
+# hit enter.
+self.secondary_prompt = '> '
 
 ###############################################################################
 #                               KEYBOARD MACROS

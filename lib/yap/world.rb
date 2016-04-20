@@ -123,13 +123,22 @@ module Yap
     end
 
     def prompt=(prompt=nil, &blk)
-      # TODO if prompt_controller then undefine, cancel events, etc
       if prompt.is_a?(Yap::Shell::Prompt)
         @prompt = prompt
       elsif prompt.respond_to?(:call) # proc
         @prompt = Yap::Shell::Prompt.new(text:prompt.call, &prompt)
       else # text
         @prompt = Yap::Shell::Prompt.new(text:prompt, &blk)
+      end
+    end
+
+    def secondary_prompt=(prompt=nil, &blk)
+      if prompt.is_a?(Yap::Shell::Prompt)
+        @secondary_prompt = prompt
+      elsif prompt.respond_to?(:call) # proc
+        @secondary_prompt = Yap::Shell::Prompt.new(text:prompt.call, &prompt)
+      else # text
+        @secondary_prompt = Yap::Shell::Prompt.new(text:prompt, &blk)
       end
     end
 
