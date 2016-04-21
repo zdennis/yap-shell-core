@@ -25,7 +25,7 @@ module Yap::Shell
         begin
           @blk.call(line)
           @world.editor.redraw_prompt
-        rescue Yap::Shell::Parser::Lexer::NonterminatedString
+        rescue Yap::Shell::Parser::Lexer::NonterminatedString, Yap::Shell::Parser::Lexer::LineContinuationFound
           line << read_another_line_of_input
           retry
         rescue ::Yap::Shell::CommandUnknownError => ex
