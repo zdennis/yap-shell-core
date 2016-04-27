@@ -54,9 +54,7 @@ module Yap::Shell
       @aliases_expanded ||= []
       @command_node_args_stack ||= []
       with_standard_streams do |stdin, stdout, stderr|
-        args = node.args.map(&:lvalue).map do |arg|
-          shell_expand(arg, escape_directory_expansions: false)
-        end
+        args = process_ArgumentNodes(node.args)
         if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
           @command_node_args_stack << args
@@ -197,7 +195,9 @@ module Yap::Shell
     #
     def visit_EnvWrapperNode(node)
       with_env do
-        node.env.each_pair { |env_var_name,value| world.env[env_var_name] = variable_expand(value) }
+        node.env.each_pair do |env_var_name, arg_node|
+          world.env[env_var_name] = process_ArgumentNode(arg_node)
+        end
         node.node.accept(self)
       end
     end
@@ -213,8 +213,8 @@ module Yap::Shell
     # they cleared or overridden.
     #
     def visit_EnvNode(node)
-      node.env.each_pair do |key,val|
-        world.env[key] = variable_expand(val)
+      node.env.each_pair do |key, arg_node|
+        world.env[key] = process_ArgumentNode(arg_node)
       end
       Yap::Shell::Execution::Result.new(status_code:0, directory:Dir.pwd, n:1, of:1)
     end
@@ -276,6 +276,17 @@ module Yap::Shell
     #                                                                    #
     ######################################################################
 
+    def process_ArgumentNodes(nodes)
+      nodes.map { |arg_node| process_ArgumentNode(arg_node) }
+    end
+
+    def process_ArgumentNode(node)
+      if node.quoted?
+        variable_expand(node.lvalue)
+      else
+        shell_expand(node.lvalue, escape_directory_expansions: false).first
+      end
+    end
 
     # +pipeline_stack+ is used to determine if we are about go inside of a
     # pipeline. It will be empty when we are coming out of a pipeline node.
