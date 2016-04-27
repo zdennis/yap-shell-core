@@ -29,7 +29,7 @@ require 'term/ansicolor'
 require 'terminfo'
 
 env.delete("BUNDLE_GEMFILE")
-# env.delete("BUNDLE_BIN_PATH")
+env.delete("BUNDLE_BIN_PATH")
 
 # Resize history to be infinite
 infinity = 1 / 0.0
