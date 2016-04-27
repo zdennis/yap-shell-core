@@ -20,8 +20,11 @@ class TabCompletion
         # Lowest Priority
         completions_by_name.merge! command_completion_matches_for(word, words)
 
-        # Medium Priority
+        # Low Priority
         completions_by_name.merge! builtin_completion_matches_for(word, words)
+
+        # Medium Priority
+        completions_by_name.merge! executable_filename_completion_matches_for(word, words)
 
         # High Priority
         completions_by_name.merge! shell_command_completion_matches_for(word, words)
@@ -84,6 +87,22 @@ class TabCompletion
           result[env_var] ||= CompletionResult.new(
             type: :env_var,
             text: prefix + env_var
+          )
+        end
+      end
+    end
+
+    def executable_filename_completion_matches_for(word, words)
+      glob = "#{word}*"
+      glob.gsub!("~", world.env["HOME"])
+      Dir.glob(glob, File::FNM_CASEFOLD).each_with_object({}) do |path, result|
+        text = path.gsub(filtered_work_break_characters_rgx, '\\\\\1')
+        descriptive_text = File.basename(text)
+        if !File.directory?(path) && File.executable?(path)
+          result[path] =  CompletionResult.new(
+            type: :command,
+            text: text,
+            descriptive_text: descriptive_text
           )
         end
       end
