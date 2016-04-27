@@ -30,6 +30,8 @@ module Yap::Shell
           retry
         rescue ::Yap::Shell::CommandUnknownError => ex
           puts "  CommandError: #{ex.message}"
+        rescue ::Yap::Shell::Parser::ParseError => ex
+          puts "  Parse error: #{ex.message}"
         ensure
           @world.editor.reset_line
         end
