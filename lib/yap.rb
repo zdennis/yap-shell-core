@@ -1,12 +1,14 @@
+require 'yap/configuration'
 require 'yap/shell'
 require 'yap/world'
 
 module Yap
   def self.run_shell
-    addons = []
-    addons.push World::Addons.load_directories Dir["#{ENV['HOME']}/.yap-addons/*"]
-    addons.push World::Addons.load_rcfiles Dir["#{ENV['HOME']}/.yaprc"]
+    addons = [
+      World::Addons.load_directories(configuration.addon_paths),
+      World::Addons.load_rcfiles(configuration.rcfiles)
+    ].flatten
 
-    Shell::Impl.new(addons: addons.flatten).repl
+    Shell::Impl.new(addons: addons).repl
   end
 end
