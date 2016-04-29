@@ -1,3 +1,4 @@
+require 'pathname'
 require 'yap/world'
 
 module Yap
@@ -18,6 +19,14 @@ module Yap
       @rcfiles = [
         Dir["#{ENV['HOME']}/.yaprc"]
       ].flatten
+    end
+
+    def path_for(part)
+      yap_path.join(part)
+    end
+
+    def yap_path
+      Pathname.new "#{ENV['HOME']}/.yap"
     end
   end
 end

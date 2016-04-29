@@ -46,6 +46,10 @@ module Yap
       addons.each { |addon| addon.initialize_world(self) }
     end
 
+    def configuration
+      ::Yap.configuration
+    end
+
     def [](addon_name)
       @addons.fetch(addon_name){ raise(ArgumentError, "No addon loaded registered as #{addon_name}") }
     end
