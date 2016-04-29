@@ -152,6 +152,15 @@ world.addons[:keyboard_macros].timeout_in_ms = nil
 # set to false you can keep attempting to type in your macro.
 world.addons[:keyboard_macros].cancel_on_unknown_sequences = true
 
+keyboard_macros = world.addons[:keyboard_macros]
+keyboard_macros.cycle(:recent_git_branches) { `git recent`.lines.map(&:chomp) }
+world.editor.bind(:alt_up_arrow) do
+  keyboard_macros.cycle(:recent_git_branches).next
+end
+world.editor.bind(:alt_down_arrow) do
+  keyboard_macros.cycle(:recent_git_branches).previous
+end
+
 # Or, you can set the trigger key for a particular set of macros
 # by specifying it when you call .configure(...).
 world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|

@@ -59,6 +59,22 @@ class KeyboardMacros < Addon
     @configurations << configuration
   end
 
+  def cycle(name, &cycle_thru_blk)
+    @cycles ||= {}
+    if block_given?
+      cycle = KeyboardMacros::Cycle.new(
+        cycle_proc: cycle_thru_blk,
+        on_cycle_proc: -> (old_value, new_value) {
+          @world.editor.delete_n_characters(old_value.to_s.length)
+          process_result(new_value)
+        }
+      )
+      @cycles[name] = cycle
+    else
+      @cycles.fetch(name)
+    end
+  end
+
   #
   # InputProcessor Methods
   #
@@ -102,14 +118,19 @@ class KeyboardMacros < Addon
         @event_id = queue_up_remove_input_processor
       end
 
-      if result.is_a?(String)
-        world.editor.write result, add_to_line_history: false
-        @previous_result = result
-      end
+      process_result(result)
     end
   end
 
   private
+
+  def process_result(result)
+    if result.is_a?(String)
+      $z.puts "WRITING: #{result}"
+      @world.editor.write result, add_to_line_history: false
+      @previous_result = result
+    end
+  end
 
   def queue_up_remove_input_processor(&blk)
     return unless @timeout_in_ms
