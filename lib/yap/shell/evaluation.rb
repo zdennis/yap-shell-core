@@ -59,6 +59,7 @@ module Yap::Shell
           @suppress_events = true
           @command_node_args_stack << args
           ast = Parser.parse(_alias)
+          ast.redirects = node.redirects
           @aliases_expanded.push(node.command)
           ast.accept(self)
           @aliases_expanded.pop
@@ -170,9 +171,12 @@ module Yap::Shell
 
     def visit_StatementsNode(node)
       Yap::Shell::Execution::Context.fire :before_statements_execute, @world unless @suppress_events
-      node.head.accept(self)
-      if node.tail
-        node.tail.accept(self)
+      with_standard_streams do |stdin, stdout, stderr|
+        @stdin, @stdout, @stderr = stream_redirections_for(node)
+        node.head.accept(self)
+        if node.tail
+          node.tail.accept(self)
+        end
       end
       Yap::Shell::Execution::Context.fire :after_statements_execute, @world unless @suppress_events
     end
@@ -321,15 +325,21 @@ module Yap::Shell
         case redirect.kind
         when "<"
           stdin = redirect.target
+          stdin  = File.open(stdin, "rb") if stdin.is_a?(String)
         when ">", "1>"
           stdout = redirect.target
+          stdout = File.open(stdout, "wb") if stdout.is_a?(String)
         when "1>&2"
           stderr = :stdout
         when "2>"
           stderr = redirect.target
+          stderr = File.open(stderr, "wb") if stderr.is_a?(String)
         when "2>&1"
           stdout = :stderr
         end
+
+        stdout = stderr if stdout == :stderr
+        stderr = stdout if stderr == :stdout
       end
       [stdin, stdout, stderr]
     end

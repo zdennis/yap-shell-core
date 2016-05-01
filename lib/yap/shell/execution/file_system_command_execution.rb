@@ -16,6 +16,10 @@ module Yap::Shell::Execution
         end
 
         pid = fork do
+          # Start a new process group as the session leader. Now we are
+          # responsible for sending signals that would have otherwise
+          # been propagated to the process, e.g. SIGINT, SIGSTOP, SIGCONT, etc.
+
           # reset signals in case any were ignored
           Signal.trap("SIGINT",  "DEFAULT")
           Signal.trap("SIGQUIT", "DEFAULT")
@@ -25,16 +29,6 @@ module Yap::Shell::Execution
 
           # Set the process group of the forked to child to that of the
           Process.setpgrp
-
-          # Start a new process group as the session leader. Now we are
-          # responsible for sending signals that would have otherwise
-          # been propagated to the process, e.g. SIGINT, SIGSTOP, SIGCONT, etc.
-          stdin  = File.open(stdin, "rb") if stdin.is_a?(String)
-          stdout = File.open(stdout, "wb") if stdout.is_a?(String)
-          stderr = File.open(stderr, "wb") if stderr.is_a?(String)
-
-          stdout = stderr if stdout == :stderr
-          stderr = stdout if stderr == :stdout
 
           $stdin.reopen stdin
           $stdout.reopen stdout
@@ -71,8 +65,6 @@ module Yap::Shell::Execution
       if stderr != $stderr && stderr.is_a?(IO) && !stderr.closed? then
         stderr.close
       end
-      # if stdin != $stdin && !stdin.closed? then stdin.close end
-
 
       # if the pid that just stopped was the process group owner then
       # give it back to the us so we can become the foreground process
