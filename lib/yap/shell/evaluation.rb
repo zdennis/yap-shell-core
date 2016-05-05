@@ -171,13 +171,21 @@ module Yap::Shell
 
     def visit_StatementsNode(node)
       Yap::Shell::Execution::Context.fire :before_statements_execute, @world unless @suppress_events
+
+      c = rand(100)
+      $z.puts "visit_StatementsNode #{c}:0 @stdout=#{@stdout}  $stdout=#{$stdout} STDOUT=#{STDOUT}"
+      $z.puts "#{node.inspect}"
+
       with_standard_streams do |stdin, stdout, stderr|
         @stdin, @stdout, @stderr = stream_redirections_for(node)
+        $stdin, $stdout, $stderr = @stdin, @stdout, @stderr
         node.head.accept(self)
         if node.tail
           node.tail.accept(self)
         end
       end
+      $z.puts "visit_StatementsNode #{c} done"
+
       Yap::Shell::Execution::Context.fire :after_statements_execute, @world unless @suppress_events
     end
 
@@ -241,6 +249,10 @@ module Yap::Shell
     end
 
     def visit_PipelineNode(node, options={})
+      c = rand(100)
+      $z.puts "visit_PipelineNode #{c}:0 @stdout=#{@stdout}  $stdout=#{$stdout} STDOUT=#{STDOUT}"
+      $z.puts "#{node.inspect}"
+
       with_standard_streams do |stdin, stdout, stderr|
         # Modify @stdout and @stderr for the first command
         stdin, @stdout = IO.pipe
@@ -256,11 +268,13 @@ module Yap::Shell
         @stdout, @stderr = stdout, stderr
 
         pipeline_stack.pop
-        node.tail.accept(self)
+        node.tail.accept(self) if node.tail
 
         # Set our @stdin back to the original
         @stdin = stdin
       end
+
+      $z.puts "visit_PipelineNode #{c} done"
     end
 
     def visit_InternalEvalNode(node)
@@ -314,9 +328,11 @@ module Yap::Shell
     end
 
     def with_standard_streams(&blk)
+      global_stdin, global_stdout, global_stderr = $stdin, $stdout, $stderr
       stdin, stdout, stderr = @stdin, @stdout, @stderr
       yield stdin, stdout, stderr
       @stdin, @stdout, @stderr = stdin, stdout, stderr
+      $stdin, $stdout, $stderr = global_stdin, global_stdout, global_stderr
     end
 
     def stream_redirections_for(node)

@@ -5,6 +5,10 @@ module Yap::Shell::Execution
   class FileSystemCommandExecution < CommandExecution
     on_execute do |command:, n:, of:, wait:, resume_blk:nil|
       stdin, stdout, stderr, world = @stdin, @stdout, @stderr, @world
+
+      close_stdout = (stdout != $stdout)
+      close_stderr = (stderr != $stderr)
+
       result = nil
       if resume_blk
         pid = resume_blk.call
@@ -30,9 +34,12 @@ module Yap::Shell::Execution
           # Set the process group of the forked to child to that of the
           Process.setpgrp
 
+          $z.puts "Fork: Reopning stdin #{STDIN} to #{stdin}"
           $stdin.reopen stdin
-          $stdout.reopen stdout
-          $stderr.reopen stderr
+          $z.puts "Fork: Reopning stdout #{STDOUT} to #{stdout}"
+          $stdout = STDOUT.reopen stdout
+          $z.puts "Fork: Reopning stderr #{STDERR} to #{stderr}"
+          $stderr = STDERR.reopen stderr
 
           begin
             before = ENV.to_h.dup
@@ -59,12 +66,11 @@ module Yap::Shell::Execution
       # If we're not printing to the terminal then close in/out/err. This
       # is so the next command in the pipeline can complete and don't hang waiting for
       # stdin after the command that's writing to its stdin has completed.
-      if stdout != $stdout && stdout.is_a?(IO) && !stdout.closed? then
-        stdout.close
-      end
-      if stderr != $stderr && stderr.is_a?(IO) && !stderr.closed? then
-        stderr.close
-      end
+      $z.puts "Command: Close stdout? #{close_stdout.inspect}"
+      stdout.close if close_stdout && !stdout.closed?
+
+      $z.puts "Command: Close stderr? #{close_stderr.inspect}"
+      stderr.close if close_stderr && !stderr.closed?
 
       # if the pid that just stopped was the process group owner then
       # give it back to the us so we can become the foreground process
