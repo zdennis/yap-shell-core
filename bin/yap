@@ -1,29 +1,18 @@
 #!/usr/bin/env ruby
 
-require 'bundler'
-Bundler.setup
-require 'pry'
-
 file = __FILE__
 if File.symlink?(file)
   file = File.readlink(file)
 end
-
-$z = File.open("/tmp/z.log", "w+")
-$z.sync = true
 
 trap "SIGTSTP", "IGNORE"
 trap "SIGINT", "IGNORE"
 trap "SIGTTIN", "IGNORE"
 trap "SIGTTOU", "IGNORE"
 
-#ENV["PATH"] = "/Applications/Postgres.app/Contents/MacOS/bin:/usr/local/share/npm/bin/:/usr/local/heroku/bin:/Users/zdennis/.bin:/Users/zdennis/.rvm/gems/ruby-2.1.5/bin:/Users/zdennis/.rvm/gems/ruby-2.1.5@global/bin:/Users/zdennis/.rvm/rubies/ruby-2.1.5/bin:/usr/local/bin:/usr/local/sbin:/Users/zdennis/bin:/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/CrossPack-AVR/bin:/private/tmp/.tidbits/bin:/Users/zdennis/source/playground/AdobeAir/AdobeAIRSDK/bin:/Users/zdennis/.rvm/bin:/Users/zdennis/Downloads/adt-bundle-mac-x86_64-20130219/sdk/tools/:/Users/zdennis/.rvm/bin"
-
 $LOAD_PATH.unshift File.dirname(file) + '/../lib'
-# $LOAD_PATH.unshift File.dirname(file) + '/../../yap-shell-parser/lib'
 
 require "yap"
 
-$stdout.sync = true
-
+STDOUT.sync = true
 Yap.run_shell
