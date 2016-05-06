@@ -1,8 +1,8 @@
-require 'yap/configuration'
-require 'yap/shell'
-require 'yap/world'
-
 module Yap
+  require 'yap/configuration'
+  require 'yap/shell'
+  require 'yap/world'
+
   def self.run_shell
     addons = [
       World::Addons.load_directories(configuration.addon_paths),

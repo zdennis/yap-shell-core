@@ -1,13 +1,13 @@
 require 'term/ansicolor'
 require 'forwardable'
-
 require 'rawline'
-require 'yap/shell/execution'
-require 'yap/shell/prompt'
-require 'yap/world/addons'
 require 'termios'
 
 module Yap
+  require 'yap/shell/execution'
+  require 'yap/shell/prompt'
+  require 'yap/world/addons'
+
   class World
     include Term::ANSIColor
     extend Forwardable

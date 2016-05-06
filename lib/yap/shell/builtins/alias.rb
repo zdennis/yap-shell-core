@@ -1,7 +1,8 @@
-require 'yap/shell/aliases'
 require 'shellwords'
 
 module Yap::Shell
+  require 'yap/shell/aliases'
+
   module Builtins
     builtin :alias do |args:, stdout:, **kwargs|
       output = []

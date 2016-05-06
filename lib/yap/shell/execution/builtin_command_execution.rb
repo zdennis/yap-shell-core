@@ -1,6 +1,6 @@
-require 'yap/shell/execution/result'
-
 module Yap::Shell::Execution
+  require 'yap/shell/execution/result'
+
   class BuiltinCommandExecution < CommandExecution
     on_execute do |command:, n:, of:, wait:|
       status_code = command.execute(stdin:@stdin, stdout:@stdout, stderr:@stderr)

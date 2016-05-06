@@ -1,6 +1,6 @@
-require 'yap/shell/commands'
-
 module Yap::Shell
+  require 'yap/shell/commands'
+
   module Builtins
     def self.builtin(name, &blk)
       Yap::Shell::BuiltinCommand.add(name, &blk)

@@ -1,11 +1,12 @@
 require 'readline'
 require 'yaml'
-require 'yap/shell/version'
-require 'yap/shell/builtins'
 require 'fcntl'
 
 module Yap
   module Shell
+    require 'yap/shell/version'
+    require 'yap/shell/builtins'
+
     autoload :Aliases, "yap/shell/aliases"
 
     autoload :CommandFactory, "yap/shell/commands"

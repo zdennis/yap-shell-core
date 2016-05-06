@@ -1,9 +1,9 @@
-require 'yap/shell/parser'
-require 'yap/shell/commands'
-require 'yap/shell/aliases'
-require 'yap/shell/evaluation/shell_expansions'
-
 module Yap::Shell
+  require 'yap/shell/parser'
+  require 'yap/shell/commands'
+  require 'yap/shell/aliases'
+  require 'yap/shell/evaluation/shell_expansions'
+
   class Evaluation
     attr_reader :world
 

@@ -1,7 +1,8 @@
 require 'pathname'
-require 'yap/world'
 
 module Yap
+  require 'yap/world'
+
   def self.configuration
     @configuration ||= Configuration.new
   end

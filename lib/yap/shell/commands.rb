@@ -1,8 +1,9 @@
 require 'shellwords'
-require 'yap/shell/aliases'
-require 'yap/shell/execution/result'
 
 module Yap::Shell
+  require 'yap/shell/aliases'
+  require 'yap/shell/execution/result'
+
   class CommandError < StandardError ; end
   class CommandUnknownError < CommandError ; end
 

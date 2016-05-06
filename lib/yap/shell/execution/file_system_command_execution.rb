@@ -1,7 +1,8 @@
-require 'yap/shell/execution/result'
 require 'termios'
 
 module Yap::Shell::Execution
+  require 'yap/shell/execution/result'
+
   class FileSystemCommandExecution < CommandExecution
     on_execute do |command:, n:, of:, wait:, resume_blk:nil|
       stdin, stdout, stderr, world = @stdin, @stdout, @stderr, @world
