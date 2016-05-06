@@ -18,16 +18,15 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "yap-shell-parser", "~> 0.4.0"
+  spec.add_dependency "yap-shell-parser", "~> 0.5.0"
   spec.add_dependency "term-ansicolor", "~> 1.3"
   spec.add_dependency "ruby-termios", "~> 0.9.6"
   spec.add_dependency "ruby-terminfo", "~> 0.1.1"
   spec.add_runtime_dependency 'activesupport', '~> 4.2', '>= 4.2.4'
-  spec.add_dependency "yap-rawline", "~> 0.2.0"
+  spec.add_dependency "yap-rawline", "~> 0.3.1"
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake", "~> 10"
-  spec.add_development_dependency 'pry-byebug', '~> 3.3', '>= 3.3.0'
 
   #--BEGIN_ADDON_GEM_DEPENDENCIES--#
   spec.add_dependency "chronic", "~> 0.10.2"
