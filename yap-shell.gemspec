@@ -13,6 +13,48 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/zdennis/yap-shell"
   spec.license       = "MIT"
 
+  spec.post_install_message = <<-POST_INSTALL_MESSAGE.gsub(/^\s*\|/, '')
+    |
+    |Greetings forward-thinking traveler!
+    |
+    |Let's waste no time and get right to it.
+    |
+    |\e[033mFirstly\e[0m, thank you for installing the yap shell!
+    |
+    |\e[033mSecondly\e[0m, this is my beta's beta. Yap has many cool ideas. I dare
+    |say some of those made it into this very release.
+    |
+    |\e[033mLastly\e[0m, create an alias to the yap executable using the ruby version
+    |you just installed it for. For example, with rbenv I use the below
+    |alias in my ~/.profile file:
+    |
+    |    alias yap='~/.rbenv/versions/2.2.3/bin/ruby ~/.rbenv/shims/yap'
+    |
+    |Then, `source ~/.profile` or reload your shell. Now you can finally run:
+    |
+    |    yap
+    |
+    |You know your tooling better than me. If you need things to go a little
+    |differently than above you go right ahead. If any questions arise don't
+    |hesitate to holler over at Github. I may not always be home, but there will
+    |always be a cozy textarea with dozens of emoji friends waiting to hear your
+    |thoughts. All day. All night.
+    |
+    |Until the next update: Happy coding!
+    |
+    |Sincerely,
+    |
+    |     \e[51mThe Lagniappe (Yap) Shell\e[0m
+    |
+    |\e[033mP.S.\e[0m If you have ideas for loading other than the hard-coded
+    |alias, do tell, right over here:
+    |
+    |     \e[1mhttp://github.com/zdennis/yap-shell/issues\e[0m
+    |
+    |\e[033mP.P.S.\e[0m OSX support? YES! Linux? I assume YES! Windows? Um...
+    |
+  POST_INSTALL_MESSAGE
+
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
