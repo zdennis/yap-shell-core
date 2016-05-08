@@ -285,7 +285,8 @@ module Yap::Shell
       if node.quoted?
         variable_expand(node.lvalue)
       else
-        shell_expand(node.lvalue, escape_directory_expansions: false).first
+        # TODO: refactor so this doesn't require a call to join.
+        shell_expand(node.lvalue, escape_directory_expansions: false).join(' ')
       end
     end
 
