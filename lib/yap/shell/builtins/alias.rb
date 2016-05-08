@@ -16,7 +16,7 @@ module Yap::Shell
         end
         output << ""
       else
-        name_eq_value = args.first
+        name_eq_value = args.map(&:shellsplit).join(' ')
         name, command = name_eq_value.scan(/^(.*?)\s*=\s*(.*)$/).flatten
         Yap::Shell::Aliases.instance.set_alias name, command
       end

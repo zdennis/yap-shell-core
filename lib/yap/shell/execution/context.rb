@@ -68,7 +68,7 @@ module Yap::Shell::Execution
           rescue Exception => ex
             raise(ex) if ex.is_a?(SystemExit)
 
-            Treefell['shell'].puts "rescued unexpected error=#{ex} with message=#{message.inspect}"
+            Treefell['shell'].puts "rescued unexpected error=#{ex} with message=#{ex.message.inspect}"
             puts <<-ERROR.gsub(/^\s*\|/, '')
               |******************************
               |\e[31mWhoops! An unexpected error has occurred\e[0m

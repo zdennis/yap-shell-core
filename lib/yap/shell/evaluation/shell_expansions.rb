@@ -10,7 +10,8 @@ module Yap::Shell
 
       def expand_aliases_in(input)
         head, *tail = input.split(/\s/, 2).first
-        if new_head=aliases.fetch_alias(head)
+        if aliases.has_key?(head)
+          new_head=aliases.fetch_alias(head)
           [new_head].concat(tail).join(" ")
         else
           input

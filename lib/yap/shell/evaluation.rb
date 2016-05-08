@@ -55,7 +55,8 @@ module Yap::Shell
       @command_node_args_stack ||= []
       with_standard_streams do |stdin, stdout, stderr|
         args = process_ArgumentNodes(node.args)
-        if !node.literal? && !@aliases_expanded.include?(node.command) && _alias=Aliases.instance.fetch_alias(node.command)
+        if !node.literal? && !@aliases_expanded.include?(node.command) && Aliases.instance.has_key?(node.command)
+          _alias=Aliases.instance.fetch_alias(node.command)
           @suppress_events = true
           @command_node_args_stack << args
           ast = Parser.parse(_alias)

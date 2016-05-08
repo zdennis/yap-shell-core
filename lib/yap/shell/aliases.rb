@@ -7,6 +7,7 @@ module Yap::Shell
     def initialize
       @file = ENV["HOME"] + "/.yapaliases.yml"
       @aliases = begin
+        Treefell['shell'].puts "reading aliases from disk: #{@file}"
         YAML.load_file(@file)
       rescue
         {}
@@ -18,16 +19,21 @@ module Yap::Shell
     end
 
     def fetch_alias(name)
-      @aliases[name]
+      @aliases[name].tap do |contents|
+        Treefell['shell'].puts "alias fetched name=#{name} contents=#{contents.inspect}"
+      end
     end
 
-    def set_alias(name, command)
-      @aliases[name] = command
-      File.write @file, @aliases.to_yaml
+    def set_alias(name, contents)
+      @aliases[name] = contents
+      Treefell['shell'].puts "alias set name=#{name} to #{contents.inspect}"
+      write_to_disk
     end
 
     def unset_alias(name)
       @aliases.delete(name)
+      Treefell['shell'].puts "alias unset name=#{name}"
+      write_to_disk
     end
 
     def has_key?(key)
@@ -38,6 +44,14 @@ module Yap::Shell
       @aliases.keys.compact.sort.inject(Hash.new) do |h,k|
         h[k] = @aliases[k]
         h
+      end
+    end
+
+    private
+
+    def write_to_disk
+      File.write(@file, @aliases.to_yaml).tap do
+        Treefell['shell'].puts "aliases written to disk: #{@file}"
       end
     end
   end
