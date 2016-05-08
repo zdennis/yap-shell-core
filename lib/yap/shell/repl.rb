@@ -223,13 +223,12 @@ module Yap::Shell
         return _input
       end
 
-      puts "Beginning heredoc" if ENV["DEBUG"]
-
+      Treefell['shell'].puts "asking for heredoc input with @world.secondary_prompt"
       loop do
         str = editor.read(@world.secondary_prompt.update.text, false)
         input << "#{str}\n"
         if str =~ /^#{Regexp.escape(marker)}$/
-          puts "Ending heredoc" if ENV["DEBUG"]
+          Treefell['shell'].puts "done asking for heredoc input"
           break
         end
       end
