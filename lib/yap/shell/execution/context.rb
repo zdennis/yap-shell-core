@@ -60,12 +60,15 @@ module Yap::Shell::Execution
           )
 
           @saved_tty_attrs = Termios.tcgetattr(STDIN)
+          Treefell['shell'].puts "firing :before_execute for #{command}"
           self.class.fire :before_execute, world, command: command
 
           begin
             result = execution_context.execute(command:command, n:i, of:of, wait:wait)
           rescue Exception => ex
             raise(ex) if ex.is_a?(SystemExit)
+
+            Treefell['shell'].puts "rescued unexpected error=#{ex} with message=#{message.inspect}"
             puts <<-ERROR.gsub(/^\s*\|/, '')
               |******************************
               |\e[31mWhoops! An unexpected error has occurred\e[0m
@@ -83,6 +86,7 @@ module Yap::Shell::Execution
             ERROR
           end
 
+          Treefell['shell'].puts "firing :after_execute for #{command}"
           self.class.fire :after_execute, world, command: command, result: result
 
           results << process_execution_result(execution_context:execution_context, result:result)
@@ -100,15 +104,19 @@ module Yap::Shell::Execution
     def process_execution_result(execution_context:, result:)
       case result
       when SuspendExecution
+        Treefell['shell'].puts "suspending execution context"
         @suspended_execution_contexts.push execution_context
         return result
 
       when ResumeExecution
+        Treefell['shell'].puts "resuming suspended execution context"
         execution_context = @suspended_execution_contexts.pop
         if execution_context
           nresult = execution_context.resume
+          Treefell['shell'].puts "resuming suspended execution context success"
           return process_execution_result execution_context: execution_context, result: nresult
         else
+          Treefell['shell'].puts "error: cannot resume execution when there is nothing suspended"
           @stderr.puts "fg: No such job"
         end
       else

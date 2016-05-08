@@ -35,11 +35,11 @@ module Yap::Shell::Execution
         end
 
         if ruby_command =~ /^[A-Z0-9]|::/
-          Treefell['shell'].puts "ruby execution: eval(#{ruby_command.inspect})"
+          Treefell['shell'].puts "ruby executing: eval(#{ruby_command.inspect})"
           ruby_result = eval ruby_command
         else
           ruby_command = "self.#{ruby_command}"
-          Treefell['shell'].puts "ruby execution: #{obj.class.name} instance instance_eval(#{ruby_command.inspect})"
+          Treefell['shell'].puts "ruby executing: #{obj.class.name} instance instance_eval(#{ruby_command.inspect})"
           ruby_result = obj.instance_eval ruby_command
         end
       rescue Exception => ex

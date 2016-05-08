@@ -98,7 +98,8 @@ module Yap::Shell::Execution
         suspended(command:command, n:n, of:of, pid: pid)
         result = Yap::Shell::Execution::SuspendExecution.new(status_code:nil, directory:Dir.pwd, n:n, of:of)
       else
-        Treefell['shell'].puts "process pid=#{pid} stopped by signal=#{status.termsig.inspect}"
+        caused_by_signal = status ? (status.termsig || status.stopsig) : nil
+        Treefell['shell'].puts "process pid=#{pid} stopped by signal=#{caused_by_signal.inspect}"
         Treefell['shell'].puts "$?: #{$?.inspect}"
         # if a signal killed or stopped the process (such as SIGINT or SIGTSTP) $? is nil.
         exitstatus = $? ? $?.exitstatus : nil
