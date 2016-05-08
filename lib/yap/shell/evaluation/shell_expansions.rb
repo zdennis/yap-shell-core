@@ -9,25 +9,30 @@ module Yap::Shell
       end
 
       def expand_aliases_in(input)
+        Treefell['shell'].puts "shell-expansions expand aliases in: #{input.inspect}"
         head, *tail = input.split(/\s/, 2).first
-        if aliases.has_key?(head)
+        expanded = if aliases.has_key?(head)
           new_head=aliases.fetch_alias(head)
           [new_head].concat(tail).join(" ")
         else
           input
         end
+        expanded
       end
 
       def expand_words_in(input, escape_directory_expansions: true)
-        [input].flatten.inject([]) do |results,str|
+        Treefell['shell'].puts "shell-expansions expand words in: #{input.inspect}"
+        expanded = [input].flatten.inject([]) do |results,str|
           results << process_expansions(
             word_expand(str),
             escape_directory_expansions: escape_directory_expansions
           )
         end.flatten
+        expanded
       end
 
       def expand_variables_in(input)
+        Treefell['shell'].puts "shell-expansions expand variables in: #{input.inspect}"
         env_expand(input)
       end
 
@@ -36,11 +41,16 @@ module Yap::Shell
       def env_expand(str)
         str.gsub(/\$(\S+)/) do |match,*args|
           var_name = match[1..-1]
-          case var_name
-          when "?"
-            world.last_result ? world.last_result.status_code.to_s : '0'
+          if var_name == '?'
+            (world.last_result ? world.last_result.status_code.to_s : '0').tap do |expanded|
+              Treefell['shell'].puts "shell-expansions expanding env var #{match} to #{expanded}"
+            end
+          elsif world.env.has_key?(var_name)
+            world.env.fetch(var_name).tap do |expanded|
+              Treefell['shell'].puts "shell-expansions expanding env var #{match} to #{expanded}"
+            end
           else
-            world.env.fetch(var_name){ match }
+            match
           end
         end
       end
@@ -54,10 +64,13 @@ module Yap::Shell
           # at least one comma listed. E.g. "a_{1,2}" => "a_1 a_2" whereas
           # "a_{1}" => "a_{1}"
           if expansions.length > 1
-            return expansions.map { |expansion| str.sub(/\{([^\}]+)\}/, expansion) }
+            expanded = expansions.map { |expansion| str.sub(/\{([^\}]+)\}/, expansion) }.tap do |expanded|
+              Treefell['shell'].puts "shell-expansions expanding words in #{str} to #{expanded}"
+            end
+            return expanded
           end
         end
-        return [str]
+        [str]
       end
 
       def process_expansions(expansions, escape_directory_expansions: true)
