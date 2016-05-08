@@ -14,16 +14,32 @@ module Yap::Shell
 
     def evaluate(input, &blk)
       @blk = blk
+      debug_log "evaluation begins input=#{input.inspect}"
       @input = recursively_find_and_replace_command_substitutions(input)
+      debug_log "recursive find/replace command substitutions results in input=#{@input.inspect}"
       ast = Parser.parse(@input)
-      ast.accept(self)
+      debug_log "parsed input into AST: #{ast}"
+      debug_log "beginning to walk AST"
+      ast.accept(self).tap do
+        debug_log "done walking AST"
+      end
     end
 
     def set_last_result(result)
+      debug_log "evaluation setting last result=#{result.inspect}"
       @world.last_result = result
     end
 
     private
+
+    def debug_log(message)
+      Treefell['shell'].puts message
+    end
+
+    def debug_visit(node)
+      calling_method = caller[0][/`.*'/][1..-2]
+      debug_log "evaluation #{calling_method} node=#{node}"
+    end
 
     # +recursively_find_and_replace_command_substitutions+ is responsible for recursively
     # finding and expanding command substitutions, in a depth first manner.
@@ -51,6 +67,7 @@ module Yap::Shell
     ######################################################################
 
     def visit_CommandNode(node)
+      debug_visit(node)
       @aliases_expanded ||= []
       @command_node_args_stack ||= []
       with_standard_streams do |stdin, stdout, stderr|
@@ -83,10 +100,12 @@ module Yap::Shell
     end
 
     def visit_CommentNode(node)
+      debug_visit(node)
       # no-op, do nothing
     end
 
     def visit_RangeNode(node)
+      debug_visit(node)
       range = node.head.value
       if node.tail
         @current_range_values = range.to_a
@@ -98,6 +117,7 @@ module Yap::Shell
     end
 
     def visit_RedirectionNode(node)
+      debug_visit(node)
       filename = node.target
 
       if File.directory?(filename)
@@ -115,6 +135,8 @@ module Yap::Shell
     end
 
     def visit_BlockNode(node)
+      debug_visit(node)
+
       with_standard_streams do |stdin, stdout, stderr|
         # Modify @stdout and @stderr for the first command
         stdin, @stdout = IO.pipe
@@ -155,6 +177,7 @@ module Yap::Shell
     end
 
     def visit_NumericalRangeNode(node)
+      debug_visit(node)
       node.range.each do |n|
         if node.tail
           if node.reference
@@ -170,6 +193,7 @@ module Yap::Shell
     end
 
     def visit_StatementsNode(node)
+      debug_visit(node)
       Yap::Shell::Execution::Context.fire :before_statements_execute, @world unless @suppress_events
       node.head.accept(self)
       if node.tail
@@ -195,6 +219,7 @@ module Yap::Shell
     #    5
     #
     def visit_EnvWrapperNode(node)
+      debug_visit(node)
       with_env do
         node.env.each_pair do |env_var_name, arg_node|
           world.env[env_var_name] = process_ArgumentNode(arg_node)
@@ -214,6 +239,7 @@ module Yap::Shell
     # they cleared or overridden.
     #
     def visit_EnvNode(node)
+      debug_visit(node)
       node.env.each_pair do |key, arg_node|
         world.env[key] = process_ArgumentNode(arg_node)
       end
@@ -221,6 +247,7 @@ module Yap::Shell
     end
 
     def visit_ConditionalNode(node)
+      debug_visit(node)
       case node.operator
       when '&&'
         node.expr1.accept self
@@ -238,6 +265,8 @@ module Yap::Shell
     end
 
     def visit_PipelineNode(node, options={})
+      debug_visit(node)
+
       with_standard_streams do |stdin, stdout, stderr|
         # Modify @stdout and @stderr for the first command
         stdin, @stdout = IO.pipe
@@ -261,6 +290,8 @@ module Yap::Shell
     end
 
     def visit_InternalEvalNode(node)
+      debug_visit(node)
+
       command = CommandFactory.build_command_for(
         world: world,
         command: node.command,
@@ -318,6 +349,8 @@ module Yap::Shell
     end
 
     def stream_redirections_for(node)
+      debug_visit(node)
+
       stdin, stdout, stderr = @stdin, @stdout, @stderr
       node.redirects.each do |redirect|
         case redirect.kind
