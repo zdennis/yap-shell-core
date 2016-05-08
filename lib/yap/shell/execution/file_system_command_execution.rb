@@ -49,11 +49,13 @@ module Yap::Shell::Execution
             ENV.replace(before)
           end
         end
+        Treefell['shell'].puts "forked child process pid=#{pid} to execute #{command}"
 
         # Put the child process into a process group of its own
         Process.setpgid pid, pid
 
         if command.heredoc
+          Treefell['shell'].puts "command has heredoc, wriing to stdin"
           w.write command.heredoc
           w.close
         end
@@ -67,9 +69,11 @@ module Yap::Shell::Execution
       # is so the next command in the pipeline can complete and don't hang waiting for
       # stdin after the command that's writing to its stdin has completed.
       if stdout != $stdout && stdout.is_a?(IO) && !stdout.closed? then
+        Treefell['shell'].puts "closing stdout for child process with pid=#{pid}"
         stdout.close
       end
       if stderr != $stderr && stderr.is_a?(IO) && !stderr.closed? then
+        Treefell['shell'].puts "closing stderr for child process with pid=#{pid}"
         stderr.close
       end
       # if stdin != $stdin && !stdin.closed? then stdin.close end
@@ -79,17 +83,23 @@ module Yap::Shell::Execution
       # give it back to the us so we can become the foreground process
       # in the terminal
       if pid == Termios.tcgetpgrp(STDIN)
+        Treefell['shell'].puts <<-DEBUG.gsub(/^\s*\|/, '')
+          |restoring process group for STDIN to yap process with pid=#{Process.pid}
+        DEBUG
         Process.setpgid Process.pid, Process.pid
         Termios.tcsetpgrp STDIN, Process.pid
       end
 
       # if the reason we stopped is from being suspended
-      if status && status.stopsig == Signal.list["TSTP"]
-        puts "Process (#{pid}) suspended: #{status.stopsig}" if ENV["DEBUG"]
+      sigtstp = Signal.list["TSTP"]
+      if status && status.stopsig == sigtstp
+        Treefell['shell'].puts "process pid=#{pid} suspended by signal=#{status.stopsig.inspect}"
+        Treefell['shell'].puts "$?: #{$?.inspect}"
         suspended(command:command, n:n, of:of, pid: pid)
         result = Yap::Shell::Execution::SuspendExecution.new(status_code:nil, directory:Dir.pwd, n:n, of:of)
       else
-        puts "Process (#{pid}) not suspended? #{status.stopsig}" if ENV["DEBUG"]
+        Treefell['shell'].puts "process pid=#{pid} stopped by signal=#{status.termsig.inspect}"
+        Treefell['shell'].puts "$?: #{$?.inspect}"
         # if a signal killed or stopped the process (such as SIGINT or SIGTSTP) $? is nil.
         exitstatus = $? ? $?.exitstatus : nil
         result = Yap::Shell::Execution::Result.new(status_code:exitstatus, directory:Dir.pwd, n:n, of:of)
@@ -99,18 +109,20 @@ module Yap::Shell::Execution
     def resume
       args = @suspended
       @suspended = nil
+      pid = args[:pid]
+      sigcont = Signal.list["CONT"]
 
-      puts "Resuming: #{args[:pid]}" if ENV["DEBUG"]
+      Treefell['shell'].puts "resuming suspended process pid=#{pid} by sending it signal=#{sigcont}"
       resume_blk = lambda do
-        Process.kill "SIGCONT", args[:pid]
-        args[:pid]
+        Process.kill sigcont, pid
+        pid
       end
 
       self.instance_exec command:args[:command], n:args[:n], of:args[:of], resume_blk:resume_blk, wait:true, &self.class.on_execute
     end
 
     def suspended(command:, n:, of:, pid:)
-      puts "Suspending: #{pid}" if ENV["DEBUG"]
+      Treefell['shell'].puts "process pid=#{pid} suspended"
       @suspended = {
         command: command,
         n: n,

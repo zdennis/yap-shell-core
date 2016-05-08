@@ -33,6 +33,12 @@ module Yap::Shell
       @line = line
     end
 
+    def to_s
+      "#{self.class.name}(#{str.inspect})"
+    end
+    alias :to_str :to_s
+    alias :inspect :to_s
+
     def to_executable_str
       raise NotImplementedError, ":to_executable_str must be implemented by including object."
     end
@@ -89,6 +95,12 @@ module Yap::Shell
     def type
       :FileSystemCommand
     end
+
+    def to_s
+      "#{self.class.name}(#{to_executable_str.inspect})"
+    end
+    alias :to_str :to_s
+    alias :inspect :to_s
 
     def to_executable_str
       [

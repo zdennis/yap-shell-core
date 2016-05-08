@@ -37,6 +37,8 @@ module Yap
         @stdout.sync = true
         @stderr.sync = true
 
+        addons_str = "\n  - " + addons.map(&:class).map(&:name).join("\n  - ")
+        Treefell['shell'].puts "Constructing world instance with addons: #{addons_str}"
         @world = Yap::World.instance(addons:addons)
       end
 
@@ -69,8 +71,16 @@ module Yap
         )
 
         @world.repl.on_input do |input|
+          Treefell['shell'].puts "repl received input: #{input.inspect}"
           evaluation = Yap::Shell::Evaluation.new(stdin:@stdin, stdout:@stdout, stderr:@stderr, world:@world)
           evaluation.evaluate(input) do |command, stdin, stdout, stderr, wait|
+            Treefell['shell'].puts <<-DEBUG.gsub(/^\s*\|/, '')
+              |adding #{command} to run in context of:
+              |  stdin: #{stdin.inspect}
+              |  stdout: #{stdout.inspect}
+              |  stderr: #{stderr.inspect}
+              |  wait for child process to complete? #{wait.inspect}
+            DEBUG
             context.clear_commands
             context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr, wait:wait
 
@@ -81,12 +91,14 @@ module Yap
         end
 
         begin
+          Treefell['shell'].puts "enter interactive mode"
           @world.interactive!
         # rescue Errno::EIO => ex
         #   # This happens when yap is no longer the foreground process
         #   # but it tries to receive input/output from the tty. I believe it
         #   # is a race condition when launching a child process.
         rescue Interrupt
+          Treefell['shell'].puts "^C"
           @world.editor.puts "^C"
           retry
         rescue Exception => ex

@@ -12,7 +12,11 @@ module Yap::Shell
     def initialize(world:nil)
       @world = world
       @editor= world.editor
+
+      Treefell['shell'].puts "installing default keybindings"
       install_default_keybindings
+
+      Treefell['shell'].puts "installing default tab completion"
       install_default_tab_completion_proc
     end
 
@@ -20,17 +24,23 @@ module Yap::Shell
       @blk = blk
 
       @world.editor.on_read_line do |event|
+        line_read = event[:payload][:line]
+        Treefell['shell'].puts "editor line read: #{line_read.inspect}"
         # editor.history = true?
-        line = event[:payload][:line] << "\n"
+        line = line_read << "\n"
         begin
           @blk.call(line)
           @world.editor.redraw_prompt
-        rescue Yap::Shell::Parser::Lexer::NonterminatedString, Yap::Shell::Parser::Lexer::LineContinuationFound
+        rescue Yap::Shell::Parser::Lexer::NonterminatedString,
+          Yap::Shell::Parser::Lexer::LineContinuationFound => ex
+          Treefell['shell'].puts "rescued #{ex}, asking user for more input"
           line << read_another_line_of_input
           retry
         rescue ::Yap::Shell::CommandUnknownError => ex
+          Treefell['shell'].puts "rescued #{ex}, telling user"
           puts "  CommandError: #{ex.message}"
         rescue ::Yap::Shell::Parser::ParseError => ex
+          Treefell['shell'].puts "rescued #{ex}, telling user"
           puts "  Parse error: #{ex.message}"
         ensure
           @world.editor.reset_line
