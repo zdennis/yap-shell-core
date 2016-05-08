@@ -126,7 +126,6 @@ class KeyboardMacros < Addon
 
   def process_result(result)
     if result.is_a?(String)
-      $z.puts "WRITING: #{result}"
       @world.editor.write result, add_to_line_history: false
       @previous_result = result
     end

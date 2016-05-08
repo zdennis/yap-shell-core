@@ -4,9 +4,5 @@ require 'bundler'
 Bundler.setup
 require 'pry'
 
-$z = File.open("/tmp/z.log", "w+")
-$z.sync = true
-
 $LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
-
 load File.dirname(__FILE__) + '/yap'
