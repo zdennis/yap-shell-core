@@ -1,4 +1,5 @@
 require 'term/ansicolor'
+require 'fileutils'
 require 'forwardable'
 require 'rawline'
 require 'termios'
@@ -29,6 +30,9 @@ module Yap
     def initialize(addons:)
       @env = ENV.to_h.dup
       dom = build_editor_dom
+
+      # ensure yap directory exists
+      FileUtils.mkdir_p configuration.yap_path
 
       @editor = RawLine::Editor.create(dom: dom)
 
