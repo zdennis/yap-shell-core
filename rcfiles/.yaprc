@@ -259,7 +259,13 @@ end
 
 func :'run-modified-specs' do |stdin:, stdout:|
   str = `git status`
-  specs = str.scan(/\S+_spec.rb/)
+  files = str.scan(/\S+.rb/)
+  specs, non_specs = files.partition { |file| file.match(/\S+_spec.rb/) }
+  non_specs.each do |non_spec|
+    filename_without_extension = non_spec.gsub(/^[^\/]+\//, '').gsub(/\.rb$/, '')
+    specs.concat Dir["spec/**/*#{filename_without_extension}_spec.rb"]
+  end
+
   cmd = "bundle exec rspec #{specs.join(' ')}"
   stdout.puts cmd
   shell cmd
