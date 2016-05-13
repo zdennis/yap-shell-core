@@ -36,9 +36,9 @@ module Yap::Shell
       Treefell['shell'].puts message
     end
 
-    def debug_visit(node)
+    def debug_visit(node, msg='')
       calling_method = caller[0][/`.*'/][1..-2]
-      debug_log "evaluation #{calling_method} node=#{node}"
+      debug_log "evaluation #{calling_method} node=#{node} #{msg}"
     end
 
     # +recursively_find_and_replace_command_substitutions+ is responsible for recursively
@@ -222,7 +222,7 @@ module Yap::Shell
       debug_visit(node)
       with_env do
         node.env.each_pair do |env_var_name, arg_node|
-          world.env[env_var_name] = process_ArgumentNode(arg_node)
+          world.env[env_var_name] = process_EnvArgumentNode(arg_node)
         end
         node.node.accept(self)
       end
@@ -241,7 +241,7 @@ module Yap::Shell
     def visit_EnvNode(node)
       debug_visit(node)
       node.env.each_pair do |key, arg_node|
-        world.env[key] = process_ArgumentNode(arg_node)
+        world.env[key] = process_EnvArgumentNode(arg_node)
       end
       Yap::Shell::Execution::Result.new(status_code:0, directory:Dir.pwd, n:1, of:1)
     end
@@ -313,11 +313,29 @@ module Yap::Shell
     end
 
     def process_ArgumentNode(node)
-      if node.quoted?
+      if node.single_quoted?
+        "'#{node.lvalue}'"
+      elsif node.double_quoted?
         variable_expand(node.lvalue)
       else
         # TODO: refactor so this doesn't require a call to join.
         shell_expand(node.lvalue, escape_directory_expansions: false).join(' ')
+      end
+    end
+
+    # process_EnvArgumentNode is separate from process_ArgumentNode since
+    # it doesn't allow full shell expansion. For example, the following
+    # will not be expanded to "FOO=a_1 a_2", it will be stored as provided:
+    #
+    #   > FOO=a_{1,2}
+    #
+    def process_EnvArgumentNode(node)
+      if node.single_quoted?
+        debug_visit(node, 'single quoted argument, performing no expansion')
+        node.lvalue
+      else
+        debug_visit(node, 'not singled quoted argument, performing variable expansion')
+        variable_expand(node.lvalue)
       end
     end
 
