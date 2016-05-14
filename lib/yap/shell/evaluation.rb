@@ -53,7 +53,18 @@ module Yap::Shell
           r,w = IO.pipe
           @stdout = w
           ast.accept(self)
-          input[position.min...position.max] = r.read.chomp
+
+          output = r.read.chomp
+
+          # Treat consecutive newlines in output as a single space
+          output = output.gsub(/\n+/, ' ')
+
+          # Double quote the output and escape any double quotes already
+          # existing
+          output = %|"#{output.gsub(/"/, '\\"')}"|
+
+          # Put thd output back into the original input
+          input[position.min...position.max] = output
         end
       end
       input
@@ -84,7 +95,7 @@ module Yap::Shell
         else
           cmd2execute = variable_expand(node.command)
           final_args = (args + @command_node_args_stack).flatten.map(&:shellescape)
-          expanded_args = shell_expand(final_args)
+          expanded_args = final_args
           command = CommandFactory.build_command_for(
             world: world,
             command: cmd2execute,
