@@ -1,6 +1,20 @@
 class KeyboardMacros < Addon
   require 'keyboard_macros/cycle'
 
+  module PrettyPrintKey
+    # ppk means "pretty print key". For example, it returns \C-g if the given
+    # byte is 7.
+    def ppk(byte)
+      if byte && byte.ord <= 26
+        '\C-' + ('a'..'z').to_a[byte.ord - 1]
+      else
+        byte.inspect
+      end
+    end
+  end
+
+  include PrettyPrintKey
+
   DEFAULT_TRIGGER_KEY = :ctrl_g
   DEFAULT_CANCEL_KEY = " "
   DEFAULT_TIMEOUT_IN_MS = 500
@@ -24,7 +38,29 @@ class KeyboardMacros < Addon
     @cancel_on_unknown_sequences = false
   end
 
+  def cancel_key=(key)
+    debug_log "setting default cancel_key key=#{ppk(key)}"
+    @cancel_key = key
+  end
+
+  def cancel_on_unknown_sequences=(true_or_false)
+    debug_log "setting default cancel_on_unknown_sequences=#{true_or_false}"
+    @cancel_on_unknown_sequences = true_or_false
+  end
+
+  def timeout_in_ms=(milliseconds)
+    debug_log "setting default timeout_in_ms milliseconds=#{milliseconds.inspect}"
+    @timeout_in_ms = milliseconds
+  end
+
+  def trigger_key=(key)
+    debug_log "setting default trigger_key key=#{ppk(key)}"
+    @trigger_key = key
+  end
+
   def configure(cancel_key: nil, trigger_key: nil, &blk)
+    debug_log "configure cancel_key=#{ppk(cancel_key)} trigger_key=#{ppk(trigger_key)} block_given?=#{block_given?}"
+
     cancel_key ||= @cancel_key
     trigger_key ||= @trigger_key
 
@@ -45,12 +81,18 @@ class KeyboardMacros < Addon
 
     world.unbind(trigger_key)
     world.bind(trigger_key) do
+      debug_log "macro triggered key=#{ppk(trigger_key)}"
+
       begin
         @previous_result = nil
         @stack << OpenStruct.new(configuration: configuration)
         configuration.start.call if configuration.start
+
+        debug_log "taking over keyboard input processing from editor"
         world.editor.keyboard_input_processors.push(self)
-        world.editor.input.wait_timeout_in_seconds = 0.1
+
+        wait_timeout_in_seconds = 0.1
+        world.editor.input.wait_timeout_in_seconds = wait_timeout_in_seconds
       ensure
         queue_up_remove_input_processor(&configuration.stop)
       end
@@ -60,6 +102,8 @@ class KeyboardMacros < Addon
   end
 
   def cycle(name, &cycle_thru_blk)
+    debug_log "defining cycle name=#{name.inspect}"
+
     @cycles ||= {}
     if block_given?
       cycle = KeyboardMacros::Cycle.new(
@@ -145,13 +189,17 @@ class KeyboardMacros < Addon
   end
 
   def cancel_processing
+    debug_log "cancel_processing"
     @event_id = nil
     @stack.reverse.each do |definition|
       definition.configuration.stop.call if definition.configuration.stop
     end
     @stack.clear
     if world.editor.keyboard_input_processors.last == self
+      debug_log "giving keyboard input processing control back"
       world.editor.keyboard_input_processors.pop
+
+      debug_log "restoring default editor input timeout"
       world.editor.input.restore_default_timeout
     end
   end
@@ -170,7 +218,13 @@ class KeyboardMacros < Addon
   end
 
   class Configuration
+    include PrettyPrintKey
+
     attr_reader :cancellation, :trigger_key, :keymap
+
+    def debug_log(*args)
+      KeyboardMacros.debug_log(*args)
+    end
 
     def initialize(cancellation: nil, editor:, keymap: {}, trigger_key: nil)
       @cancellation = cancellation
@@ -181,6 +235,8 @@ class KeyboardMacros < Addon
       @on_start_blk = nil
       @on_stop_blk = nil
       @cycles = {}
+
+      debug_log "configuring a macro trigger_key=#{ppk(trigger_key)}"
 
       if @cancellation
         define @cancellation.cancel_key, -> { @cancellation.call }
@@ -198,6 +254,8 @@ class KeyboardMacros < Addon
     end
 
     def cycle(name, &cycle_thru_blk)
+      debug_log "defining a cycle on macro name=#{name.inspect}"
+
       if block_given?
         cycle = KeyboardMacros::Cycle.new(
           cycle_proc: cycle_thru_blk,
@@ -216,6 +274,7 @@ class KeyboardMacros < Addon
     end
 
     def define(sequence, result=nil, fragment: false, &blk)
+      debug_log "defining macro sequence=#{sequence.inspect} result=#{result.inspect} fragment=#{fragment.inspect} under macro #{ppk(trigger_key)}"
       unless result.respond_to?(:call)
         string_result = result
         result = -> { string_result }

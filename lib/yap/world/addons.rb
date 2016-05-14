@@ -16,6 +16,10 @@ module Yap
           @addon_name ||= self.name.split(/::/).last.scan(/[A-Z][^A-Z]+/).map(&:downcase).reject{ |f| f == "addon" }.join("_").to_sym
         end
 
+        def debug_log(msg)
+          Treefell['addons'].puts "addon=#{addon_name} #{msg}"
+        end
+
         def require(name)
           Treefell['shell'].puts "addon is requiring: #{name}"
           directory = File.dirname caller[0].split(':').first
@@ -39,6 +43,10 @@ module Yap
       module InstanceMethods
         def addon_name
           @addon_name ||= self.class.addon_name
+        end
+
+        def debug_log(msg)
+          self.class.debug_log(msg)
         end
       end
     end
