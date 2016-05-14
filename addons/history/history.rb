@@ -22,6 +22,7 @@ class History < Addon
   end
 
   def save
+    debug_log "saving history file=#{file.inspect}"
     File.open(file, "a") do |file|
       # Don't write the YAML header because we're going to append to the
       # history file, not overwrite. YAML works fine without it.
@@ -40,6 +41,7 @@ class History < Addon
   private
 
   def load_history
+    debug_log "loading history file=#{file.inspect}"
     at_exit { save }
 
     if File.exists?(file) && File.readable?(file)
