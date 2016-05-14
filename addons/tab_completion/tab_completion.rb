@@ -24,10 +24,10 @@ class TabCompletion < Addon
     end
 
     def to_s
-      @text
+      @text.to_s
     end
-    alias :to_str :to_s
-    alias :inspect :to_s
+    alias_method :to_str, :to_s
+    alias_method :inspect, :to_s
   end
 
   COMPLETIONS = [ BasicCompletion ]
