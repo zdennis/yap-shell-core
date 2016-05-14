@@ -30,6 +30,10 @@ Gem::Specification.new do |spec|
     |
     |    alias yap='env -i PATH=$PATH RUBYOPT="-rubygems -EUTF-8" HOME=$HOME sh -c "rbenv local 2.2.3 && yap"'
     |
+    |If you are interested in tracing yap's execution you can add the DEBUG and TREEFELL_OUT options:
+    |
+    |    alias yap-debug='env -i DEBUG=* TREEFELL_OUT=/tmp/yap-debug.log PATH=$PATH RUBYOPT="-rubygems -EUTF-8" HOME=$HOME sh -c "rbenv local 2.2.3 && yap"'
+    |
     |Then, `source ~/.profile` or reload your shell. Now you can finally run:
     |
     |    yap
