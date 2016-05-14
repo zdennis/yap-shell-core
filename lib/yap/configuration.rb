@@ -18,7 +18,8 @@ module Yap
       ]
 
       @rcfiles = [
-        "#{ENV['HOME']}/.yaprc"
+        "#{ENV['HOME']}/.yaprc",
+        yap_path.join("yaprc")
       ]
     end
 
