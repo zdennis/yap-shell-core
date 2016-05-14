@@ -34,8 +34,11 @@ module Yap::Shell
         rescue Yap::Shell::Parser::Lexer::NonterminatedString,
           Yap::Shell::Parser::Lexer::LineContinuationFound => ex
           Treefell['shell'].puts "rescued #{ex}, asking user for more input"
-          line << read_another_line_of_input
-          retry
+          more_input = read_another_line_of_input
+          if more_input
+            line << more_input
+            retry
+          end
         rescue ::Yap::Shell::CommandUnknownError => ex
           Treefell['shell'].puts "rescued #{ex}, telling user"
           puts "  CommandError: #{ex.message}"
