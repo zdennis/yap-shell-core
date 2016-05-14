@@ -24,6 +24,8 @@ ENV.keys.each do |key|
   end
 end
 
+require "term/ansicolor"
+require "pry"
 require "yap"
 
 STDOUT.sync = true

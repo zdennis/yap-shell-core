@@ -102,7 +102,6 @@ module Yap
           @world.editor.puts "^C"
           retry
         rescue Exception => ex
-          require 'pry'
           binding.pry unless ex.is_a?(SystemExit)
         end
       end
