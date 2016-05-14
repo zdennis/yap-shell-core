@@ -13,13 +13,13 @@ module Yap
 
     def initialize
       @addon_paths = [
-        Dir["#{File.dirname(__FILE__)}/../../addons/*"],
-        Dir["#{ENV['HOME']}/.yap/addons/*"]
-      ].flatten
+        "#{File.dirname(__FILE__)}/../../addons",
+        "#{ENV['HOME']}/.yap/addons"
+      ]
 
       @rcfiles = [
-        Dir["#{ENV['HOME']}/.yaprc"]
-      ].flatten
+        "#{ENV['HOME']}/.yaprc"
+      ]
     end
 
     def path_for(part)

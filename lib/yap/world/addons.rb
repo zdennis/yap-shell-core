@@ -68,27 +68,30 @@ module Yap
       end
 
       def self.load_rcfiles(files)
-        Treefell['shell'].puts "loading rcfiles #{files.inspect}"
+        Treefell['shell'].puts %|searching for rcfiles:\n  * #{files.join("\n  * ")}|
         files.map do |file|
           if File.exists?(file)
+            Treefell['shell'].puts "rcfile #{file} found, loading."
             RcFile.new file
           else
-            Treefell['shell'].puts "skipping non-existent rcfile #{file.inspect} "
+            Treefell['shell'].puts "rcfile #{file} not found, skipping."
           end
         end.flatten.compact
       end
 
-      def self.load_directories(directories)
-        Treefell['shell'].puts "loading addon directories: #{directories.inspect}"
-        directories.map do |d|
-          if File.directory?(d)
-            load_directory(d).map(&:new)
-          else
-            Treefell['shell'].puts "skipping addon directory #{d.inspect}, does not exist or is not a directory"
+      def self.load_directories(search_paths)
+        Treefell['shell'].puts %|searching for addons in:\n  * #{search_paths.join("\n  * ")}|
+        search_paths.map do |directory|
+          Dir["#{directory}/*"].map do |d|
+            if File.directory?(d)
+              Treefell['shell'].puts %|addon found: #{d}|
+              load_directory(d).map(&:new)
+            else
+              Treefell['shell'].puts %|file found in add-on search path, skipping.|
+              nil
+            end
           end
-        end.flatten.compact.tap do |results|
-          Treefell['shell'].puts "loaded addons: #{results.inspect}"
-        end
+        end.flatten.compact
       end
 
       class RcFile < Addon
