@@ -135,7 +135,7 @@ self.secondary_prompt = '> '
 # Sets the default trigger key for all keyboard macros
 world.addons[:keyboard_macros].trigger_key = ?\C-g
 
-# Sets the default cancel key for all keyboard macros
+# Sets the default cancel key (space) for all keyboard macros
 world.addons[:keyboard_macros].cancel_key = " "
 
 # Sets the default timeout for macros. When set to nil you will have to
@@ -159,12 +159,13 @@ end
 # by specifying it when you call .configure(...).
 world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
   macro.start do
-    world.editor.content_box.children = [
-      TerminalLayout::Box.new(content: "am i floating1?", style: {display: :float, float: :right, height: 1, width: "am i floating1?".length}),
-      TerminalLayout::Box.new(content: "What up12?", style: {display: :block}),
-      TerminalLayout::Box.new(content: "Not much21", style: {display: :block}),
-      TerminalLayout::Box.new(content: "am i floating3?", style: {display: :float, float: :left, height: 1, width: "am i floating1?".length}),
-    ]
+    # TODO: FUTURE
+    # world.editor.content_box.children = [
+    #   TerminalLayout::Box.new(content: "am i floating1?", style: {display: :float, float: :right, height: 1, width: "am i floating1?".length}),
+    #   TerminalLayout::Box.new(content: "What up12?", style: {display: :block}),
+    #   TerminalLayout::Box.new(content: "Not much21", style: {display: :block}),
+    #   TerminalLayout::Box.new(content: "am i floating3?", style: {display: :float, float: :left, height: 1, width: "am i floating1?".length}),
+    # ]
   end
 
   macro.stop do
@@ -198,6 +199,8 @@ world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
   end
 end
 
+# The below macro shows that you can have macros start with a different
+# trigger keys.
 # world.addons[:keyboard_macros].configure(trigger_key: :ctrl_h) do |macros|
 #   macros.define 'h123', -> {
 #     box = TerminalLayout::Box.new(content: "Right?", style: { display: :block, float: :right, height: 1, width: 50 })
