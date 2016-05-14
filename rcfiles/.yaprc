@@ -1,16 +1,23 @@
 #!/usr/bin/ruby
 
+###############################################################################
+#                         ENVIRONMENT VARIABLES
+#------------------------------------------------------------------------------
+# When yap boots up it constructs a world for the running shell. The world
+# has it's own copy of environment variables. Below is an example of
+# modifying your PATH environment variables.
 world.env["PATH"] = [
   world.env["HOME"] + "/.rbenv/shims",
   "/usr/local/bin",
   world.env["PATH"]
 ].join(":")
 
-require 'chronic'
-require 'term/ansicolor'
-require 'terminfo'
 
-# Resize history to be infinite
+###############################################################################
+#                           SHELL HISTORY
+#------------------------------------------------------------------------------
+# Here's an example of resizing shell history to be of infinite size. If you
+# set this to a numeric value then it will only maintain that many entries.
 infinity = 1 / 0.0
 world.history.resize(infinity)
 
@@ -23,59 +30,67 @@ func :reload! do |args:, stdin:, stdout:, stderr:|
 end
 
 
-completion_cache = {}
-
-# tab_completion_display do |matches|
+###############################################################################
+#                         CONFIGURING YOUR PROMPT
+#------------------------------------------------------------------------------
+# Your prompt can be whatever you can code it to be. It can be static or
+# or dynamic. You can also update the prompt indirectly so that it live
+# updates regardless of if you hit enter.
 #
-# end
-
-tab_completion :rake, /^(rake|be rake)\s+(.*)/ do |input_fragment, match_data|
-  # |config|
-  # config.completions do |input_fragment, match_data|
-  results = completion_cache[Dir.pwd] ||= `bundle exec rake -T`.gsub(/^rake\s*/, '').split(/\n/)
-
-  task_rgx = /^#{Regexp.escape(input_fragment.word[:text])}/
-  results.grep(task_rgx).map do |text|
-    {
-      type: :rake,
-      text: text.gsub(/\s*#.*$/, ''),
-      descriptive_text: Term::ANSIColor.yellow(text)
-    }
-    # end
-  end
-end
-
+# The easiest thing to do is to set the prompt to a static string, but it's
+# also the least useful way to utilize your prompt, e.g.:
 #
-# Configuring your prompt. This can be set to a static value or to a
-# Proc like object that responds to #call. If it responds to call it will
-# be used every time the prompt is to be re-drawn
+#   yap> world.prompt = 'my-prompt>'
 #
-last_prompt = nil
-self.prompt = -> do
+# A more useful way to configure your prompt is by using a lambda/proc (or
+# anything that responds to 'call'). This proc will be called whenever
+# the prompt needs to be rendered, so it can be as dynamic as you like. Below
+# is an example of setting a prompt with a bunch of git smarts.
+#
+# One other thing worth noting is that you can re-render the prompt without
+# having to hit enter to run a statement. If this piques your interest check
+# out the prompt_updates/ addon included in the yap-shell gem. It's in the
+# YAP_SHELL_INSTALL_DIR/addons/promp_updates/ directory.
+#
+# Now, here's an example of a smart prompt with some git intelligence:
+
+world.prompt = -> do
+  # use ~ instead of full-path to home directory
   pwd = Dir.pwd.sub Regexp.new(ENV['HOME']), '~'
 
+  # identify our current branch
   git_current_branch = `git branch 2>/dev/null | sed -n '/\* /s///p'`.chomp
-  if git_current_branch.length > 0
+
+  # is the current directory a part of a git enabled directory structure?
+  current_dir_is_git_aware = git_current_branch.length > 0
+
+  if current_dir_is_git_aware
     git_current_branch += " "
+
+    # are there unstaged changes?
     git_dirty_not_cached = `git diff --shortstat 2>/dev/null`.length > 0
+
+    # are there staged changes?
     git_dirty_cached = `git diff --shortstat --cached 2>/dev/null`.length > 0
 
     if git_dirty_not_cached || git_dirty_cached
+      # uncommitted changes
       git_branch = intense_cyan(git_current_branch)
     else
+      # no uncommitted changes
       git_branch = cyan(git_current_branch)
     end
   else
     git_branch = ""
   end
 
-  arrow = '➜'
-
-  # ~/source/playground/yap master ➜
-  last_prompt = "#{dark(green('£'))} #{yellow(pwd)} #{git_branch}#{red(arrow)} "
+  # Example: ~/source/playground/yap master ➜
+  "#{yellow(pwd)} #{git_branch}#{red('➜')} "
 end
 
-#
+###############################################################################
+#                            SECONDARY PROMPT
+#------------------------------------------------------------------------------
 # The secondary_prompt is equivalent to the PS2 prompt in bash. It is what
 # is displayed when entering a multiline command. It can be set to a string
 # or a proc. It defaults to '> '
