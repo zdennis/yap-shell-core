@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
     |you just installed it for. For example, with rbenv I use the below
     |alias in my ~/.profile file:
     |
-    |    alias yep="rbenv local 2.2.3 && rbenv exec yap"
+    |    alias yap="rbenv local 2.2.3 && rbenv exec yap"
     |
     |Then, `source ~/.profile` or reload your shell. Now you can finally run:
     |
