@@ -46,6 +46,7 @@ module Yap::Shell
     def recursively_find_and_replace_command_substitutions(input)
       input = input.dup
       Parser.each_command_substitution_for(input) do |substitution_result, start_position, end_position|
+        debug_log "found command substitution at position=#{(start_position..end_position)} #{substitution_result.inspect}"
         result = recursively_find_and_replace_command_substitutions(substitution_result.str)
         position = substitution_result.position
         ast = Parser.parse(result)
@@ -64,6 +65,7 @@ module Yap::Shell
           output = %|"#{output.gsub(/"/, '\\"')}"|
 
           # Put thd output back into the original input
+          debug_log "replacing command substitution at position=#{(position.min...position.max)} with #{output.inspect}"
           input[position.min...position.max] = output
         end
       end
@@ -184,7 +186,6 @@ module Yap::Shell
           end
         end
       end
-
     end
 
     def visit_NumericalRangeNode(node)
