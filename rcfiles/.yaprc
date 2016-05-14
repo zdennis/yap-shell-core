@@ -1,35 +1,14 @@
 #!/usr/bin/ruby
 
-# ENV["PATH"] = "/Applications/Postgres.app/Contents/MacOS/bin:/usr/local/share/npm/bin/:/usr/local/heroku/bin:/Users/zdennis/.bin:/Users/zdennis/.rvm/gems/ruby-2.1.5/bin:/Users/zdennis/.rvm/gems/ruby-2.1.5@global/bin:/Users/zdennis/.rvm/rubies/ruby-2.1.5/bin:/usr/local/bin:/usr/local/sbin:/Users/zdennis/bin:/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/usr/local/CrossPack-AVR/bin:/private/tmp/.tidbits/bin:/Users/zdennis/source/playground/AdobeAir/AdobeAIRSDK/bin:/Users/zdennis/.rvm/bin:/Users/zdennis/Downloads/adt-bundle-mac-x86_64-20130219/sdk/tools/:/Users/zdennis/.rvm/bin"
-# ENV["GEM_HOME"] = "/Users/zdennis/.rvm/gems/ruby-2.1.5:/Users/zdennis/.rvm/gems/ruby-2.1.5@global"
-
-# This is only necessary when starting yap from another shell as it inherits that shell's
-# environment.
-keys2keep = %w(COLORFGBG DISPLAY EDITOR HOME LANG LOGNAME MAIL PATH PS1 PWD SHELL SHLVL SSH_AUTH_SOCK SUDO_COMMAND SUDO_GID SUDO_UID SUDO_USER TERM USER USERNAME _ __CF_USER_TEXT_ENCODING)
-world.env.keys.sort.each do |key|
-  unless keys2keep.include?(key)
-    world.env.delete(key)
-  end
-end
-
 world.env["PATH"] = [
   world.env["HOME"] + "/.rbenv/shims",
   "/usr/local/bin",
   world.env["PATH"]
 ].join(":")
 
-world.env.delete("RBENV_DIR")
-world.env.delete("RBENV_DIR")
-world.env.delete("RBENV_HOOK_PATH")
-world.env.delete("RBENV_ROOT")
-world.env.delete("RBENV_VERSION")
-
 require 'chronic'
 require 'term/ansicolor'
 require 'terminfo'
-
-env.delete("BUNDLE_GEMFILE")
-env.delete("BUNDLE_BIN_PATH")
 
 # Resize history to be infinite
 infinity = 1 / 0.0
