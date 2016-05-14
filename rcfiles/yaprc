@@ -26,7 +26,7 @@ func :reload! do |args:, stdin:, stdout:, stderr:|
   stdout.print "  Saving history "
   world.addons[:history].save
   stdout.puts Term::ANSIColor.green("done")
-  exec File.expand_path($0)
+  world.reload!
 end
 
 

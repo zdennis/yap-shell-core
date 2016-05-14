@@ -32,7 +32,26 @@ module Yap
       dom = build_editor_dom
 
       # ensure yap directory exists
-      FileUtils.mkdir_p configuration.yap_path
+      if !File.exists?(configuration.yap_path)
+        puts
+        puts yellow("Yap directory not found: #{configuration.yap_path}")
+        puts
+        puts "Initializing yap for the first time:"
+        puts
+
+        print "    Creating #{configuration.yap_path} "
+        FileUtils.mkdir_p configuration.yap_path
+        puts green("done")
+
+        print "    Creating default #{configuration.preferred_yaprc_path} "
+        FileUtils.cp configuration.yaprc_template_path, configuration.yap_path
+        puts green("done")
+        puts
+        puts "To tweak yap take a look at #{configuration.preferred_yaprc_path}."
+        puts
+        puts "Reloading shell"
+        reload!
+      end
 
       @editor = RawLine::Editor.create(dom: dom)
 
@@ -82,6 +101,10 @@ module Yap
 
     def unbind(key)
       @editor.unbind(key)
+    end
+
+    def reload!
+      exec File.expand_path($0)
     end
 
     def func(name, &blk)

@@ -19,12 +19,20 @@ module Yap
 
       @rcfiles = [
         "#{ENV['HOME']}/.yaprc",
-        yap_path.join("yaprc")
+        preferred_yaprc_path
       ]
     end
 
     def path_for(part)
       yap_path.join(part)
+    end
+
+    def preferred_yaprc_path
+      yap_path.join("yaprc")
+    end
+
+    def yaprc_template_path
+      Pathname.new(File.dirname(__FILE__)).join('../../rcfiles/yaprc')
     end
 
     def yap_path
