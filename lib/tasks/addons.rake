@@ -1,4 +1,50 @@
 namespace :addons do
+  task :new do
+    require 'highline'
+    require 'term/ansicolor'
+    require 'pathname'
+
+    extend Term::ANSIColor
+
+    yap_path = Pathname.new(File.dirname(__FILE__)).join('../..')
+    yap_lib_path = yap_path.join('lib')
+    yap_addons_path = yap_path.join('addons')
+
+    $LOAD_PATH.unshift yap_lib_path
+    require 'yap'
+
+    cli = HighLine.new
+    answer = cli.ask("Name for the addon? ")
+
+    addon_name = answer.downcase.gsub(/\W+/, '_')
+    addon_class_name = addon_name.split('_').map(&:capitalize).join
+    addon_path = yap_addons_path.join(addon_name)
+
+    loop do
+      answer = cli.ask("Create #{addon_class_name} addon in #{addon_path}? [Yn] ")
+      break if answer =~ /y/i
+      exit 1 if answer =~ /n/i
+    end
+    puts "Generating #{addon_class_name}"
+    puts
+
+    print "  Creating #{addon_path} "
+    FileUtils.mkdir_p addon_path
+    puts green('done')
+
+    addon_file = addon_path.join("#{addon_name}.rb")
+    print "  Creating #{addon_file} "
+    File.write addon_file, <<-FILE.gsub(/^\s*\|/, '')
+      |class #{addon_class_name} < Addon
+      |  def initialize_world(world)
+      |    # initialization code here
+      |  end
+      |end
+    FILE
+    puts green('done')
+    puts
+  end
+
   namespace :update do
     desc "Update the gemspec based on add-on specific dependnecies"
     task :gemspec do
