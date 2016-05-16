@@ -155,6 +155,53 @@ world.editor.bind(:alt_down_arrow) do
   keyboard_macros.cycle(:recent_git_branches).previous
 end
 
+class HistorySearch
+  def initialize(history, search_box, input_box)
+    @history = history
+    @search_box = search_box
+    @input_box = input_box
+  end
+
+  def read_bytes(bytes)
+    if bytes.any?
+      Treefell['shell'].puts "history search found bytes: #{bytes.inspect}"
+      @search_box.content += bytes.first.chr
+      @input_box.content = @search_box.content
+
+      if bytes.first == 97
+        binding.pry
+        true
+        true
+        true
+      end
+    end
+  end
+end
+
+world.editor.bind(:ctrl_r) do
+  label_text = "(reverse-search): "
+  search_label = TerminalLayout::Box.new(
+    content: label_text,
+    style: {
+      display: :inline,
+      height: 1
+    }
+  )
+  search_box = TerminalLayout::InputBox.new(
+    content: "",
+    style: {
+      display: :inline,
+      height: 1
+    }
+  )
+
+  Treefell['editor'].puts "world.editor.content_box.children: #{world.editor.content_box.children.inspect}"
+  world.editor.content_box.children = [search_label, search_box]
+
+  history_search = HistorySearch.new(history, search_box, world.editor.input_box)
+  world.editor.keyboard_input_processors.push(history_search)
+end
+
 # Or, you can set the trigger key for a particular set of macros
 # by specifying it when you call .configure(...).
 world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
