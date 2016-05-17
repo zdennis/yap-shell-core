@@ -1,32 +1,50 @@
 #!/usr/bin/env ruby
 
-file = __FILE__
-if File.symlink?(file)
-  file = File.readlink(file)
-end
-
-trap "SIGTSTP", "IGNORE"
-trap "SIGINT", "IGNORE"
-trap "SIGTTIN", "IGNORE"
-trap "SIGTTOU", "IGNORE"
-
-$LOAD_PATH.unshift File.dirname(file) + '/../lib'
-
-ENV['TERM'] ||= 'linux'
-
-# Delete all RBENV/RVM environment variables
-# Once we're booted, we don't want them being inherited
-# by other child processes since those children cannot
-# modify Yap's ENV, only their own child env.
-ENV.keys.each do |key|
-  if key =~ /^(rbenv_|rvm_)/i
-    ENV.delete(key)
+if ENV["YAP_SHELL"].nil?
+  # Start YAP with a pristine environment
+  env2keep = {
+    'PATH' => ENV['PATH'],
+    'HOME' => ENV['HOME'],
+    'RUBYOPT' => '-rubygems -EUTF-8',
+    'TREEFELL_OUT' => ENV['TREEFELL_OUT'],
+    'DEBUG' => ENV['DEBUG'],
+    'YAP_SHELL' => 'active'
+  }
+  env_params = env2keep.each_with_object([]) do |(key,value),arr|
+    next if value.nil?
+    arr << %|#{key}="#{value}"|
+  end.join(' ')
+  cmd = %|env -i #{env_params} #{$0}|
+  exec cmd
+else
+  file = __FILE__
+  if File.symlink?(file)
+    file = File.readlink(file)
   end
+
+  trap "SIGTSTP", "IGNORE"
+  trap "SIGINT", "IGNORE"
+  trap "SIGTTIN", "IGNORE"
+  trap "SIGTTOU", "IGNORE"
+
+  $LOAD_PATH.unshift File.dirname(file) + '/../lib'
+
+  ENV['TERM'] ||= 'linux'
+
+  # Delete all RBENV/RVM environment variables
+  # Once we're booted, we don't want them being inherited
+  # by other child processes since those children cannot
+  # modify Yap's ENV, only their own child env.
+  ENV.keys.each do |key|
+    if key =~ /^(rbenv_|rvm_)/i
+      ENV.delete(key)
+    end
+  end
+
+  require "term/ansicolor"
+  require "pry"
+  require "yap"
+
+  STDOUT.sync = true
+  Yap.run_shell
 end
-
-require "term/ansicolor"
-require "pry"
-require "yap"
-
-STDOUT.sync = true
-Yap.run_shell

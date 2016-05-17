@@ -28,11 +28,11 @@ Gem::Specification.new do |spec|
     |you just installed it for. For example, with rbenv I use the below
     |alias in my ~/.profile file:
     |
-    |    alias yap='env -i PATH=$PATH RUBYOPT="-rubygems -EUTF-8" HOME=$HOME sh -c "rbenv local 2.2.3 && yap"'
+    |    alias yap='rbenv local 2.2.3 && yap'
     |
     |If you are interested in tracing yap's execution you can add the DEBUG and TREEFELL_OUT options:
     |
-    |    alias yap-debug='env -i DEBUG=* TREEFELL_OUT=/tmp/yap-debug.log PATH=$PATH RUBYOPT="-rubygems -EUTF-8" HOME=$HOME sh -c "rbenv local 2.2.3 && yap"'
+    |    alias yap-debug='rbenv local 2.2.3 ; DEBUG=* TREEFELL_OUT=/tmp/yap-debug.log yap'
     |
     |Then, `source ~/.profile` or reload your shell. Now you can finally run:
     |
