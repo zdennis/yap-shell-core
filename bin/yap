@@ -42,6 +42,7 @@ else
   end
 
   require "term/ansicolor"
+  require "byebug"
   require "pry"
   require "yap"
 
