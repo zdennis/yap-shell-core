@@ -1,14 +1,26 @@
 #!/usr/bin/env ruby
 
-if ENV["YAP_SHELL"].nil?
+if ENV['YAP_SHELL'] == 'active'
   # Start YAP with a pristine environment
   env2keep = {
-    'PATH' => ENV['PATH'],
+    # DISPLAY needs to be inherited in order to launch GUI apps
+    'DISPLAY' => ENV['DISPLAY'],
     'HOME' => ENV['HOME'],
+    'PATH' => ENV['PATH'],
+
+    # For Yap's sanity
     'RUBYOPT' => '-rubygems -EUTF-8',
-    'TREEFELL_OUT' => ENV['TREEFELL_OUT'],
+    'YAP_SHELL' => 'active',
+
+    # Inherit the user's preferred shell
+    'SHELL' => ENV['SHELL'],
+
+    # Necessary for ssh-agent
+    'SSH_AUTH_SOCK' => ENV['SSH_AUTH_SOCK'],
+
+    # DEBUG/TREEFELL_OUT are for debuging yap itself
     'DEBUG' => ENV['DEBUG'],
-    'YAP_SHELL' => 'active'
+    'TREEFELL_OUT' => ENV['TREEFELL_OUT']
   }
   env_params = env2keep.each_with_object([]) do |(key,value),arr|
     next if value.nil?
