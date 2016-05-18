@@ -54,6 +54,7 @@ else
   end
 
   require "term/ansicolor"
+  require "tins"
   require "byebug"
   require "pry"
   require "yap"
