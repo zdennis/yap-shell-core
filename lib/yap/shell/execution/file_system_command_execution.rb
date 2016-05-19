@@ -44,6 +44,16 @@ module Yap::Shell::Execution
           begin
             before = ENV.to_h.dup
             ENV.replace(@world.env)
+            Treefell['shell'].puts <<-MSG.gsub(/^\s*\|/, '')
+              |forked child process
+              |  pid=#{Process.pid} #{command.to_executable_str}
+              |  stdin=#{stdin.inspect}
+              |  stdout=#{stdout.inspect}
+              |  stderr=#{stderr.inspect}
+              |  $stdin=#{$stdin.inspect}
+              |  $stdout=#{$stdout.inspect}
+              |  $stderr=#{$stderr.inspect}
+            MSG
             Kernel.exec command.to_executable_str
           ensure
             ENV.replace(before)
