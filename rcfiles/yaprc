@@ -156,24 +156,99 @@ world.editor.bind(:alt_down_arrow) do
 end
 
 class HistorySearch
-  def initialize(history, search_box, input_box)
+  attr_reader :keys
+
+  def initialize(history, keys:, line:, search:, done:)
     @history = history
-    @search_box = search_box
-    @input_box = input_box
+    @keys = keys
+    @line = line
+    @search_proc = search || -> {}
+    @done_proc = done || -> {}
+
+    initialize_key_bindings
+  end
+
+  def initialize_key_bindings
+    @keys.bind(:return){ execute }
+    @keys.bind(:ctrl_j){ accept }
+    @keys.bind(:ctrl_r){ search_again_backward }
+    @keys.bind(:ctrl_n){ search_again_forward }
+    @keys.bind(:backspace) { delete_left_character }
   end
 
   def read_bytes(bytes)
     if bytes.any?
-      Treefell['shell'].puts "history search found bytes: #{bytes.inspect}"
-      @search_box.content += bytes.first.chr
-      @input_box.content = @search_box.content
+      Treefell['shell'].puts "history search found bytes: #{bytes.inspect} keys=#{@keys.inspect}"
 
-      if bytes.first == 97
-        binding.pry
-        true
-        true
-        true
+      if @keys[bytes]
+        Treefell['shell'].puts "history search found key-binding"
+        @keys[bytes].call
+      else
+        Treefell['shell'].puts "history no key binding found, searching with bytes: #{bytes.inspect}"
+        search_with_bytes(bytes)
       end
+    end
+  end
+
+  private
+
+  def delete_left_character
+    @line.delete_left_character
+    perform_search(type: @last_search_was)
+  end
+
+  def accept
+    @done_proc.call(execute: false, result: @history2search[@last_match_index])
+  end
+
+  def execute
+    @done_proc.call(execute: true, result: @history2search[@last_match_index])
+  end
+
+  def found_match(result:)
+    @search_proc.call(term: @line.text, result: result)
+  end
+
+  def search_again_backward
+    Treefell['shell'].puts "history searching again backward"
+    if @last_search_was == :forward
+      @last_match_index = @history.length - @last_match_index - 1
+      @history2search = @history.reverse
+    end
+    perform_search(starting_index: @last_match_index, type: :backward)
+  end
+
+  def search_again_forward
+    Treefell['shell'].puts "history searching again forward"
+    if @last_search_was == :backward
+      @last_match_index = @history.length - @last_match_index - 1
+      @history2search = @history
+    end
+    perform_search(starting_index: @last_match_index, type: :forward)
+  end
+
+  def search_with_bytes(bytes)
+    part = bytes.map(&:chr).join
+    @line.write(part)
+    @history2search = @history.reverse
+    perform_search(type: :backward)
+  end
+
+  def perform_search(starting_index: -1, type:)
+    # fuzzy search
+    characters = @line.text.split('').map { |ch| Regexp.escape(ch) }
+    fuzzy_search_regex = /#{characters.join('.*')}/
+
+    Treefell['shell'].puts "history search matching on regex=#{fuzzy_search_regex} starting_index=#{starting_index}"
+    @last_search_was = type
+
+    match = @history2search.detect.with_index do |item, i|
+      next if i <= starting_index
+      item =~ fuzzy_search_regex && @last_match_index = i
+    end
+
+    if match
+      found_match(result: match)
     end
   end
 end
@@ -194,12 +269,30 @@ world.editor.bind(:ctrl_r) do
       height: 1
     }
   )
+  search_box.name = "focused-input-box"
 
-  Treefell['editor'].puts "world.editor.content_box.children: #{world.editor.content_box.children.inspect}"
+  Treefell['shell'].puts "world.editor.content_box.children: #{world.editor.content_box.children.inspect}"
+  history_search_env = world.editor.new_env
+  history_search = HistorySearch.new(history,
+    line: RawLine::LineEditor.new(RawLine::Line.new, sync_with: -> { search_box }),
+    keys: history_search_env.keys,
+    search: -> (term:, result:){
+      world.editor.input_box.content = result if result
+    },
+    done: -> (execute:, result:){
+      world.editor.content_box.children = []
+      world.editor.pop_env
+      world.editor.overwrite_line(result)
+      world.editor.process_line if execute
+      world.editor.focus_input_box(world.editor.input_box)
+    }
+  )
+
+  editor.push_env history_search_env
+  world.editor.push_keyboard_input_processor(history_search)
+
   world.editor.content_box.children = [search_label, search_box]
-
-  history_search = HistorySearch.new(history, search_box, world.editor.input_box)
-  world.editor.keyboard_input_processors.push(history_search)
+  world.editor.focus_input_box(search_box)
 end
 
 # Or, you can set the trigger key for a particular set of macros
