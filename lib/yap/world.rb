@@ -224,6 +224,9 @@ module Yap
         dom.prompt_box = @prompt_box
         dom.input_box = @input_box
         dom.content_box = @content_box
+        @prompt_box.name = "prompt-box"
+        @input_box.name = "input-box"
+        @content_box.name = "content-box"
       end
     end
   end
