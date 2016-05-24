@@ -237,14 +237,20 @@ class HistorySearch
   def perform_search(starting_index: -1, type:)
     # fuzzy search
     characters = @line.text.split('').map { |ch| Regexp.escape(ch) }
-    fuzzy_search_regex = /#{characters.join('.*')}/
+    fuzzy_search_regex = /#{characters.join('.*?')}/
 
     Treefell['shell'].puts "history search matching on regex=#{fuzzy_search_regex} starting_index=#{starting_index}"
     @last_search_was = type
 
     match = @history2search.detect.with_index do |item, i|
       next if i <= starting_index
-      item =~ fuzzy_search_regex && @last_match_index = i
+
+      Treefell['shell'].puts "history search matching #{(item + @line.text).inspect} =~ #{fuzzy_search_regex}"
+      md = (item + @line.text).match(fuzzy_search_regex)
+      if md && md.end(0) <= item.length
+        Treefell['shell'].puts "history search match #{item} at #{i}"
+        @last_match_index = i
+      end
     end
 
     if match
