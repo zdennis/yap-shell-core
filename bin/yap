@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-if ENV['YAP_SHELL'] == 'active'
+if ENV['YAP_SHELL'] != 'active'
   # Start YAP with a pristine environment
   env2keep = {
     # DISPLAY needs to be inherited in order to launch GUI apps
@@ -42,16 +42,7 @@ else
   $LOAD_PATH.unshift File.dirname(file) + '/../lib'
 
   ENV['TERM'] ||= 'linux'
-
-  # Delete all RBENV/RVM environment variables
-  # Once we're booted, we don't want them being inherited
-  # by other child processes since those children cannot
-  # modify Yap's ENV, only their own child env.
-  ENV.keys.each do |key|
-    if key =~ /^(rbenv_|rvm_)/i
-      ENV.delete(key)
-    end
-  end
+  ENV['YAP_SHELL'] = 'active'
 
   require "term/ansicolor"
   require "tins"
