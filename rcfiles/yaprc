@@ -173,7 +173,14 @@ class HistorySearch
     @keys.bind(:ctrl_j){ accept }
     @keys.bind(:ctrl_r){ search_again_backward }
     @keys.bind(:ctrl_n){ search_again_forward }
-    @keys.bind(:backspace) { delete_left_character }
+    @keys.bind(:ctrl_a){ @line.move_to_beginning_of_input }
+    @keys.bind(:ctrl_e){ @line.move_to_end_of_input }
+    @keys.bind(:backspace) do
+      @line.delete_left_character
+      perform_search(type: @last_search_was)
+    end
+    @keys.bind(:escape){ cancel }
+    @keys.bind(:ctrl_c){ cancel }
   end
 
   def read_bytes(bytes)
@@ -206,13 +213,12 @@ class HistorySearch
 
   private
 
-  def delete_left_character
-    @line.delete_left_character
-    perform_search(type: @last_search_was)
-  end
-
   def accept
     @done_proc.call(execute: false, result: @history2search[@last_match_index])
+  end
+
+  def cancel
+    @done_proc.call(execute: false, result: nil)
   end
 
   def execute
@@ -247,7 +253,7 @@ class HistorySearch
 
   def search_with_bytes(bytes)
     part = bytes.map(&:chr).join
-    @line.write(part)
+    @line.write(part.scan(/[[:print:]]/).join)
     @history2search = @history.reverse
     perform_search(type: :backward)
   end
@@ -259,11 +265,11 @@ class HistorySearch
     end
 
     # fuzzy search
-    # characters = @line.text.split('').map { |ch| Regexp.escape(ch) }
-    # fuzzy_search_regex = /#{characters.join('.*?')}/
+    characters = @line.text.split('').map { |ch| Regexp.escape(ch) }
+    fuzzy_search_regex = /#{characters.join('.*?')}/
 
     # non-fuzzy-search
-    fuzzy_search_regex = /#{Regexp.escape(@line.text)}/
+    # fuzzy_search_regex = /#{Regexp.escape(@line.text)}/
 
     Treefell['shell'].puts "history search matching on regex=#{fuzzy_search_regex.inspect} starting_index=#{starting_index}"
     @last_search_was = type
@@ -317,9 +323,9 @@ world.editor.bind(:ctrl_r) do
     done: -> (execute:, result:){
       world.editor.content_box.children = []
       world.editor.pop_env
-      world.editor.overwrite_line(result)
-      world.editor.process_line if execute
       world.editor.focus_input_box(world.editor.input_box)
+      world.editor.overwrite_line(result.to_s)
+      world.editor.process_line if execute
     }
   )
 
