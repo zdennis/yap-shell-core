@@ -214,15 +214,15 @@ class HistorySearch
   private
 
   def accept
-    @done_proc.call(execute: false, result: @history2search[@last_match_index])
+    @done_proc.call(execute: false, result: result)
   end
 
   def cancel
-    @done_proc.call(execute: false, result: nil)
+    @done_proc.call(execute: false, result: result)
   end
 
   def execute
-    @done_proc.call(execute: true, result: @history2search[@last_match_index])
+    @done_proc.call(execute: true, result: result)
   end
 
   def found_match(result:)
@@ -230,7 +230,12 @@ class HistorySearch
   end
 
   def no_match_found
-    @search_proc.call(term: @line.text, result: nil)
+    @last_match_index = nil
+    @search_proc.call(term: @line.text, result: result)
+  end
+
+  def result
+    @history2search[@last_match_index] if @last_match_index
   end
 
   def search_again_backward
