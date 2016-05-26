@@ -30,7 +30,6 @@ module Yap::Shell
         line = line_read << "\n"
         begin
           @blk.call(line)
-          @world.editor.redraw_prompt
         rescue Yap::Shell::Parser::Lexer::NonterminatedString,
           Yap::Shell::Parser::Lexer::LineContinuationFound => ex
           Treefell['shell'].puts "rescued #{ex}, asking user for more input"
