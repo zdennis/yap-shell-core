@@ -20,14 +20,11 @@ module Yap::Shell::Execution
       end
 
       Treefell['shell'].puts "shell command executing with params: #{params.inspect} $stdout=#{$stdout.inspect} $stderr=#{$stderr.inspect}"
-      pid = fork { func.call(**params) }
-
-      if wait
-        pid, status = Process.wait2(pid, Process::WUNTRACED)
-      end
+      func.call(**params)
 
       @stdout.close if @stdout != $stdout && !@stdout.closed?
       @stderr.close if @stderr != $stderr && !@stderr.closed?
+      @stdin.close if @stdin != $stdin && !@stdin.closed?
     end
   end
 end
