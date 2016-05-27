@@ -158,7 +158,7 @@ module Yap::Shell
         values = []
         if node.head
           node.head.accept(self)
-          values = stdin.read.split(/\s+/)
+          values = stdin.read.split(/\n|\0/)
         else
           # assume range for now
           values = @current_range_values
