@@ -89,7 +89,7 @@ class KeyboardMacros < Addon
         configuration.start.call if configuration.start
 
         debug_log "taking over keyboard input processing from editor"
-        world.editor.keyboard_input_processors.push(self)
+        world.editor.push_keyboard_input_processor(self)
 
         wait_timeout_in_seconds = 0.1
         world.editor.input.wait_timeout_in_seconds = wait_timeout_in_seconds
@@ -195,9 +195,9 @@ class KeyboardMacros < Addon
       definition.configuration.stop.call if definition.configuration.stop
     end
     @stack.clear
-    if world.editor.keyboard_input_processors.last == self
+    if world.editor.keyboard_input_processor == self
       debug_log "giving keyboard input processing control back"
-      world.editor.keyboard_input_processors.pop
+      world.editor.pop_keyboard_input_processor
 
       debug_log "restoring default editor input timeout"
       world.editor.input.restore_default_timeout

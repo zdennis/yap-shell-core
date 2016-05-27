@@ -98,12 +98,12 @@ module Yap
         attr_reader :file
 
         def initialize(file)
-          @file = file
+          @file = File.expand_path(file)
         end
 
         def initialize_world(world)
           Treefell['shell'].puts "initializing rcfile: #{file}"
-          world.instance_eval File.read(@file)
+          world.instance_eval File.read(@file), @file
         end
       end
 

@@ -155,6 +155,10 @@ world.editor.bind(:alt_down_arrow) do
   keyboard_macros.cycle(:recent_git_branches).previous
 end
 
+world.editor.bind(:ctrl_r) do
+  world.addons[:history_search].prompt_user_to_search
+end
+
 # Or, you can set the trigger key for a particular set of macros
 # by specifying it when you call .configure(...).
 world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|

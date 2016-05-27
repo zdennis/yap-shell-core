@@ -6,7 +6,7 @@ module Yap::Shell::Execution
       possible_parameters = {
         command: command.str,
         args: command.args,
-        stdin: @stdin,
+        stdin: (@stdin != $stdin ? @stdin : StringIO.new),
         stdout: @stdout,
         stderr: @stderr,
         world: @world,
@@ -19,10 +19,12 @@ module Yap::Shell::Execution
         h
       end
 
-      Treefell['shell'].puts "shell command executing with params: #{params.inspect}"
-      command_result = func.call(**params)
+      Treefell['shell'].puts "shell command executing with params: #{params.inspect} $stdout=#{$stdout.inspect} $stderr=#{$stderr.inspect}"
+      func.call(**params)
+
       @stdout.close if @stdout != $stdout && !@stdout.closed?
       @stderr.close if @stderr != $stderr && !@stderr.closed?
+      @stdin.close if @stdin != $stdin && !@stdin.closed?
     end
   end
 end
