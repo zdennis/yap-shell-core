@@ -129,7 +129,17 @@ module Yap
         evaluation.evaluate(statement) do |command, stdin, stdout, stderr, wait|
           context.clear_commands
           context.add_command_to_run command, stdin:stdin, stdout:stdout, stderr:stderr, wait:wait
-          @last_result = context.execute(world:self)
+          @last_result = context.execute(world:self) || 0
+          if @last_result.is_a?(Integer)
+            Yap::Shell::Execution::Result.new(
+              status_code: @last_result,
+              directory: Dir.pwd,
+              n: 1,
+              of: 1
+            )
+          else
+            @last_result
+          end
         end
       end
 
