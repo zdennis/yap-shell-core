@@ -22,11 +22,14 @@ if ENV['YAP_SHELL'] != 'active'
     'DEBUG' => ENV['DEBUG'],
     'TREEFELL_OUT' => ENV['TREEFELL_OUT']
   }
+
+  ENV.clear
   env_params = env2keep.each_with_object([]) do |(key,value),arr|
     next if value.nil?
     arr << %|#{key}="#{value}"|
   end.join(' ')
-  cmd = %|env -i #{env_params} #{$0}|
+
+  cmd = %|env -i #{env_params} #{File.expand_path(__FILE__)}|
   exec cmd
 else
   file = __FILE__
