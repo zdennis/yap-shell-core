@@ -115,7 +115,7 @@ class HistorySearch < Addon
     end
 
     def cancel
-      @done_proc.call(execute: false, result: result)
+      @done_proc.call(execute: false, result: nil)
     end
 
     def execute
