@@ -327,7 +327,7 @@ module Yap::Shell
     def process_ArgumentNode(node)
       if node.single_quoted?
         debug_visit(node, 'single quoted argument, performing no expansion')
-        ["'#{node.lvalue}'"]
+        ["#{node.lvalue}"]
       elsif node.double_quoted?
         debug_visit(node, 'double quoted argument, performing variable expansion')
         [variable_expand(node.lvalue)]
