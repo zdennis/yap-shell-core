@@ -80,22 +80,7 @@ class HistorySearch < Addon
       if bytes.any?
         Treefell['shell'].puts "history search found bytes: #{bytes.inspect}"
 
-        # [1,2,3] => try 1,2,3 first ,then 1,2, then 1, then move on
-        nbytes = bytes.dup
-        search_bytes = []
-        loop do
-          if nbytes.empty?
-            break
-          elsif @keys[nbytes]
-            Treefell['shell'].puts "history search found key-binding for bytes=#{nbytes.inspect}"
-            @keys[nbytes].call
-            nbytes = search_bytes
-            search_bytes = []
-          else
-            search_bytes.unshift nbytes[-1]
-            nbytes = nbytes[0..-2]
-          end
-        end
+        search_bytes = process_bytes(bytes)
 
         if search_bytes.any?
           Treefell['shell'].puts "history searching with bytes=#{bytes.inspect}"
@@ -105,6 +90,25 @@ class HistorySearch < Addon
     end
 
     private
+
+    # given [1,2,3] first try [1,2,3]. If no key binding
+    # matches, then try [1,2]. If no keybinding matches try [1].
+    # Execution should flow in left to right, positional order.
+    # This returns an array of left over bytes in the order they
+    # appeared that did not match any keybinding
+    def process_bytes bytes, leftover=[]
+      if bytes.empty?
+        leftover
+      elsif @keys[bytes]
+        @keys[bytes].call
+        leftover
+      else
+        process_bytes(
+          bytes[0..-2],
+          [bytes[-1]].concat(leftover)
+        )
+      end
+    end
 
     def accept
       @done_proc.call(execute: false, result: result)
