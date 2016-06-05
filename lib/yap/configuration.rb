@@ -11,6 +11,29 @@ module Yap
     attr_accessor :addon_paths
     attr_accessor :rcfiles
 
+    def self.option(name, type=nil)
+      reader_method = name.to_s
+      define_method(reader_method) do
+        value = instance_variable_get("@#{name}")
+        return !!value if type == :boolean
+        value
+      end
+
+      writer_method = "#{reader_method}="
+      define_method(writer_method) do |value|
+        instance_variable_set("@#{name}", value)
+      end
+
+      if type == :boolean
+        query_method = "#{reader_method}?"
+        alias_method query_method, reader_method
+      end
+    end
+
+    option :use_addons, :boolean
+    option :use_history, :boolean
+    option :use_rcfiles, :boolean
+
     def initialize
       @addon_paths = [
         "#{File.dirname(__FILE__)}/../../addons",

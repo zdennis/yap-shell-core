@@ -3,6 +3,7 @@ class History < Addon
   attr_reader :position
 
   def initialize_world(world)
+    return unless world.configuration.use_history?
     @world = world
 
     @file = world.configuration.path_for('history')

@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-
 if ENV['YAP_SHELL'] != 'active'
   # Start YAP with a pristine environment
   env2keep = {
@@ -29,7 +28,7 @@ if ENV['YAP_SHELL'] != 'active'
     arr << %|#{key}="#{value}"|
   end.join(' ')
 
-  cmd = %|env -i #{env_params} #{File.expand_path(__FILE__)}|
+  cmd = %|env -i #{env_params} #{File.expand_path(__FILE__)} #{ARGV.join(' ')}|
   exec cmd
 else
   file = __FILE__
@@ -47,12 +46,10 @@ else
   ENV['TERM'] ||= 'linux'
   ENV['YAP_SHELL'] = 'active'
 
-  require "term/ansicolor"
-  require "tins"
-  require "byebug"
-  require "pry"
   require "yap"
 
   STDOUT.sync = true
-  Yap.run_shell
+  STDERR.sync = true
+
+  Yap.run_shell(ARGV)
 end

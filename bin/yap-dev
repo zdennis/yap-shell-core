@@ -4,6 +4,5 @@ require 'bundler'
 Bundler.setup
 require 'pry'
 
-ENV['YAP_SHELL'] = 'active'
 $LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
 load File.dirname(__FILE__) + '/yap'
