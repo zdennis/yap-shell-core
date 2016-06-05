@@ -102,7 +102,13 @@ module Yap
           @world.editor.puts "^C"
           retry
         rescue Exception => ex
-          binding.pry unless ex.is_a?(SystemExit)
+          if !ex.is_a?(SystemExit)
+            if $stdout.isatty
+              binding.pry
+            else
+              raise ex
+            end
+          end
         end
       end
     end

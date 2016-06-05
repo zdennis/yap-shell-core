@@ -209,6 +209,8 @@ module Yap::Shell
     # if we haven't been made the process group controlling the TTY that we
     # become so. This method intentionally blocks.
     def ensure_process_group_controls_the_tty
+      return unless STDIN.isatty
+
       tty_pgrp = Termios.tcgetpgrp(STDIN)
       while ![Process.pid, Process.getpgrp].include?(tty_pgrp)
         Termios.tcsetpgrp(STDIN, Process.pid)

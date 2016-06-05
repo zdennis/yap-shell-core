@@ -59,7 +59,8 @@ module Yap::Shell::Execution
             world:  world
           )
 
-          @saved_tty_attrs = Termios.tcgetattr(STDIN)
+          @saved_tty_attrs = Termios.tcgetattr(STDIN) if STDIN.isatty
+
           Treefell['shell'].puts "firing :before_execute for #{command}"
           self.class.fire :before_execute, world, command: command
 
@@ -90,7 +91,7 @@ module Yap::Shell::Execution
           self.class.fire :after_execute, world, command: command, result: result
 
           results << process_execution_result(execution_context:execution_context, result:result)
-          Termios.tcsetattr(STDIN, Termios::TCSANOW, @saved_tty_attrs)
+          Termios.tcsetattr(STDIN, Termios::TCSANOW, @saved_tty_attrs) if STDIN.isatty
         end
       end
 

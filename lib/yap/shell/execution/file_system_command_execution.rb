@@ -72,7 +72,7 @@ module Yap::Shell::Execution
       end
 
       # Set terminal's process group to that of the child process
-      Termios.tcsetpgrp STDIN, pid
+      Termios.tcsetpgrp STDIN, pid if STDIN.isatty
       pid, status = Process.wait2(pid, Process::WUNTRACED) if wait
 
       # If we're not printing to the terminal then close in/out/err. This
@@ -92,12 +92,14 @@ module Yap::Shell::Execution
       # if the pid that just stopped was the process group owner then
       # give it back to the us so we can become the foreground process
       # in the terminal
-      if pid == Termios.tcgetpgrp(STDIN)
-        Treefell['shell'].puts <<-DEBUG.gsub(/^\s*\|/, '')
-          |restoring process group for STDIN to yap process with pid=#{Process.pid}
-        DEBUG
-        Process.setpgid Process.pid, Process.pid
-        Termios.tcsetpgrp STDIN, Process.pid
+      if STDIN.isatty
+        if pid == Termios.tcgetpgrp(STDIN)
+          Treefell['shell'].puts <<-DEBUG.gsub(/^\s*\|/, '')
+            |restoring process group for STDIN to yap process with pid=#{Process.pid}
+          DEBUG
+          Process.setpgid Process.pid, Process.pid
+          Termios.tcsetpgrp STDIN, Process.pid
+        end
       end
 
       # if the reason we stopped is from being suspended

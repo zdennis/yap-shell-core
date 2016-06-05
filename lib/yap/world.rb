@@ -147,6 +147,7 @@ module Yap
     end
 
     def foreground?
+      return unless STDIN.isatty
       Process.getpgrp == Termios.tcgetpgrp($stdout)
     end
 
