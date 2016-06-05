@@ -44,8 +44,6 @@ module Yap::Shell
         rescue ::Yap::Shell::Parser::ParseError => ex
           Treefell['shell'].puts "rescued #{ex}, telling user"
           puts "  Parse error: #{ex.message}"
-        ensure
-          @world.editor.reset_line
         end
 
         ensure_process_group_controls_the_tty
