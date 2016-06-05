@@ -74,6 +74,8 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake", "~> 10"
+  spec.add_development_dependency "rspec", "~> 3.4.0"
+  spec.add_development_dependency "childprocess", "~> 0.5.9"
 
   #--BEGIN_ADDON_GEM_DEPENDENCIES--#
   spec.add_dependency "chronic", "~> 0.10.2"
