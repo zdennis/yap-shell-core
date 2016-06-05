@@ -33,24 +33,28 @@ module Yap
 
       # ensure yap directory exists
       if !File.exists?(configuration.yap_path)
-        puts
-        puts yellow("Yap directory not found: #{configuration.yap_path}")
-        puts
-        puts "Initializing yap for the first time:"
-        puts
+        if configuration.skip_first_time?
+          # skipping first time
+        else
+          puts
+          puts yellow("Yap directory not found: #{configuration.yap_path}")
+          puts
+          puts "Initializing yap for the first time:"
+          puts
 
-        print "    Creating #{configuration.yap_path} "
-        FileUtils.mkdir_p configuration.yap_path
-        puts green("done")
+          print "    Creating #{configuration.yap_path} "
+          FileUtils.mkdir_p configuration.yap_path
+          puts green("done")
 
-        print "    Creating default #{configuration.preferred_yaprc_path} "
-        FileUtils.cp configuration.yaprc_template_path, configuration.yap_path
-        puts green("done")
-        puts
-        puts "To tweak yap take a look at #{configuration.preferred_yaprc_path}."
-        puts
-        puts "Reloading shell"
-        reload!
+          print "    Creating default #{configuration.preferred_yaprc_path} "
+          FileUtils.cp configuration.yaprc_template_path, configuration.yap_path
+          puts green("done")
+          puts
+          puts "To tweak yap take a look at #{configuration.preferred_yaprc_path}."
+          puts
+          puts "Reloading shell"
+          reload!
+        end
       end
 
       @editor = RawLine::Editor.create(dom: dom)

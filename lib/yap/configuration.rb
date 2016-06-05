@@ -11,9 +11,10 @@ module Yap
     attr_accessor :addon_paths
     attr_accessor :rcfiles
 
-    def self.option(name, type=nil)
+    def self.option(name, type=nil, default: nil)
       reader_method = name.to_s
       define_method(reader_method) do
+        return default unless instance_variable_defined?("@#{name}")
         value = instance_variable_get("@#{name}")
         return !!value if type == :boolean
         value
@@ -30,9 +31,10 @@ module Yap
       end
     end
 
-    option :use_addons, :boolean
-    option :use_history, :boolean
-    option :use_rcfiles, :boolean
+    option :skip_first_time, :boolean, default: false
+    option :use_addons, :boolean, default: true
+    option :use_history, :boolean, default: true
+    option :use_rcfiles, :boolean, default: true
 
     def initialize
       @addon_paths = [

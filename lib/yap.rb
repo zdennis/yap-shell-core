@@ -17,6 +17,10 @@ module Yap
         exit
       end
 
+      opts.on('--skip-first-time', 'Disables creating ~/.yap directory on shell startup') do
+        configuration.skip_first_time = true
+      end
+
       opts.on('--no-addons', 'Disables auto-loading addons on shell startup') do
         configuration.use_addons = false
       end
