@@ -1,6 +1,7 @@
 require 'fileutils'
 require 'pathname'
 require 'timeout'
+require 'ostruct'
 
 module Yap
   module Spec
@@ -121,6 +122,13 @@ module Yap
 
       def output
         str = ANSIString.new output_file.read
+        without_ansi_str = str.without_ansi.force_encoding(
+          Encoding::ASCII_8BIT
+        ).gsub(/(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]/n, '')
+      end
+
+      def error_output
+        str = ANSIString.new error_output_file.read
         str.without_ansi.force_encoding(
           Encoding::ASCII_8BIT
         ).gsub(/(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]/n, '')
@@ -128,6 +136,10 @@ module Yap
 
       def output_file
         @output_file ||= OutputFile.new(stdout.path)
+      end
+
+      def error_output_file
+        @error_output_file ||= OutputFile.new(stderr.path)
       end
 
       def stdout
