@@ -1,7 +1,8 @@
 language: ruby
 rvm:
-  - 2.1.5
+  - 2.2
 cache: bundler
+gemfile: Gemfile.travis
 script:
   - bundle exec rspec -fd spec
 notifications:

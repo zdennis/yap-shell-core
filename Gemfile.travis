@@ -1,0 +1,8 @@
+source 'https://rubygems.org'
+
+gemspec
+
+gem 'treefell', git: 'https://github.com/zdennis/treefell.git'
+gem 'yap-shell-parser', git: 'https://github.com/zdennis/yap-shell-parser.git'
+gem 'terminal-layout', git: 'https://github.com/zdennis/terminal-layout.git'
+gem 'yap-rawline', git: 'https://github.com/zdennis/rawline.git'
