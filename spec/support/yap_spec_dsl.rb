@@ -11,6 +11,10 @@ module Yap
         @bytes_read = 0
       end
 
+      def clear
+        `> #{@filepath}`
+      end
+
       def read
         file = File.open(@filepath, 'rb')
         file.seek(@bytes_read)
@@ -120,6 +124,11 @@ module Yap
         shell.io.stdin.print "\r"
       end
 
+      def clear_all_output
+        output_file.clear
+        error_output_file.clear
+      end
+
       def output
         str = ANSIString.new output_file.read
         without_ansi_str = str.without_ansi.force_encoding(
@@ -143,13 +152,18 @@ module Yap
       end
 
       def stdout
-        @stdout ||= File.open(File.expand_path('stdout.log'), 'wb')
+        yap_dir
+        @stdout ||= begin
+          File.open yap_dir.join('stdout.log').expand_path, 'wb'
+        end
         @stdout.sync = true
         @stdout
       end
 
       def stderr
-        @stderr ||= File.new(File.expand_path('stderr.log'), 'wb')
+        @stderr ||= begin
+          File.open yap_dir.join('stderr.log').expand_path, 'wb'
+        end
         @stderr.sync = true
         @stderr
       end

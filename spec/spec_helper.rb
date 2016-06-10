@@ -27,6 +27,32 @@ end
 RSpec.configure do |config|
   config.include Yap::Spec::DSL
 
+  config.before(:all, type: :feature) do
+    set_yap_command_line_arguments \
+      '--no-history', '--no-addons', '--no-rcfiles', '--skip-first-time'
+
+    turn_on_debug_log(debug: 'editor')
+
+    initialize_shell
+
+    mkdir tmp_dir
+    Dir.chdir tmp_dir
+
+    type "cd #{tmp_dir}"
+    enter
+
+    type "pwd"
+    enter
+    expect { output }.to have_printed(File.expand_path(tmp_dir))
+    clear_all_output
+  end
+
+  config.after(:each, type: :feature) do
+    Dir.chdir(tmp_dir) do
+      FileUtils.rm_rf Dir.glob('*')
+    end
+  end
+
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
   # assertions if you prefer.
