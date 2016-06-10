@@ -11,7 +11,6 @@ module Yap
 
     autoload :CommandFactory, "yap/shell/commands"
     autoload :CommandError,  "yap/shell/commands"
-    autoload :CommandUnknownError,  "yap/shell/commands"
     autoload :BuiltinCommand,  "yap/shell/commands"
     autoload :FileSystemCommand,  "yap/shell/commands"
     autoload :RubyCommand,  "yap/shell/commands"

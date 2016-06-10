@@ -5,7 +5,6 @@ module Yap::Shell
   require 'yap/shell/execution/result'
 
   class CommandError < StandardError ; end
-  class CommandUnknownError < CommandError ; end
 
   class CommandFactory
     def self.build_command_for(world:, command:, args:, heredoc:, internally_evaluate:, line:)
@@ -14,9 +13,9 @@ module Yap::Shell
       case command
       when ShellCommand then ShellCommand.new(world:world, str:command, args:args, heredoc:heredoc, line:line)
       when BuiltinCommand then BuiltinCommand.new(world:world, str:command, args:args, heredoc:heredoc)
-      when FileSystemCommand  then FileSystemCommand.new(world:world, str:command, args:args, heredoc:heredoc)
+      when FileSystemCommand then FileSystemCommand.new(world:world, str:command, args:args, heredoc:heredoc)
       else
-        raise CommandUnknownError, "Don't know how to execute command: #{command}"
+        UnknownCommand.new(world:world, str:command, args:args, heredoc:heredoc)
       end
     end
   end
@@ -72,6 +71,19 @@ module Yap::Shell
 
     def to_executable_str
       raise NotImplementedError, "#to_executable_str is not implemented on BuiltInCommand"
+    end
+  end
+
+  class UnknownCommand < Command
+    EXIT_CODE = 127
+
+    def execute(stdin:, stdout:, stderr:)
+      stderr.puts "yap: command not found: #{str}"
+      EXIT_CODE
+    end
+
+    def type
+      :BuiltinCommand
     end
   end
 

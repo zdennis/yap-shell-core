@@ -38,9 +38,6 @@ module Yap::Shell
             line << more_input
             retry
           end
-        rescue ::Yap::Shell::CommandUnknownError => ex
-          Treefell['shell'].puts "rescued #{ex}, telling user"
-          puts "  CommandError: #{ex.message}"
         rescue ::Yap::Shell::Parser::ParseError => ex
           Treefell['shell'].puts "rescued #{ex}, telling user"
           puts "  Parse error: #{ex.message}"
