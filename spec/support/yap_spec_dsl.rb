@@ -86,7 +86,7 @@ module Yap
 
       def initialize_shell
         @shell.stop if @shell
-        begin
+        @shell = begin
           process = ChildProcess.build(
             'ruby',
             yap_dir.join('bin/yap-dev').to_s,
@@ -109,7 +109,7 @@ module Yap
       alias_method :reinitialize_shell, :initialize_shell
 
       def shell
-        @shell ||= reinitialize_shell
+        @shell ||= initialize_shell
       end
 
       def set_prompt(str)

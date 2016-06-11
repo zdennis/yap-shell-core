@@ -28,6 +28,8 @@ RSpec.configure do |config|
   config.include Yap::Spec::DSL
 
   config.before(:all, type: :feature) do
+    ENV['HOME'] = tmp_dir.to_s
+
     set_yap_command_line_arguments \
       '--no-history', '--no-addons', '--no-rcfiles', '--skip-first-time'
 
@@ -53,10 +55,18 @@ RSpec.configure do |config|
 
   config.after(:each, type: :feature) do
     enter if typed_content_awaiting_enter?
+
+    # Use yap to tell us when it's done doing whatever is was doing.
+    # This ensures we don'try to clean up before yap is done!
+    type 'echo done with this test'
+    enter
+    expect { output }.to have_printed('done with this test')
     clear_all_output
 
     Dir.chdir(tmp_dir) do
-      FileUtils.rm_rf Dir.glob('*')
+      # remove all files including hidden but not current directory and
+      # parent directory
+      FileUtils.rm_rf Dir.glob('{.,}*') - %w(. ..)
     end
   end
 
