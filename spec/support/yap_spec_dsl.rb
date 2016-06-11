@@ -62,6 +62,13 @@ module Yap
         FileUtils.rm_rf Pathname.new(path).expand_path
       end
 
+      def write_executable_script(filename, contents)
+        file = File.new(filename, 'w+')
+        file.write contents
+        file.chmod 0755
+        file.close
+      end
+
       def tmp_dir
         yap_dir.join('tmp/specroot').expand_path
       end

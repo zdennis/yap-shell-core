@@ -54,13 +54,10 @@ describe 'Shell expansions', type: :feature do
 
   describe 'exit status for last command: $?' do
     it 'prints whatever the exit status of the last command was' do
-      file = File.new('exit-with-status-code', 'w+')
-      file.write <<-SCRIPT.gsub(/^\s*\|/, '').chomp
+      write_executable_script 'exit-with-status-code', <<-SCRIPT.strip_heredoc
         |#!/bin/sh
         |exit $1
       SCRIPT
-      file.chmod 0755
-      file.close
 
       type './exit-with-status-code 0 ; echo $?'
       enter
