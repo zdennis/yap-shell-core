@@ -54,19 +54,21 @@ RSpec.configure do |config|
   end
 
   config.after(:each, type: :feature) do
-    enter if typed_content_awaiting_enter?
+    begin
+      enter if typed_content_awaiting_enter?
 
-    # Use yap to tell us when it's done doing whatever is was doing.
-    # This ensures we don'try to clean up before yap is done!
-    type 'echo done with this test'
-    enter
-    expect { output }.to have_printed('done with this test')
-    clear_all_output
-
-    Dir.chdir(tmp_dir) do
-      # remove all files including hidden but not current directory and
-      # parent directory
-      FileUtils.rm_rf Dir.glob('{.,}*') - %w(. ..)
+      # Use yap to tell us when it's done doing whatever is was doing.
+      # This ensures we don'try to clean up before yap is done!
+      type 'echo done with this test'
+      enter
+      expect { output }.to have_printed('done with this test')
+      clear_all_output
+    ensure
+      Dir.chdir(tmp_dir) do
+        # remove all files including hidden but not current directory and
+        # parent directory
+        FileUtils.rm_rf Dir.glob('{.,}*') - %w(. ..)
+      end
     end
   end
 
