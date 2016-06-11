@@ -52,6 +52,9 @@ RSpec.configure do |config|
   end
 
   config.after(:each, type: :feature) do
+    enter if typed_content_awaiting_enter?
+    clear_all_output
+
     Dir.chdir(tmp_dir) do
       FileUtils.rm_rf Dir.glob('*')
     end

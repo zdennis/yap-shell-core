@@ -117,11 +117,17 @@ module Yap
         enter
       end
 
+      def typed_content_awaiting_enter?
+        @typed_content_awaiting_enter
+      end
+
       def type(str)
+        @typed_content_awaiting_enter = true
         shell.io.stdin.print str
       end
 
       def enter
+        @typed_content_awaiting_enter = false
         shell.io.stdin.print "\r"
       end
 
