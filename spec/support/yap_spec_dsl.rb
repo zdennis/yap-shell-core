@@ -103,6 +103,13 @@ module Yap
           process.cwd = File.dirname(__FILE__)
           process.start
 
+          # make sure clean-up child processes, hang if any fail
+          # to stop
+          at_exit do
+            process.stop
+            process.wait
+          end
+
           process
         end
       end
