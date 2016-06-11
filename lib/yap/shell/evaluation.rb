@@ -331,6 +331,9 @@ module Yap::Shell
       elsif node.double_quoted?
         debug_visit(node, 'double quoted argument, performing variable expansion')
         [variable_expand(node.lvalue)]
+      elsif node.escaped?
+        debug_visit(node, 'escaped argument, skipping variable expansion')
+        [node.lvalue]
       else
         debug_visit(node, 'unquoted argument, performing shell expansion')
         shell_expand(node.lvalue, escape_directory_expansions: false)

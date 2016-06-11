@@ -60,17 +60,16 @@ module Yap::Shell
         if content
           expansions = content.split(",", -1)
 
-          # Be compatible with Bash/Zsh which only do word-expansion if there
-          # at least one comma listed. E.g. "a_{1,2}" => "a_1 a_2" whereas
-          # "a_{1}" => "a_{1}"
-          if expansions.length > 1
-            expanded = expansions.map { |expansion| str.sub(/\{([^\}]+)\}/, expansion) }.tap do |expanded|
-              Treefell['shell'].puts "shell-expansions expanding words in #{str} to #{expanded}"
-            end
-            return expanded
+          # Break compatibility with Bash/Zsh. They do not expand words
+          # when there is only one word supplied (e.g. "a_{word}"), but this
+          # is counter-intuitive to me. It should behave the same regardless
+          # of the number of words provided to expand.
+          expanded = expansions.map { |expansion| str.sub(/\{([^\}]+)\}/, expansion) }.tap do |expanded|
+            Treefell['shell'].puts "shell-expansions expanding words in #{str} to #{expanded}"
           end
+        else
+          [str]
         end
-        [str]
       end
 
       def process_expansions(expansions, escape_directory_expansions: true)
