@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe 'Running Yap for the first time', type: :feature do
+describe 'Running Yap for the first time', type: :feature, forks: true do
   before do
     # do not pass in --skip-first-time
     set_yap_command_line_arguments \

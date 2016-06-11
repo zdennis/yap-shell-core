@@ -55,13 +55,18 @@ RSpec.configure do |config|
 
   config.after(:each, type: :feature) do
     begin
-      enter if typed_content_awaiting_enter?
+      if self.class.metadata[:forks]
+        # no-op because the example will cause yap to fork inside the child
+        # childprocess and will break the IO pipes we know about in the test
+      else
+        enter if typed_content_awaiting_enter?
 
-      # Use yap to tell us when it's done doing whatever is was doing.
-      # This ensures we don'try to clean up before yap is done!
-      type 'echo done with this test'
-      enter
-      expect { output }.to have_printed('done with this test')
+        # Use yap to tell us when it's done doing whatever is was doing.
+        # This ensures we don'try to clean up before yap is done!
+        type 'echo done with this test'
+        enter
+        expect { output }.to have_printed('done with this test')
+      end
       clear_all_output
     ensure
       Dir.chdir(tmp_dir) do
