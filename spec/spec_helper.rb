@@ -47,6 +47,10 @@ RSpec.configure do |config|
     clear_all_output
   end
 
+  config.after(:all, type: :feature) do
+    shell.stop if shell
+  end
+
   config.after(:each, type: :feature) do
     Dir.chdir(tmp_dir) do
       FileUtils.rm_rf Dir.glob('*')

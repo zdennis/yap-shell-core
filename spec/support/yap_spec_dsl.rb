@@ -102,6 +102,7 @@ module Yap
           # tmpdir = File.dirname(__FILE__) + '/../tmp'
           process.cwd = File.dirname(__FILE__)
           process.start
+
           process
         end
       end
