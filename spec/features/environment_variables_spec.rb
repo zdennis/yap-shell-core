@@ -1,13 +1,30 @@
 require 'spec_helper'
 
 describe 'Environment variables', type: :feature do
-  it 'sets and gets them' do
+  it 'sets and gets them with: NAME=value' do
     type 'FOO=foobarbaz'
     enter
 
     type 'echo $FOO'
     enter
     expect { output }.to have_printed('foobarbaz')
+  end
+
+  it 'can set multiple on a single line: NAME1=value1 NAME2=value2 etc' do
+    type 'A=b B=c C=d'
+    enter
+    clear_all_output
+
+    type 'echo $A $B $C'
+    enter
+    expect { output }.to have_printed('b c d')
+    clear_all_output
+
+    skip "this is a bug" do
+      type 'echo $A$B$C'
+      enter
+      expect { output }.to have_printed('bcd')
+    end
   end
 
   it 'expands env vars inside of double quotes' do
