@@ -13,6 +13,7 @@ module Yap
 
       def clear
         `> #{@filepath}`
+        @bytes_read = 0
       end
 
       def read
