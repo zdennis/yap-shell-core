@@ -18,7 +18,7 @@ describe 'Shell expansions', type: :feature do
       type 'echo foo'
       enter
       expect { output }.to have_printed('foo')
-      expect { output }.to_not have_printed('bar')
+      expect { output }.to have_not_printed('bar')
     end
   end
 

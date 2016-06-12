@@ -37,7 +37,7 @@ describe 'Line editing', type: :feature do
     6.times { type delete }
     enter
     expect { output }.to have_printed('hello')
-    expect { output }.to_not have_printed('world')
+    expect { output }.to have_not_printed('world')
   end
 
   describe 'line navigation (default key bindings)' do
@@ -143,13 +143,13 @@ describe 'Line editing', type: :feature do
       type 'nope'
       enter
       expect { output }.to have_printed('nope')
-      expect { output }.to_not have_printed('hello world')
+      expect { output }.to have_not_printed('hello world')
 
       type 'echo '
       type ?\C-y
       enter
       expect { output }.to have_printed('hello')
-      expect { output }.to_not have_printed('hello')
+      expect { output }.to have_not_printed('hello')
     end
 
     it 'Ctrl-u deletes from the cursor to the beginning of the line, adding to the killing as ring' do

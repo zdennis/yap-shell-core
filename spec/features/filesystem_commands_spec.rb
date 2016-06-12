@@ -48,14 +48,14 @@ describe 'Filesystem commands', type: :feature do
 
       type "(echo foo || non-existent-command) && echo bar"
       enter
-      expect { error_output }.to_not have_printed(/yap: command not found: non-existent-command/m)
+      expect { error_output }.to have_not_printed(/yap: command not found: non-existent-command/m)
       expect { output }.to have_printed(/foo.*\n.*bar/m)
       clear_all_output
 
       type "(non-existent-command && echo foo) && echo bar"
       enter
       expect { error_output }.to have_printed(/yap: command not found: non-existent-command/m)
-      expect { output }.to_not have_printed(/foo.*\n.*bar/m)
+      expect { output }.to have_not_printed(/foo.*\n.*bar/m)
     end
   end
 end
