@@ -24,6 +24,71 @@ module Yap
       end
     end
 
+    class Shell
+      def self.current
+        @instance
+      end
+
+      def self.new(**kwargs)
+        if @instance
+          @instance.stop
+        end
+        @instance = allocate.tap do |instance|
+          instance.send :initialize, **kwargs
+          instance.start
+        end
+      end
+
+      def initialize(dir:, args:, stdout:, stderr:)
+        @childprocess = nil
+        @dir = dir
+        @args = args
+        @stdout = stdout
+        @stderr = stderr
+      end
+
+      def io
+        @childprocess.io if @childprocess
+      end
+
+      def stop
+        if @childprocess
+          @childprocess.stop
+          @childprocess.wait
+        end
+      end
+
+      def start
+        return @childprocess if @childprocess
+        @childprocess = begin
+          process = ChildProcess.build(
+            'ruby',
+            @dir,
+            *@args
+          )
+
+          process.io.stdout = @stdout
+          process.io.stderr = @stderr
+
+          # make stdin available, writable
+          process.duplex = true
+
+          # tmpdir = File.dirname(__FILE__) + '/../tmp'
+          process.cwd = File.dirname(__FILE__)
+          process.start
+
+          # make sure clean-up child processes, hang if any fail
+          # to stop
+          at_exit do
+            process.stop
+            process.wait
+          end
+
+          process
+        end
+      end
+    end
+
     module DSL
       def very_soon(timeout: self.timeout, &block)
         @wait_for_last_exception = nil
@@ -92,38 +157,20 @@ module Yap
       end
 
       def initialize_shell
-        @shell.stop if @shell
-        @shell = begin
-          process = ChildProcess.build(
-            'ruby',
-            yap_dir.join('bin/yap-dev').to_s,
-            *yap_command_line_arguments
-          )
-
-          process.io.stdout = stdout
-          process.io.stderr = stderr
-
-          # make stdin available, writable
-          process.duplex = true
-
-          # tmpdir = File.dirname(__FILE__) + '/../tmp'
-          process.cwd = File.dirname(__FILE__)
-          process.start
-
-          # make sure clean-up child processes, hang if any fail
-          # to stop
-          at_exit do
-            process.stop
-            process.wait
-          end
-
-          process
-        end
+        Shell.new(
+          dir: yap_dir.join('bin/yap-dev').to_s,
+          args: yap_command_line_arguments,
+          stdout: stdout,
+          stderr: stderr
+        )
       end
-      alias_method :reinitialize_shell, :initialize_shell
+
+      def reinitialize_shell
+        initialize_shell
+      end
 
       def shell
-        @shell ||= initialize_shell
+        Shell.current
       end
 
       def set_prompt(str)
