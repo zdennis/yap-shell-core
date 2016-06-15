@@ -105,6 +105,7 @@ module Yap
             if $stdout.isatty
               binding.pry
             else
+              $stdout.puts ex.message
               raise ex
             end
           end
