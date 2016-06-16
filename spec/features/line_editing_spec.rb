@@ -149,7 +149,7 @@ describe 'Line editing', type: :feature do
       type ?\C-y
       enter
       expect { output }.to have_printed('hello')
-      expect { output }.to have_not_printed('hello')
+      expect { output }.to have_not_printed('world')
     end
 
     it 'Ctrl-u deletes from the cursor to the beginning of the line, adding to the killing as ring' do
