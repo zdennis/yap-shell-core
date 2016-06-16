@@ -396,23 +396,32 @@ module Yap::Shell
           stdout = redirect.target
           stdout = File.open(stdout, "wb") if stdout.is_a?(String)
         when "1>&2"
-          stderr = :stdout
+          stdout = redirect.target
+          stdout = File.open(stdout, "wb") if stdout.is_a?(String)
+          stderr = stdout
         when "2>"
           stderr = redirect.target
           stderr = File.open(stderr, "wb") if stderr.is_a?(String)
         when "2>&1"
-          stdout = :stderr
+          stderr = redirect.target
+          stderr = File.open(stderr, "wb") if stderr.is_a?(String)
+          stdout = stderr
         when "1>>", ">>"
           stdout = redirect.target
           stdout = File.open(stdout, "ab") if stdout.is_a?(String)
         when "2>>"
           stderr = redirect.target
           stderr = File.open(stderr, "ab") if stderr.is_a?(String)
+        when "&>"
+          stdout = redirect.target
+          stdout = File.open(stdout, "wb") if stdout.is_a?(String)
+          stderr = stdout
+        when "&>>"
+          stdout = redirect.target
+          stdout = File.open(stdout, "ab") if stdout.is_a?(String)
+          stderr = stdout
         end
       end
-
-      stdout = stderr if stdout == :stderr
-      stderr = stdout if stderr == :stdout
 
       [stdin, stdout, stderr]
     end

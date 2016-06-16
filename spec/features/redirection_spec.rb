@@ -177,11 +177,37 @@ describe 'I/O Redirection', type: :feature do
   end
 
   describe 'STDOUT and STDERR pointing to the same file' do
-    it 'redirects and overwrites with: &>'
+    before do
+      write_executable_script 'echo-stdout-and-stderr', <<-SCRIPT.strip_heredoc
+        |#!/bin/sh
+        |echo $1
+        |>&2 echo $2
+      SCRIPT
+    end
 
-    it 'redirects and overwrites with: 2>&1'
+    it 'redirects and overwrites with: &>' do
+      type './echo-stdout-and-stderr foo bar &> output-and-error.txt'
+      enter
+      type 'cat output-and-error.txt'
+      enter
+      expect { output }.to have_printed(/foo.*\n.*bar/m)
+    end
 
-    it 'redirects and appends with: &>>'
+    it 'redirects and overwrites with: 2>&1' do
+      type './echo-stdout-and-stderr bar foo 2>&1 output-and-error.txt'
+      enter
+      type 'cat output-and-error.txt'
+      enter
+      expect { output }.to have_printed(/bar.*\n.*foo/m)
+    end
+
+    it 'redirects and appends with: &>>' do
+      type './echo-stdout-and-stderr howdy hey &>> output-and-error.txt'
+      enter
+      type 'cat output-and-error.txt'
+      enter
+      expect { output }.to have_printed(/howdy.*\n.*hey/m)
+    end
   end
 
   describe 'STDIN' do
