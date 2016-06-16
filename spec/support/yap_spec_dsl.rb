@@ -8,20 +8,15 @@ module Yap
     class OutputFile
       def initialize(filepath)
         @filepath = filepath
-        @bytes_read = 0
       end
 
       def clear
         `> #{@filepath}`
-        @bytes_read = 0
       end
 
       def read
         file = File.open(@filepath, 'rb')
-        file.seek(@bytes_read)
-        file.read.tap do |str|
-          @bytes_read += str.bytes.length
-        end
+        file.read
       end
     end
 
