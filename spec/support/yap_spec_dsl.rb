@@ -16,7 +16,7 @@ module Yap
 
       def read
         file = File.open(@filepath, 'rb')
-        file.read
+        file.read.gsub(/\u0000/, '')
       end
     end
 
