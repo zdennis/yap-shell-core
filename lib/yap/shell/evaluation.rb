@@ -391,16 +391,29 @@ module Yap::Shell
         case redirect.kind
         when "<"
           stdin = redirect.target
+          stdin = File.open(stdin, "rb") if stdin.is_a?(String)
         when ">", "1>"
           stdout = redirect.target
+          stdout = File.open(stdout, "wb") if stdout.is_a?(String)
         when "1>&2"
           stderr = :stdout
         when "2>"
           stderr = redirect.target
+          stderr = File.open(stderr, "wb") if stderr.is_a?(String)
         when "2>&1"
           stdout = :stderr
+        when "1>>", ">>"
+          stdout = redirect.target
+          stdout = File.open(stdout, "ab") if stdout.is_a?(String)
+        when "2>>"
+          stderr = redirect.target
+          stderr = File.open(stderr, "ab") if stderr.is_a?(String)
         end
       end
+
+      stdout = stderr if stdout == :stderr
+      stderr = stdout if stderr == :stdout
+
       [stdin, stdout, stderr]
     end
 

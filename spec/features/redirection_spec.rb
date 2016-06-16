@@ -1,6 +1,14 @@
 require 'spec_helper'
 
 describe 'I/O Redirection', type: :feature do
+  before do
+    write_executable_script 'fail', <<-SCRIPT.strip_heredoc
+      |#!/bin/sh
+      |>&2 echo fail $1
+      |exit 1
+    SCRIPT
+  end
+
   describe 'STDOUT' do
     it 'redirects with: >' do
       type 'echo foo > output.txt'
@@ -35,38 +43,77 @@ describe 'I/O Redirection', type: :feature do
       expect { output }.to have_not_printed('foo')
     end
 
-    it 'appends with: >>'
+    describe 'appending' do
+      before do
+        type 'echo foo > output.txt'
+        enter
+        type 'cat output.txt'
+        enter
+        expect { output }.to have_printed(/foo/)
+        clear_all_output
+      end
+
+      it 'appends with: >>' do
+        type 'echo bar >> output.txt'
+        enter
+        type 'cat output.txt'
+        enter
+        expect { output }.to have_printed(/foo.*\n.*bar/)
+      end
+
+      it 'appends with: 1>>' do
+        type 'echo bar 1>> output.txt'
+        enter
+        type 'cat output.txt'
+        enter
+        expect { output }.to have_printed(/foo.*\n.*bar/)
+      end
+    end
   end
 
   describe 'STDERR' do
     it 'redirects with: 2>' do
-      type 'echo foo > error.txt'
+      type './fail foo 2> error.txt'
       enter
       clear_all_output
 
       type 'cat error.txt'
       enter
-      expect { output }.to have_printed('foo')
+      expect { output }.to have_printed('fail foo')
     end
 
     it 'overwrites the file' do
-      type 'echo foo > error.txt'
+      type './fail foo 2> error.txt'
       enter
-      type 'echo bar > error.txt'
+      type './fail bar 2> error.txt'
       enter
       clear_all_output
 
       type 'cat error.txt'
       enter
-      expect { output }.to have_printed('bar')
+      expect { output }.to have_printed('fail bar')
+      expect { output }.to have_not_printed('fail foo')
       clear_all_output
-
-      type 'cat error.txt'
-      enter
-      expect { output }.to have_not_printed('foo')
     end
 
-    it 'appends with: 2>>'
+    describe 'appending' do
+      before do
+        type './fail caz 2> error.txt'
+        enter
+        type 'cat error.txt'
+        enter
+        expect { output }.to have_printed(/fail caz/)
+        clear_all_output
+      end
+
+      it 'appends with: 2>>' do
+        type './fail box 2>> error.txt'
+        enter
+        type 'cat error.txt'
+        enter
+        expect { output }.to have_printed(/fail caz.*\n.*fail box/)
+      end
+    end
   end
 
   describe 'STDOUT and STDERR separately for a command' do

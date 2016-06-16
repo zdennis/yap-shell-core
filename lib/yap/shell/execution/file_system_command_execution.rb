@@ -27,16 +27,6 @@ module Yap::Shell::Execution
           # Set the process group of the forked to child to that of the
           Process.setpgrp
 
-          # Start a new process group as the session leader. Now we are
-          # responsible for sending signals that would have otherwise
-          # been propagated to the process, e.g. SIGINT, SIGSTOP, SIGCONT, etc.
-          stdin  = File.open(stdin, "rb") if stdin.is_a?(String)
-          stdout = File.open(stdout, "wb") if stdout.is_a?(String)
-          stderr = File.open(stderr, "wb") if stderr.is_a?(String)
-
-          stdout = stderr if stdout == :stderr
-          stderr = stdout if stderr == :stdout
-
           $stdin.reopen stdin
           $stdout.reopen stdout
           $stderr.reopen stderr
