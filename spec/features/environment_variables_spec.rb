@@ -20,11 +20,9 @@ describe 'Environment variables', type: :feature do
     expect { output }.to have_printed('b c d')
     clear_all_output
 
-    skip "this is a bug" do
-      type 'echo $A$B$C'
-      enter
-      expect { output }.to have_printed('bcd')
-    end
+    type 'echo $A$B$C'
+    enter
+    expect { output }.to have_printed('bcd')
   end
 
   it 'expands env vars inside of double quotes' do

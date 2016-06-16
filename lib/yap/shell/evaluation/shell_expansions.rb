@@ -39,7 +39,8 @@ module Yap::Shell
       private
 
       def env_expand(str)
-        str.gsub(/\$(\S+)/) do |match,*args|
+        # match "$a", "$a $b", "$a$b", "$cat$dog $foo"
+        str.gsub(/\$([^\$\s]+)/) do |match,*args|
           var_name = match[1..-1]
           if var_name == '?'
             (world.last_result ? world.last_result.status_code.to_s : '0').tap do |expanded|
