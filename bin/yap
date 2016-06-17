@@ -6,12 +6,16 @@ env2keep = {
   'DISPLAY' => ENV['DISPLAY'],
   'HOME' => ENV['HOME'],
   'PATH' => ENV['PATH'],
+  'PWD' => ENV['PWD'],
 
   # For Yap's sanity
   'RUBYOPT' => '-rubygems -EUTF-8',
 
   # Inherit the user's preferred shell
   'SHELL' => ENV['SHELL'],
+
+  # Set the logged in user
+  'USER' => ENV['USER'],
 
   # Necessary for ssh-agent
   'SSH_AUTH_SOCK' => ENV['SSH_AUTH_SOCK'],
