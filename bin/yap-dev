@@ -4,5 +4,42 @@ require 'bundler'
 Bundler.setup
 require 'pry'
 
+module SilenceWarnings
+  # Runs a block of code without warnings.
+  def self.silence_warnings(&block)
+    warn_level = $VERBOSE
+    $VERBOSE = nil
+    result = block.call
+    $VERBOSE = warn_level
+    result
+  end
+end
+
+### START debundle.rb ###
+
+# MIT License
+# Copyright (c) Conrad Irwin <conrad.irwin@gmail.com>
+# Copyright (c) Jan Lelis <mail@janlelis.de>
+
+module Debundle
+  VERSION = '1.0.0'
+
+  def self.debundle!
+    if Gem.post_reset_hooks.reject!{ |hook| hook.source_location.first =~ %r{/bundler/} }
+      Gem.clear_paths
+      SilenceWarnings.silence_warnings do
+        load 'rubygems/core_ext/kernel_require.rb'
+        load 'rubygems/core_ext/kernel_gem.rb'
+      end
+    end
+  rescue => e
+    warn "DEBUNDLE.RB FAILED: #{e.class}\n#{e.message}"
+  end
+end
+
+Debundle.debundle!
+
+### END debundle.rb ###
+
 $LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
 load File.dirname(__FILE__) + '/yap'

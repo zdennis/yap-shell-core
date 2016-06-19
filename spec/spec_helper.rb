@@ -46,12 +46,18 @@ RSpec.configure do |config|
     mkdir tmp_dir
     Dir.chdir tmp_dir
 
-    type "cd #{tmp_dir}"
-    enter
+    if self.class.metadata[:repl] == false
+      # no-op if the test specificaly says it doesn't use a repl
+      # This is likely when we're expecting yap to print information
+      # and exit immediately
+    else
+      type "cd #{tmp_dir}"
+      enter
 
-    type "pwd"
-    enter
-    expect { output }.to have_printed(File.expand_path(tmp_dir))
+      type "pwd"
+      enter
+      expect { output }.to have_printed(File.expand_path(tmp_dir))
+    end
     clear_all_output
   end
 
@@ -64,6 +70,10 @@ RSpec.configure do |config|
       if self.class.metadata[:forks]
         # no-op because the example will cause yap to fork inside the child
         # childprocess and will break the IO pipes we know about in the test
+      elsif self.class.metadata[:repl] == false
+        # no-op if the test specificaly says it doesn't use a repl
+        # This is likely when we're expecting yap to print information
+        # and exit immediately
       else
         enter if typed_content_awaiting_enter?
 

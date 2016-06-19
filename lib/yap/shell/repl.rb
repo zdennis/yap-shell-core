@@ -195,7 +195,7 @@ module Yap::Shell
     end
 
     def install_default_tab_completion_proc
-      editor.completion_proc = lambda do |word|
+      editor.completion_proc = lambda do |word, line, word_index|
         Dir["#{word}*"].map{ |str| str.gsub(/ /, '\ ')}
       end
     end

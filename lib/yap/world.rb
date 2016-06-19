@@ -7,6 +7,8 @@ require 'termios'
 module Yap
   require 'yap/shell/execution'
   require 'yap/shell/prompt'
+  require 'yap/world/addon_paths'
+  require 'yap/world/addon_reference'
   require 'yap/world/addons'
 
   class World
@@ -65,7 +67,7 @@ module Yap
       @repl = Yap::Shell::Repl.new(world:self)
 
       @addons = addons.reduce(Hash.new) do |hsh, addon|
-        hsh[addon.addon_name] = addon
+        hsh[addon.export_as] = AddonWrapper.new(addon)
         hsh
       end
 

@@ -10,6 +10,7 @@ module Yap
   class Configuration
     attr_accessor :addon_paths
     attr_accessor :rcfiles
+    attr_accessor :yap_addons_configuration_path
 
     def self.option(name, type=nil, default: nil)
       reader_method = name.to_s
@@ -31,16 +32,21 @@ module Yap
       end
     end
 
+    option :run_shell, :boolean, default: true
     option :skip_first_time, :boolean, default: false
     option :use_addons, :boolean, default: true
     option :use_history, :boolean, default: true
     option :use_rcfiles, :boolean, default: true
 
     def initialize
+      @yap_addons_configuration_path = yap_path.join('addons.yml')
+
       @addon_paths = [
-        "#{File.dirname(__FILE__)}/../../addons",
-        "#{ENV['HOME']}/.yap/addons"
-      ]
+        # "#{File.dirname(__FILE__)}/../../addons",
+        # "#{ENV['HOME']}/.yap/addons"
+      ].concat(Gem.path.map { |gems_path| "#{gems_path}/gems" }).map do |path|
+        File.expand_path(path)
+      end
 
       @rcfiles = [
         "#{ENV['HOME']}/.yaprc",

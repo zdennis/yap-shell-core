@@ -5,6 +5,33 @@ module Yap
     module UserAddons
     end
 
+    class AddonWrapper
+      def initialize(addon)
+        @addon = addon
+        @disabled = false
+      end
+
+      def disable!
+        @enabled = false
+      end
+
+      def disabled?
+        !@enabled
+      end
+
+      def enabled?
+        @enabled
+      end
+
+      def method_missing(name, *args, &blk)
+        if enabled?
+          @addon.send name, *args, &blk
+        else
+          Treefell['addon'].puts "Not sending #{name} to #{@addon} because it is disabled"
+        end
+      end
+    end
+
     module AddonMethods
       module ClassMethods
         def load_addon
@@ -13,7 +40,17 @@ module Yap
         end
 
         def addon_name
-          @addon_name ||= self.name.split(/::/).last.scan(/[A-Z][^A-Z]+/).map(&:downcase).reject{ |f| f == "addon" }.join("_").to_sym
+          @addon_name ||= begin
+            self.name.split(/::/).last.scan(/[A-Z][^A-Z]+/).map(&:downcase).reject{ |f| f == "addon" }.join("_").to_sym
+          end
+        end
+
+        def export_as(name=nil)
+          if name
+            @export_as = name.to_sym
+          else
+            @export_as ||= addon_name.to_sym
+          end
         end
 
         def debug_log(msg)
@@ -47,6 +84,15 @@ module Yap
 
         def debug_log(msg)
           self.class.debug_log(msg)
+        end
+
+        def export_as
+          self.class.export_as
+        end
+
+        def initialize(*args)
+          @enabled = true
+          super
         end
       end
     end
@@ -82,10 +128,26 @@ module Yap
       def self.load_directories(search_paths)
         Treefell['shell'].puts %|searching for addons in:\n  * #{search_paths.join("\n  * ")}|
         search_paths.map do |directory|
+          loading_a_gem = false
           Dir["#{directory}/*"].map do |d|
             if File.directory?(d)
-              Treefell['shell'].puts %|addon found: #{d}|
-              load_directory(d).map(&:new)
+              if File.expand_path(d) =~ /#{Gem.path.map{|path| Regexp.escape(path)}.join('|')}/
+                loading_a_gem = true
+              else
+                loading_a_gem = false
+              end
+
+              if File.basename(d) =~ /(yap-shell-.*-addon)/
+                addon_name = $1
+                if loading_a_gem
+                  load_gem(addon_name).tap do |addon|
+                    Treefell['shell'].puts %|Loaded addon instance: #{addon}|
+                  end
+                else
+                  Treefell['shell'].puts %|non-gem addon found: #{d}|
+                  load_non_gem(addon_name, d)
+                end
+              end
             else
               Treefell['shell'].puts %|file found in add-on search path, skipping.|
               nil
@@ -104,6 +166,22 @@ module Yap
         def initialize_world(world)
           Treefell['shell'].puts "initializing rcfile: #{file}"
           world.instance_eval File.read(@file), @file
+        end
+      end
+
+      def self.load_non_gem(name, directory)
+        directory = File.expand_path(directory)
+        Treefell['shell'].puts "loading addon #{name} from directory: #{directory}"
+
+        lib_path = File.join directory, "lib"
+        Treefell['shell'].puts "prepending addon path to $LOAD_PATH: #{lib_path}"
+        $LOAD_PATH.unshift lib_path
+
+        bring_addon_into_existence(name)
+      ensure
+        if lib_path
+          Treefell['shell'].puts "Removing addon #{lib_path} path from $LOAD_PATH"
+          $LOAD_PATH.delete(lib_path)
         end
       end
 
@@ -174,6 +252,28 @@ module Yap
           end
         end.tap do |loaded_addon|
           Treefell['shell'].puts "loaded #{File.dirname(file)} as #{loaded_addon.inspect}"
+        end
+      end
+
+      def self.load_gem(name)
+        gem name
+        bring_addon_into_existence(name)
+      end
+
+      def self.bring_addon_into_existence(name)
+        require name
+
+        classified_name = name.split('-').map(&:capitalize).join
+        unless Object.const_defined?(classified_name)
+          fail "Expected #{name}.rb to load #{classified_name}, but it didn't"
+        end
+        addon = Object.const_get(classified_name)
+        if addon.is_a?(Addon)
+          addon.new
+        elsif addon.const_defined?(:Addon)
+          addon.const_get(:Addon).new
+        else
+          fail 'Expected gem #{name} to define a constant, but nothing was found'
         end
       end
     end

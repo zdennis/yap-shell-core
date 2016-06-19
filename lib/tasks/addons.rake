@@ -8,7 +8,7 @@ namespace :addons do
 
     yap_path = Pathname.new(File.dirname(__FILE__)).join('../..')
     yap_lib_path = yap_path.join('lib')
-    yap_addons_path = yap_path.join('addons')
+    yap_addons_configuration_path = yap_path.join('addons')
 
     $LOAD_PATH.unshift yap_lib_path
     require 'yap'
@@ -18,7 +18,7 @@ namespace :addons do
 
     addon_name = answer.downcase.gsub(/\W+/, '_')
     addon_class_name = addon_name.split('_').map(&:capitalize).join
-    addon_path = yap_addons_path.join(addon_name)
+    addon_path = yap_addons_configuration_path.join(addon_name)
 
     loop do
       answer = cli.ask("Create #{addon_class_name} addon in #{addon_path}? [Yn] ")

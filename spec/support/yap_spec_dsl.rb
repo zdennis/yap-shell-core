@@ -110,7 +110,13 @@ module Yap
       end
 
       def mkdir(path)
-        path = tmp_dir.join(path) unless path == tmp_dir
+        mkdir_p path
+      end
+
+      def mkdir_p(path)
+        unless File.expand_path(path.to_s).include?(tmp_dir.to_s)
+          path = tmp_dir.join(path)
+        end
         FileUtils.mkdir_p Pathname.new(path).expand_path
       end
 
@@ -123,7 +129,15 @@ module Yap
         FileUtils.rm_rf Pathname.new(path).expand_path
       end
 
+      def write_file(filename, contents)
+        filename = tmp_dir.join(filename) unless filename.to_s.include?(tmp_dir.to_s)
+        file = File.new(filename, 'w+')
+        file.write contents
+        file.close
+      end
+
       def write_executable_script(filename, contents)
+        filename = tmp_dir.join(filename) unless filename.to_s.include?(tmp_dir.to_s)
         file = File.new(filename, 'w+')
         file.write contents
         file.chmod 0755
@@ -145,7 +159,7 @@ module Yap
       end
 
       def set_yap_command_line_arguments(*args)
-        @yap_command_line_arguments = args
+        @yap_command_line_arguments = args.flatten
       end
 
       def yap_command_line_arguments

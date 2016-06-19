@@ -105,7 +105,7 @@ module Yap
             if $stdout.isatty
               binding.pry
             else
-              $stdout.puts ex.message
+              $stdout.puts ex.class.name
               raise ex
             end
           end
