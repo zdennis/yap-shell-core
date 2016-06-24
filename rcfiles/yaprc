@@ -1,5 +1,83 @@
 #!/usr/bin/ruby
 
+world.addons[:keyboard_macros].disable!
+
+old_world_envs = []
+parse_env_vars_from_string = -> (str) {
+  keys_and_values = str.split("\n").map(&:chomp).map do |line|
+    next if line =~ /^\s*#/
+    line.split('=', 2)
+  end.compact
+
+  keys_and_values.map! do |(key, value)|
+    if value =~ /^['"]/
+      [key, value.scan(/^['"](.*)['"]\s*$/).flatten.first]
+    else
+      [key, value]
+    end
+  end
+}
+
+load_dotenv_file = -> (file) {
+  dotenv_file = Dir[file].first
+  if dotenv_file
+    old_world_envs.push world.env.dup
+    Treefell['shell'].puts "loading dotenv file #{dotenv_file}"
+    keys_and_values = parse_env_vars_from_string.call(IO.read(dotenv_file))
+
+    keys_and_values.each do |(key, value)|
+      next unless key
+      next if key == 'RAILS_ENV'
+      world.env[key] = value
+    end
+    Treefell['shell'].puts "done loading dotenv"
+  end
+}
+
+
+Yap::Shell::Execution::Context.on(:after_execute) do |world, command:, **kwargs|
+  if command.str == "nvm"
+    old_nvm_bin = world.env["NVM_BIN"]
+    Dir[ world.configuration.path_for("env/nvm.env") ].each do |file|
+      if old_nvm_bin
+        world.env["PATH"].sub!(/#{Regexp.escape(old_nvm_bin)}:/, '')
+      end
+
+      key_and_values = parse_env_vars_from_string.call(IO.read(file))
+      key_and_values.each do |(key, value)|
+        world.env[key] = value
+      end
+
+      nvm_bin = world.env["NVM_BIN"]
+      if nvm_bin
+        world.env["PATH"] = nvm_bin + ":" + world.env["PATH"]
+      end
+    end
+  end
+end
+
+Yap::Shell::Execution::Context.on(:before_execute) do |world, command:|
+  if command.str == "cd"
+    if old_world_envs.any?
+      world.env.replace(old_world_envs.first)
+      old_world_envs.clear
+    end
+  end
+end
+
+Yap::Shell::Execution::Context.on(:after_execute) do |world, command:, result:|
+  if command.str == "cd"
+    load_dotenv_file.call('.env')
+    load_dotenv_file.call('.env.local')
+    rails_env = world.env['RAILS_ENV']
+    if rails_env
+      load_dotenv_file.call(".env.#{rails_env}")
+    else
+      load_dotenv_file.call(".env.development")
+    end
+  end
+end
+
 ###############################################################################
 #                         ENVIRONMENT VARIABLES
 #------------------------------------------------------------------------------
