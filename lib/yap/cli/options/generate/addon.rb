@@ -25,6 +25,10 @@ module Yap
         @command ||= load_command('generate/addon').new(@addon_name)
       end
 
+      def help_message
+        option_parser.to_s
+      end
+
       private
 
       def option_parser

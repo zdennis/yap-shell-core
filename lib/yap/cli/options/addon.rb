@@ -17,6 +17,10 @@ module Yap
         @command
       end
 
+      def help_message
+        option_parser.to_s
+      end
+
       private
 
       def set_command(command)

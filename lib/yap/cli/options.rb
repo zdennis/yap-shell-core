@@ -29,7 +29,7 @@ module Yap
               fail "Couldn't find #{path_part} in #{constant}"
             end
           else
-            fail "Couldn't load any file for #{file2load}"
+            fail LoadError, "Couldn't load any file for #{file2load}"
           end
         end
         Treefell['shell'].puts "#{inspect} loaded: #{constant}"
@@ -63,6 +63,7 @@ module Yap
 
       def parse(args)
         option_parser.order!(args)
+        options_instance = self
 
         Yap.configuration.run_shell = false if args.any?
 
@@ -80,6 +81,7 @@ module Yap
           option_str = args.shift
           current_scope = scope + [option_str]
 
+
           begin
             options_class = load_relative_constant current_scope.join('/')
             options_instance = options_class.new(options: options)
@@ -89,12 +91,16 @@ module Yap
 
             scope << option_str
           rescue LoadError => ex
-            puts "Unknown option(s=): #{option_str}"
-            puts ex.inspect
-            puts ex.backtrace
+            puts "Unknown option: #{option_str}"
+            puts
+            puts options_instance.help_message
             exit 1
           end
         end
+      end
+
+      def help_message
+        option_parse.to_s
       end
 
       private

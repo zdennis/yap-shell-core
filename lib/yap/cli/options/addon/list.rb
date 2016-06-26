@@ -17,6 +17,10 @@ module Yap
         @command ||= load_command('addon/list').new
       end
 
+      def help_message
+        option_parser.to_s
+      end
+
       private
 
       def option_parser
