@@ -11,6 +11,10 @@ module Yap
   require 'yap/shell'
   require 'yap/world'
 
+  def self.root
+    Pathname.new File.join(File.dirname(__FILE__), '..')
+  end
+
   def self.run_shell(argv)
     Treefell['shell'].puts "#{self}.#{__callee__} booting shell"
 

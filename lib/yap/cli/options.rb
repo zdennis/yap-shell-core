@@ -12,15 +12,24 @@ module Yap
       def load_constant_from_path(path)
         requiring_parts = []
         path_parts = path.to_s.split('/')
-        constant = path_parts.reduce(Object) do |constant, part|
-          requiring_parts << part
-          requiring_path = requiring_parts.join('/')
-          require requiring_path
-          part = part.capitalize
-          if constant.const_defined?(part)
-            constant = constant.const_get(part)
+        requiring_path = nil
+        constant = path_parts.reduce(Object) do |constant, path_part|
+          requiring_parts << path_part
+          file2load = Yap.root.join('lib', requiring_parts.join('/') + "*.rb")
+          requiring_path = Dir[ file2load ].sort.first
+          if requiring_path
+            require requiring_path
+            path_part = File.basename(requiring_path).sub(/\.rb$/, '')
+            requiring_parts.pop
+            requiring_parts.push path_part
+            constant_name = path_part.capitalize
+            if constant.const_defined?(constant_name)
+              constant = constant.const_get(constant_name)
+            else
+              fail "Couldn't find #{path_part} in #{constant}"
+            end
           else
-            fail "Couldn't find #{part} in #{constant}"
+            fail "Couldn't load any file for #{file2load}"
           end
         end
         Treefell['shell'].puts "#{inspect} loaded: #{constant}"
