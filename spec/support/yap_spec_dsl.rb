@@ -69,8 +69,7 @@ module Yap
           # make stdin available, writable
           process.duplex = true
 
-          # tmpdir = File.dirname(__FILE__) + '/../tmp'
-          process.cwd = File.dirname(__FILE__)
+          process.cwd = Dir.pwd
           process.start
 
           # make sure clean-up child processes, hang if any fail

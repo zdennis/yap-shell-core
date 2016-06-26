@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+ENV['PWD'] = Dir.pwd
+
 # Start YAP with a pristine environment
 env2keep = {
   # DISPLAY needs to be inherited in order to launch GUI apps
