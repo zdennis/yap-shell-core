@@ -36,15 +36,14 @@ RSpec.configure do |config|
   config.before(:all, type: :feature) do
     ENV['HOME'] = tmp_dir.to_s
 
+    mkdir tmp_dir
+    Dir.chdir tmp_dir
+
     set_yap_command_line_arguments \
       '--no-history', '--no-addons', '--no-rcfiles', '--skip-first-time'
 
     turn_on_debug_log(debug: 'editor')
-
     initialize_shell
-
-    mkdir tmp_dir
-    Dir.chdir tmp_dir
 
     if self.class.metadata[:repl] == false
       # no-op if the test specificaly says it doesn't use a repl
