@@ -1,0 +1,20 @@
+require File.dirname(__FILE__) + '/lib/%{addon_dir}/version'
+
+Gem::Specification.new do |gem|
+  gem.name    = '%{addon_dir}'
+  gem.version = %{constant_name}::VERSION
+  gem.date    = Date.today.to_s
+
+  gem.summary = '%{summary}'
+  gem.description = '%{description}'
+  gem.license = '%{license}'
+
+  gem.authors  = ['Your name']
+  gem.email    = '%{email}'
+  gem.homepage = '%{homepage}'
+
+  # ensure the gem is built out of versioned files
+  files_on_disk = Dir['{bin,lib,man,test,spec}/**/**/*', 'README*', 'LICENSE*']
+  files_in_git = `git ls-files -z`.split("\u0000")
+  gem.files = files_on_disk & files_in_git
+end
