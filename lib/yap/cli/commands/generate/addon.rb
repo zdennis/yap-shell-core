@@ -5,11 +5,12 @@ module Yap
   module Cli
     module Commands
       class Generate::Addon
-        attr_accessor :addon_name, :version
+        attr_accessor :addon_name, :version, :use_git
 
         def initialize(addon_name)
           @addon_name = addon_name.gsub(/[^\w\-_]+/, '-').downcase
           @version = '0.1.0'
+          @use_git = true
         end
 
         def doing(text, &block)
@@ -33,6 +34,16 @@ module Yap
             write_file addonrb_path, addonrb_contents
             mkdir lib_addon_path
             write_file version_path, version_contents
+
+            puts
+            if use_git && `which git` && $?.exitstatus == 0
+              write_file '.gitignore', gitignore_contents
+              doing "git init . && git add . && git commit -m 'initial commit of #{addon_name}'" do
+                `git init . && git add . && git commit -m 'initial commit of #{addon_name} addon for yap'`
+              end
+            else
+              puts "Git initialization #{Term::ANSIColor.cyan('skipped')}"
+            end
           end
 
           puts
@@ -45,6 +56,10 @@ module Yap
             |  * Share your addon with others by building a gem and pushing it to rubygems
             |
             |For more information see https://github.com/zdennis/yap-shell/wiki/Addons
+            |
+            |Now, to get started:
+            |
+            |   cd #{gem_safe_addon_name}
           TEXT
           puts
         end
@@ -130,6 +145,34 @@ module Yap
             rspec_version: rspec_version,
             yap_version: yap_version
           }
+        end
+
+        def gitignore_contents
+          <<-TEXT.gsub(/^\s*/, '')
+            *.gem
+            *.rbc
+            .bundle
+            .config
+            .yardoc
+            Gemfile.lock
+            InstalledFiles
+            _yardoc
+            coverage
+            doc/
+            lib/bundler/man
+            pkg
+            rdoc
+            spec/reports
+            test/tmp
+            test/version_tmp
+            tmp
+            *.bundle
+            *.so
+            *.o
+            *.a
+            mkmf.log
+            wiki/
+          TEXT
         end
 
         def lib_path

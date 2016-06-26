@@ -52,6 +52,10 @@ module Yap
             TEXT
             exit @exit_status
           end
+
+          opts.on('--skip-git', 'Skip git initialization') do
+            command.use_git = false
+          end
         end
       end
     end
