@@ -103,6 +103,9 @@ module Yap
             |      @world = world
             |
             |      # Initialize your addon here.
+            |
+            |      # For more information see:
+            |      #    https://github.com/zdennis/yap-shell/wiki/Addons
             |    end
             |  end
             |end
