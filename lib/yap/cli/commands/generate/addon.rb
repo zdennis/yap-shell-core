@@ -4,7 +4,7 @@ require 'term/ansicolor'
 module Yap
   module Cli
     module Commands
-      class Addon::Generate
+      class Generate::Addon
         attr_accessor :addon_name, :version
 
         def initialize(addon_name)

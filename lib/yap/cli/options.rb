@@ -10,10 +10,12 @@ module Yap
       end
 
       def load_constant_from_path(path)
-        requiring = []
+        requiring_parts = []
         path_parts = path.to_s.split('/')
         constant = path_parts.reduce(Object) do |constant, part|
-          require (requiring << part).join('/')
+          requiring_parts << part
+          requiring_path = requiring_parts.join('/')
+          require requiring_path
           part = part.capitalize
           if constant.const_defined?(part)
             constant = constant.const_get(part)

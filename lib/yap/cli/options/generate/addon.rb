@@ -1,6 +1,6 @@
 module Yap
   module Cli
-    class Options::Addon::Generate
+    class Options::Generate::Addon
       include OptionsLoader
 
       attr_reader :command, :options
@@ -15,7 +15,7 @@ module Yap
       end
 
       def command
-        @command ||= load_command('addon/generate').new(@addon_name)
+        @command ||= load_command('generate/addon').new(@addon_name)
       end
 
       private
@@ -25,12 +25,6 @@ module Yap
           opts.on('-h') do
             puts opts
             exit 0
-          end
-          opts.on('--enabled') do
-            command.filter = :enabled
-          end
-          opts.on('--disabled') do
-            command.filter = :disabled
           end
         end
       end
