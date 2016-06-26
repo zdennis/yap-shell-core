@@ -7,11 +7,6 @@ describe 'Generating an addon', type: :feature, repl: false do
 
   let(:yap_cli_args) do
     [
-      '--addon-paths', addons_path.to_s,
-      '--rcfiles', yaprc_path.to_s,
-      '--no-history',
-      '--no-rcfiles',
-      '--skip-first-time',
       'generate', 'addon', 'foo-bar'
     ]
   end
@@ -20,6 +15,7 @@ describe 'Generating an addon', type: :feature, repl: false do
     set_yap_command_line_arguments yap_cli_args
 
     turn_on_debug_log(debug: 'editor')
+
     reinitialize_shell
   end
 
