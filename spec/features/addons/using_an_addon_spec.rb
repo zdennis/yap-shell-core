@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe 'Addons', type: :feature do
+describe 'Using an addon', type: :feature do
   let(:addons_path) { tmp_dir.join('addons/') }
   let(:yaprc_path) { tmp_dir.join('yaprc') }
   let(:yaprc_contents) { '' }
