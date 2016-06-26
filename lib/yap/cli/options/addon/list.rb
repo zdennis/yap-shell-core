@@ -10,7 +10,6 @@ module Yap
       end
 
       def parse(args)
-        @addon_name = args.shift unless args.first =~ /^-/
         option_parser.order!(args)
       end
 
@@ -22,14 +21,37 @@ module Yap
 
       def option_parser
         OptionParser.new do |opts|
-          opts.on('-h') do
+          opts.banner = <<-TEXT.gsub(/^\s*\|/, '')
+            |Usage: #{opts.program_name} addon list [options]
+            |
+            |#{Term::ANSIColor.cyan('yap addon list')} can be used to list yap addons.
+            |
+            |Addon list options:
+          TEXT
+
+          opts.on('-h', '--help', 'Prints this help') do
             puts opts
+            puts
+            puts  <<-TEXT.gsub(/^\s*\|/, '')
+              |Example: Listing all addons
+              |
+              |   #{opts.program_name} addon list
+              |
+              |Example: Listing disabled addons only
+              |
+              |   #{opts.program_name} addon list --disabled
+              |
+              |Example: Listing enabled addons only
+              |
+              |   #{opts.program_name} addon list --enabled
+              |
+            TEXT
             exit 0
-          end          
-          opts.on('--enabled') do
+          end
+          opts.on('--enabled', 'Lists yap addons that are enabled') do
             command.filter = :enabled
           end
-          opts.on('--disabled') do
+          opts.on('--disabled', 'Lists yap addons that are disabled') do
             command.filter = :disabled
           end
         end

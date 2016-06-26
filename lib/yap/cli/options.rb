@@ -101,9 +101,29 @@ module Yap
 
       def option_parser
         OptionParser.new do |opts|
+          opts.banner = <<-TEXT.gsub(/^\s*\|/, '')
+            |Usage: #{opts.program_name} [option|command]
+            |
+            |When a command is omitted the yap shell starts an interactive
+            |session. Otherwise, the command is executed.
+            |
+            |Shell options:
+          TEXT
           opts.on('-h', '--help', 'Prints this help') do
             puts opts
-            exit
+            commands = Dir[ File.dirname(__FILE__) + '/commands/*.rb' ].map do |path|
+              command = File.basename(path).sub(/\.rb$/, '')
+              "#{command}: #{Term::ANSIColor.cyan(opts.program_name + ' ' + command + ' --help')}"
+            end
+            commands = %|  #{commands.join("\n  ")}|
+            puts <<-TEXT.gsub(/^\s*\|/, '')
+              |
+              |Commands:
+              |
+              |#{commands}
+              |
+            TEXT
+            exit 0
           end
 
           opts.on('--skip-first-time', 'Disables creating ~/.yap directory on shell startup') do
