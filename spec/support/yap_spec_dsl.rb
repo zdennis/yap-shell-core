@@ -155,7 +155,6 @@ module Yap
       def turn_on_debug_log(file: '/tmp/yap-debug.log', debug: '*')
         ENV['TREEFELL_OUT'] = file
         ENV['DEBUG'] = debug
-        reinitialize_shell
       end
 
       def set_yap_command_line_arguments(*args)
