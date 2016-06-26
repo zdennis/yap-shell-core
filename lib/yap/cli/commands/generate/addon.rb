@@ -13,34 +13,42 @@ module Yap
         end
 
         def doing(text, &block)
-          print "  #{text}"
+          print "#{text}"
           block.call
           puts " #{Term::ANSIColor.green('done')}"
         end
 
         def process
-          puts "Creating addon: #{Term::ANSIColor.yellow(addon_name)}"
+          puts "Creating addon #{Term::ANSIColor.yellow(addon_name)} in #{addon_dir}/"
           puts
 
-          doing("Create directory #{addon_dir}"){ FileUtils.mkdir_p addon_dir }
-
-          readme_path = File.join(addon_dir, 'README.md')
-          lib_path = File.join(addon_dir, 'lib')
+          readme_path = File.join('README.md')
+          lib_path = File.join('lib')
           lib_addon_path = File.join(lib_path, addon_dir)
           version_path = File.join(lib_addon_path, 'version.rb')
           addonrb_path = File.join(lib_path, "#{addon_dir}.rb")
 
+          doing("    Create directory #{addon_dir}"){ FileUtils.mkdir_p addon_dir }
           Dir.chdir addon_dir do
-            doing("Create directory: #{lib_path}"){ FileUtils.mkdir_p lib_path }
-            doing("Creating file: #{gemspec_name}"){ File.write gemspec_name, gemspec_contents }
-            doing("Creating file: #{readme_path}"){ File.write readme_path, readme_contents }
-            doing("Creating file: #{addonrb_path}"){ File.write addonrb_path, libfile_contents }
-            doing("Create directory: #{lib_addon_path}"){ FileUtils.mkdir_p lib_addon_path }
-            doing("Creating file: #{version_path}"){ File.write version_path, version_contents }
+            doing("    Create directory: #{lib_path}"){ FileUtils.mkdir_p lib_path }
+            doing("    Creating file: #{gemspec_name}"){ File.write gemspec_name, gemspec_contents }
+            doing("    Creating file: #{readme_path}"){ File.write readme_path, readme_contents }
+            doing("    Creating file: #{addonrb_path}"){ File.write addonrb_path, libfile_contents }
+            doing("    Create directory: #{lib_addon_path}"){ FileUtils.mkdir_p lib_addon_path }
+            doing("    Creating file: #{version_path}"){ File.write version_path, version_contents }
           end
 
           puts
-          puts "Done."
+          puts "Yap addon generated! A few helpful things to note:"
+          puts
+          puts <<-TEXT.gsub(/^\s*\|/, '')
+            |  * The #{Term::ANSIColor.yellow(addon_name)} addon is a standard rubygem and has its own gemspec, found in #{addon_dir}/
+            |  * Yap loads the #{Term::ANSIColor.yellow(addon_constant_name)}, found in #{addonrb_path}
+            |  * Share your addon with others by building a gem and pushing it to rubygems
+            |
+            |For more information see https://github.com/zdennis/yap-shell/wiki/Addons
+          TEXT
+          puts
         end
 
         private
@@ -49,8 +57,12 @@ module Yap
           gem_safe_addon_name
         end
 
+        def addon_constant_name
+          [constant_name, 'Addon'].join('::')
+        end
+
         def constant_name
-          addon_name.split(/\W+/).map(&:capitalize).join
+          gem_safe_addon_name.split(/\W+/).map(&:capitalize).join
         end
 
         def gemspec_name
