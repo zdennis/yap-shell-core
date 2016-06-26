@@ -5,11 +5,9 @@ require 'rawline'
 require 'termios'
 
 module Yap
+  require 'yap/addon'
   require 'yap/shell/execution'
   require 'yap/shell/prompt'
-  require 'yap/world/addon_paths'
-  require 'yap/world/addon_reference'
-  require 'yap/world/addons'
 
   class World
     include Term::ANSIColor
@@ -67,7 +65,7 @@ module Yap
       @repl = Yap::Shell::Repl.new(world:self)
 
       @addons = addons.reduce(Hash.new) do |hsh, addon|
-        hsh[addon.export_as] = AddonWrapper.new(addon)
+        hsh[addon.export_as] = Yap::Addon::Wrapper.new(addon)
         hsh
       end
 

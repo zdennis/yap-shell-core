@@ -22,28 +22,26 @@ module Yap
           puts "Creating addon #{Term::ANSIColor.yellow(addon_name)} in #{addon_dir}/"
           puts
 
-          readme_path = File.join('README.md')
-          lib_path = File.join('lib')
-          lib_addon_path = File.join(lib_path, addon_dir)
-          version_path = File.join(lib_addon_path, 'version.rb')
-          addonrb_path = File.join(lib_path, "#{addon_dir}.rb")
-
-          doing("    Create directory #{addon_dir}"){ FileUtils.mkdir_p addon_dir }
+          mkdir addon_dir
           Dir.chdir addon_dir do
-            doing("    Create directory: #{lib_path}"){ FileUtils.mkdir_p lib_path }
-            doing("    Creating file: #{gemspec_name}"){ File.write gemspec_name, gemspec_contents }
-            doing("    Creating file: #{readme_path}"){ File.write readme_path, readme_contents }
-            doing("    Creating file: #{addonrb_path}"){ File.write addonrb_path, libfile_contents }
-            doing("    Create directory: #{lib_addon_path}"){ FileUtils.mkdir_p lib_addon_path }
-            doing("    Creating file: #{version_path}"){ File.write version_path, version_contents }
+            mkdir lib_path
+            write_file 'Gemfile', gemfile_contents
+            write_file gemspec_name, gemspec_contents
+            write_file 'LICENSE.txt', license_contents
+            write_file 'Rakefile', rakefile_contents
+            write_file 'README.md', readme_contents
+            write_file addonrb_path, addonrb_contents
+            mkdir lib_addon_path
+            write_file version_path, version_contents
           end
 
           puts
           puts "Yap addon generated! A few helpful things to note:"
           puts
           puts <<-TEXT.gsub(/^\s*\|/, '')
-            |  * The #{Term::ANSIColor.yellow(addon_name)} addon is a standard rubygem and has its own gemspec, found in #{addon_dir}/
-            |  * Yap loads the #{Term::ANSIColor.yellow(addon_constant_name)}, found in #{addonrb_path}
+            |  * The #{Term::ANSIColor.yellow(addon_name)} addon has been generated in #{addon_dir}/
+            |  * It is a standard rubygem, has its own gemspec, and is named #{Term::ANSIColor.yellow(gem_safe_addon_name)}
+            |  * Yap loads the #{Term::ANSIColor.yellow(constant_name)}, found in #{addonrb_path} (start there)
             |  * Share your addon with others by building a gem and pushing it to rubygems
             |
             |For more information see https://github.com/zdennis/yap-shell/wiki/Addons
@@ -53,16 +51,59 @@ module Yap
 
         private
 
+        def mkdir(path)
+          doing("Create directory: #{path}"){ FileUtils.mkdir_p path }
+        end
+
+        def write_file(path, contents)
+          doing "Creating file: #{path}" do
+            File.write path, contents
+          end
+        end
+
         def addon_dir
           gem_safe_addon_name
         end
 
-        def addon_constant_name
-          [constant_name, 'Addon'].join('::')
+        def addonrb_path
+          File.join(lib_path, gem_safe_addon_name + '.rb')
+        end
+
+        def addonrb_contents
+          contents = File.read(File.dirname(__FILE__) + '/addonrb.template')
+          contents % addonrb_template_variables
+        end
+
+        def addonrb_template_variables
+          export_as = addon_name
+          export_as = "'#{addon_name}'" if addon_name =~ /-/
+          {
+            constant_name: constant_name,
+            export_as: export_as
+          }
+        end
+
+        def bundler_version
+          require 'bundler/version'
+          Bundler::VERSION.scan(/\d+\.\d+/).first ||
+            fail('Cannot determine bundler version')
         end
 
         def constant_name
           gem_safe_addon_name.split(/\W+/).map(&:capitalize).join
+        end
+
+        def gemfile_contents
+          <<-GEMFILE.gsub(/^\s*\|/, '')
+            |source 'https://rubygems.org'
+            |
+            |# Specify your gem's dependencies in #{gemspec_name}
+            |gemspec
+          GEMFILE
+        end
+
+        def gem_safe_addon_name
+          "yap-shell-addon-#{addon_name}"
         end
 
         def gemspec_name
@@ -74,12 +115,66 @@ module Yap
           contents % gemspec_template_variables
         end
 
-        def gem_safe_addon_name
-          "yap-shell-#{addon_name}-addon"
-        end
-
         def gemspec_template_variables
           {
+            addon_dir: addon_dir,
+            constant_name: constant_name,
+            summary: "#{addon_name} summary goes here.",
+            description: "#{addon_name} description goes here.",
+            license: 'MIT',
+            authors: [],
+            email: 'you@example.com',
+            homepage: '',
+            bundler_version: bundler_version,
+            rake_version: rake_version,
+            rspec_version: rspec_version,
+            yap_version: yap_version
+          }
+        end
+
+        def lib_path
+          File.join('lib')
+        end
+
+        def lib_addon_path
+          File.join(lib_path, addon_dir)
+        end
+
+        def license_contents
+          contents = File.read(File.dirname(__FILE__) + '/license.template')
+          contents % license_template_variables
+        end
+
+        def license_template_variables
+          username = (`git config user.name` rescue 'YOUR_NAME')
+          { username: username }
+        end
+
+        def rake_version
+          require 'rake/version'
+          version_string = if Rake.const_defined?(:VERSION)
+            Rake::VERSION
+          else
+            Rake::Version::NUMBERS.join('.')
+          end
+          version_string.scan(/\d+\.\d+/).first ||
+            fail('Cannot determine rake version')
+        end
+
+        def rakefile_contents
+          File.read(File.dirname(__FILE__) + '/rakefile.template')
+        end
+
+        def readme_contents
+          contents = File.read(File.dirname(__FILE__) + '/readme.template')
+          contents % readme_template_variables
+        end
+
+        def readme_template_variables
+          {
+            addon_name: addon_name,
+            gem_safe_addon_name: gem_safe_addon_name,
+            lib_addon_path: lib_addon_path,
             addon_dir: addon_dir,
             constant_name: constant_name,
             summary: "#{addon_name} summary goes here.",
@@ -91,31 +186,14 @@ module Yap
           }
         end
 
-        def libfile_contents
-          export_as = addon_name
-          export_as = "'#{addon_name}'" if addon_name =~ /-/
-          <<-RUBY.gsub(/^\s*\|/, '')
-            |module #{constant_name}
-            |  class Addon < ::Yap::World::Addon
-            |    self.export_as :#{export_as}
-            |
-            |    def initialize_world(world)
-            |      @world = world
-            |
-            |      # Initialize your addon here.
-            |
-            |      # For more information see:
-            |      #    https://github.com/zdennis/yap-shell/wiki/Addons
-            |    end
-            |  end
-            |end
-          RUBY
+        def rspec_version
+          require 'rspec/version'
+          RSpec::Version::STRING.scan(/\d+\.\d+/).first ||
+            fail('Cannot determine rspec version')
         end
 
-        def readme_contents
-          <<-MARKDOWN
-
-          MARKDOWN
+        def version_path
+          File.join(lib_addon_path, 'version.rb')
         end
 
         def version_contents
@@ -124,6 +202,11 @@ module Yap
             |  VERSION = '#{version}'
             |end
           RUBY
+        end
+
+        def yap_version
+          Yap::Shell::VERSION.scan(/\d+\.\d+/).first ||
+            fail('Cannot determine yap version')
         end
       end
     end

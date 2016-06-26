@@ -8,7 +8,7 @@ module Yap
 
         def process
           configuration = Yap.configuration
-          addon_refs = Yap::World::AddonPaths.find_for_configuration(configuration)
+          addon_refs = Yap::Addon::Path.find_for_configuration(configuration)
           addon_config_hsh = {}
           found_addon_ref = nil
           addon_refs.each do |addon_ref|

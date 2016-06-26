@@ -26,7 +26,7 @@ module Yap
       if configuration.use_addons?
         Treefell['shell'].puts "#{self}.#{__callee__} loading addons"
         addons_loaded.concat \
-          World::Addons.load_directories(configuration.addon_paths)
+          Yap::Addon.load_directories(configuration.addon_paths)
       else
         Treefell['shell'].puts "#{self}.#{__callee__} skipping addons"
       end
@@ -34,7 +34,7 @@ module Yap
       if configuration.use_rcfiles?
         Treefell['shell'].puts "#{self}.#{__callee__} loading rcfiles"
         addons_loaded.concat \
-          World::Addons.load_rcfiles(configuration.rcfiles)
+          Yap::Addon.load_rcfiles(configuration.rcfiles)
       else
         Treefell['shell'].puts "#{self}.#{__callee__} skipping rcfiles"
       end

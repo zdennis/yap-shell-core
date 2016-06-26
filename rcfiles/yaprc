@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-world.addons[:keyboard_macros].disable!
+# world.addons[:keyboard_macros].disable!
 
 old_world_envs = []
 parse_env_vars_from_string = -> (str) {

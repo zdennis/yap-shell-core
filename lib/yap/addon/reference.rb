@@ -1,6 +1,6 @@
 module Yap
-  class World
-    class AddonReference
+  module Addon
+    class Reference
       attr_reader :name, :require_as, :path
 
       def initialize(name:, require_as:, path:, disabled:)

@@ -9,7 +9,7 @@ module Yap
         def process
           configuration = Yap.configuration
 
-          addon_refs = ::Yap::World::AddonPaths.
+          addon_refs = ::Yap::Addon::Path.
             find_for_configuration(configuration)
           if addon_refs.empty?
             puts <<-MSG.strip_heredoc

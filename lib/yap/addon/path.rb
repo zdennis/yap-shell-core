@@ -1,6 +1,6 @@
 module Yap
-  class World
-    class AddonPaths
+  module Addon
+    class Path
       def self.find_for_configuration(configuration)
         addons_config_hsh = {}
         if File.exists?(configuration.yap_addons_configuration_path)
@@ -29,7 +29,7 @@ module Yap
           Dir["#{path}/*"].map do |directory|
             next unless File.directory?(directory)
 
-            if File.basename(directory) =~ /(yap-shell-(.*)-addon)/
+            if File.basename(directory) =~ /(yap-shell-addon-(.*))-\d+\.\d+\.\d+/
               require_as, name = $1, $2
 
               export_as = File.read(directory + "/lib/" + require_as + ".rb").
@@ -43,7 +43,7 @@ module Yap
                 name, { disabled: false }
               )[:disabled]
 
-              results << Yap::World::AddonReference.new(
+              results << Yap::Addon::Reference.new(
                 name: name,
                 require_as: require_as,
                 path: File.expand_path(directory),

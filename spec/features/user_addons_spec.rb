@@ -12,7 +12,7 @@ describe 'Addons', type: :feature do
     mkdir_p foo_lib_addon_path.to_s
     write_file foo_addon_rb_path.to_s, <<-RUBY.strip_heredoc
       |module YapShellFooAddon
-      |  class Addon < ::Yap::World::Addon
+      |  class Addon < ::Yap::Addon::Base
       |    self.export_as :foo
       |
       |    def initialize_world(world)
@@ -32,7 +32,7 @@ describe 'Addons', type: :feature do
     mkdir_p bar_lib_addon_path.to_s
     write_file bar_addon_rb_path.to_s, <<-RUBY.strip_heredoc
       |module YapShellBarAddon
-      |  class Addon < ::Yap::World::Addon
+      |  class Addon < ::Yap::Addon::Base
       |    self.export_as :bar
       |
       |    def initialize_world(world)
