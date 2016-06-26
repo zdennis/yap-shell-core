@@ -35,10 +35,9 @@ module Yap
     module AddonMethods
       module ClassMethods
         def load_addon
-          # no-op, override in subclass if you need to do anything special
-          # when your addon is first loaded when the shell starts
+          @instance ||= new
         end
-
+        
         def addon_name
           @addon_name ||= begin
             self.name.split(/::/).last.scan(/[A-Z][^A-Z]+/).map(&:downcase).reject{ |f| f == "addon" }.join("_").to_sym
