@@ -5,13 +5,13 @@ describe 'Addons', type: :feature do
   let(:yaprc_path) { tmp_dir.join('yaprc') }
   let(:yaprc_contents) { '' }
 
-  let(:foo_addon_path) { addons_path.join('yap-shell-foo-addon-0.1.0') }
+  let(:foo_addon_path) { addons_path.join('yap-shell-addon-foo-0.1.0') }
   let(:foo_lib_addon_path) { foo_addon_path.join('lib') }
-  let(:foo_addon_rb_path) { foo_lib_addon_path.join('yap-shell-foo-addon.rb') }
+  let(:foo_addon_rb_path) { foo_lib_addon_path.join('yap-shell-addon-foo.rb') }
   let(:create_foo_addon) do
     mkdir_p foo_lib_addon_path.to_s
     write_file foo_addon_rb_path.to_s, <<-RUBY.strip_heredoc
-      |module YapShellFooAddon
+      |module YapShellAddonFoo
       |  class Addon < ::Yap::Addon::Base
       |    self.export_as :foo
       |
@@ -25,13 +25,13 @@ describe 'Addons', type: :feature do
     RUBY
   end
 
-  let(:bar_addon_path) { addons_path.join('yap-shell-bar-addon-0.1.0') }
+  let(:bar_addon_path) { addons_path.join('yap-shell-addon-bar-0.1.0') }
   let(:bar_lib_addon_path) { bar_addon_path.join('lib') }
-  let(:bar_addon_rb_path) { bar_lib_addon_path.join('yap-shell-bar-addon.rb') }
+  let(:bar_addon_rb_path) { bar_lib_addon_path.join('yap-shell-addon-bar.rb') }
   let(:create_bar_addon) do
     mkdir_p bar_lib_addon_path.to_s
     write_file bar_addon_rb_path.to_s, <<-RUBY.strip_heredoc
-      |module YapShellBarAddon
+      |module YapShellAddonBar
       |  class Addon < ::Yap::Addon::Base
       |    self.export_as :bar
       |
@@ -76,6 +76,7 @@ describe 'Addons', type: :feature do
     # foo-addon is a shell function added by the foo-addon defined above
     type 'foo-addon hello world'
     enter
+
     expect { output }.to have_printed("You passed [\"hello\", \"world\"] to foo-addon")
   end
 
