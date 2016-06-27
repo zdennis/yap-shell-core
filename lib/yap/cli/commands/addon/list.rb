@@ -26,7 +26,7 @@ module Yap
             end
           else
             addon_refs.each do |addon_ref|
-              enabled_or_disabled = addon_ref.disabled? ? 'disabled' : 'enabled'
+              enabled_or_disabled = addon_ref.enabled? ? 'enabled' : 'disabled'
               puts "#{addon_ref.name} (#{enabled_or_disabled})"
             end
           end

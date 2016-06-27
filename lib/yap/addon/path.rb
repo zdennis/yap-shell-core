@@ -33,9 +33,10 @@ module Yap
               require_as, name = $1, $2
 
               export_as = File.read(directory + "/lib/" + require_as + ".rb").
-                scan(/export_as\(?\s*[:'"](.*)['"]?/).
+                scan(/export_as\(?\s*:?(['"]?)(.*)\1/).
                 flatten.
-                first
+                last
+
               name = export_as if export_as
               name = name.to_sym
 
@@ -47,7 +48,7 @@ module Yap
                 name: name,
                 require_as: require_as,
                 path: File.expand_path(directory),
-                disabled: !enabled
+                enabled: enabled
               )
             end
           end

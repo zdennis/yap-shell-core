@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-# world.addons[:keyboard_macros].disable!
+# world.addons[:'keyboard-macros'].disable!
 
 old_world_envs = []
 parse_env_vars_from_string = -> (str) {
@@ -198,7 +198,7 @@ self.secondary_prompt = '> '
 #
 # == Example
 #
-#    world.addons[:keyboard_macros].configure(trigger_key: :ctrl_g) do |macros|
+#    world.addons[:'keyboard-macros'].configure(trigger_key: :ctrl_g) do |macros|
 #      macros.define :z, 'git open-pull'
 #      macros.define 'l', "git log -n1\n"
 #    end
@@ -211,20 +211,20 @@ self.secondary_prompt = '> '
 ###############################################################################
 
 # Sets the default trigger key for all keyboard macros
-world.addons[:keyboard_macros].trigger_key = ?\C-g
+world.addons[:'keyboard-macros'].trigger_key = ?\C-g
 
 # Sets the default cancel key (space) for all keyboard macros
-world.addons[:keyboard_macros].cancel_key = " "
+world.addons[:'keyboard-macros'].cancel_key = " "
 
 # Sets the default timeout for macros. When set to nil you will have to
 # use the cancel key to exit out of macros.
-world.addons[:keyboard_macros].timeout_in_ms = nil
+world.addons[:'keyboard-macros'].timeout_in_ms = nil
 
 # Forgiveness-mode: Automatically cancel if the sequence is unknown. When
 # set to false you can keep attempting to type in your macro.
-world.addons[:keyboard_macros].cancel_on_unknown_sequences = true
+world.addons[:'keyboard-macros'].cancel_on_unknown_sequences = true
 
-keyboard_macros = world.addons[:keyboard_macros]
+keyboard_macros = world.addons[:'keyboard-macros']
 keyboard_macros.cycle(:recent_git_branches) { `git recent`.lines.map(&:chomp) }
 world.editor.bind(:alt_up_arrow) do
   keyboard_macros.cycle(:recent_git_branches).next
@@ -234,12 +234,12 @@ world.editor.bind(:alt_down_arrow) do
 end
 
 world.editor.bind(:ctrl_r) do
-  world.addons[:history_search].prompt_user_to_search
+  world.addons[:'history-search'].prompt_user_to_search
 end
 
 # Or, you can set the trigger key for a particular set of macros
 # by specifying it when you call .configure(...).
-world.addons[:keyboard_macros].configure(trigger_key: ?\C-g) do |macro|
+world.addons[:'keyboard-macros'].configure(trigger_key: ?\C-g) do |macro|
   macro.start do
     # TODO: FUTURE
     # world.editor.content_box.children = [
@@ -283,7 +283,7 @@ end
 
 # The below macro shows that you can have macros start with a different
 # trigger keys.
-# world.addons[:keyboard_macros].configure(trigger_key: :ctrl_h) do |macros|
+# world.addons[:'keyboard-macros'].configure(trigger_key: :ctrl_h) do |macros|
 #   macros.define 'h123', -> {
 #     box = TerminalLayout::Box.new(content: "Right?", style: { display: :block, float: :right, height: 1, width: 50 })
 #     world.editor.content_box.children = [box]

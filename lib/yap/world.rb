@@ -64,13 +64,18 @@ module Yap
 
       @repl = Yap::Shell::Repl.new(world:self)
 
-      @addons = addons.reduce(Hash.new) do |hsh, addon|
-        hsh[addon.export_as] = Yap::Addon::Wrapper.new(addon)
-        hsh
+      # initialize after they are all loaded in case they reference each other.
+      @addons = addons.each_with_object({}) do |addon, hsh|
+        if addon.yap_enabled?
+          hsh[addon.export_as] = addon
+        end
       end
 
-      # initialize after they are all loaded in case they reference each other.
-      addons.each { |addon| addon.initialize_world(self) }
+      @addons.values.select(&:yap_enabled?).each do |addon|
+        if addon.yap_enabled?
+          addon.initialize_world(self)
+        end
+      end
     end
 
     def configuration

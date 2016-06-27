@@ -25,8 +25,8 @@ module Yap
       addons_loaded = []
       if configuration.use_addons?
         Treefell['shell'].puts "#{self}.#{__callee__} loading addons"
-        addons_loaded.concat \
-          Yap::Addon.load_directories(configuration.addon_paths)
+        addons = Yap::Addon.load_for_configuration(configuration)
+        addons_loaded.concat addons
       else
         Treefell['shell'].puts "#{self}.#{__callee__} skipping addons"
       end

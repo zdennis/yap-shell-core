@@ -39,11 +39,13 @@ module Yap
         self.class.export_as
       end
 
-      def initialize(*args)
-        @enabled = true
-        super
+      def initialize(enabled: true)
+        @yap_enabled = enabled
       end
 
+      def yap_enabled?
+        @yap_enabled
+      end
     end
   end
 end
