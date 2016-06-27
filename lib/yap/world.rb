@@ -64,17 +64,45 @@ module Yap
 
       @repl = Yap::Shell::Repl.new(world:self)
 
-      # initialize after they are all loaded in case they reference each other.
-      @addons = addons.each_with_object({}) do |addon, hsh|
+      @addons_initialized = []
+      @addons = AddonHash.new(
+        self
+      )
+
+      addons.each do |addon|
         if addon.yap_enabled?
-          hsh[addon.export_as] = addon
+          @addons[addon.export_as] = addon
         end
       end
 
       @addons.values.select(&:yap_enabled?).each do |addon|
-        if addon.yap_enabled?
-          addon.initialize_world(self)
+        unless addon_initialized?(addon)
+          initialize_addon(addon)
         end
+      end
+    end
+
+    def addon_initialized?(addon)
+      (@addons_initialized ||= []).include?(addon)
+    end
+
+    def initialize_addon(addon)
+      return unless addon
+      addon.initialize_world(self)
+      (@addons_initialized ||= []) << addon
+    end
+
+    class AddonHash < Hash
+      def initialize(world)
+        @world = world
+      end
+
+      def [](key)
+        addon = super
+        unless @world.addon_initialized?(addon)
+          @world.initialize_addon(addon)
+        end
+        addon
       end
     end
 
