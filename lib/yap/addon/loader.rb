@@ -32,18 +32,37 @@ module Yap
       end
 
       def load_reference(reference)
+        if Gem.path.any? { |path| reference.path.include?(path) }
+          load_gem reference
+        else
+          load_non_gem reference
+        end
+      end
+
+      def load_gem(reference)
         gem reference.require_as
         bring_addon_into_existence reference
       end
 
+      def load_non_gem(reference)
+        lib_path = File.expand_path File.join(reference.path, 'lib')
+        Treefell['addon'].puts "prepending addon path to $LOAD_PATH: #{lib_path}"
+        $LOAD_PATH.unshift lib_path
+
+        bring_addon_into_existence reference
+      ensure
+        Treefell['addon'].puts "Removing addon #{lib_path} path from $LOAD_PATH"
+        $LOAD_PATH.delete(lib_path)
+      end
+
       def self.load_rcfiles(files)
-        Treefell['shell'].puts %|searching for rcfiles:\n  * #{files.join("\n  * ")}|
+        Treefell['addon'].puts %|searching for rcfiles:\n  * #{files.join("\n  * ")}|
         files.map do |file|
           if File.exists?(file)
-            Treefell['shell'].puts "rcfile #{file} found, loading."
+            Treefell['addon'].puts "rcfile #{file} found, loading."
             RcFile.new file
           else
-            Treefell['shell'].puts "rcfile #{file} not found, skipping."
+            Treefell['addon'].puts "rcfile #{file} not found, skipping."
           end
         end.flatten.compact
       end
