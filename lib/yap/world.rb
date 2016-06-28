@@ -76,9 +76,8 @@ module Yap
       end
 
       @addons.values.select(&:yap_enabled?).each do |addon|
-        unless addon_initialized?(addon)
-          initialize_addon(addon)
-        end
+        initialize_addon(addon) unless addon_initialized?(addon)
+        addon
       end
     end
 
