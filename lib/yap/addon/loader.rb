@@ -26,7 +26,7 @@ module Yap
         elsif addon.const_defined?(:Addon)
           addon.const_get(:Addon)
         else
-          fail LoadError, 'Expected gem #{name} to define a constant, but nothing was found'
+          fail LoadError, "Expected gem #{name} to define a constant, but nothing was found"
         end
         addon_class.new enabled: reference.enabled?
       end
