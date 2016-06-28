@@ -32,11 +32,8 @@ module Yap
             if File.basename(directory) =~ /(yap-shell-addon-(.*))-\d+\.\d+\.\d+/
               require_as, name = $1, $2
 
-              export_as = File.read(directory + "/lib/" + require_as + ".rb").
-                scan(/export_as\(?\s*:?(['"]?)(.*)\1/).
-                flatten.
-                last
-
+              addonrb_path = directory + "/lib/" + require_as + ".rb"
+              export_as = ExportAs.find_in_file(addonrb_path)
               name = export_as if export_as
               name = name.to_sym
 

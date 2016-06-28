@@ -8,7 +8,7 @@ module Yap
       def load_all
         @addon_references.map do |reference|
           load_reference(reference)
-        end
+        end.compact
       end
 
       private
@@ -32,10 +32,22 @@ module Yap
       end
 
       def load_reference(reference)
-        if Gem.path.any? { |path| reference.path.include?(path) }
-          load_gem reference
-        else
-          load_non_gem reference
+        begin
+          if Gem.path.any? { |path| reference.path.include?(path) }
+            load_gem reference
+          else
+            load_non_gem reference
+          end
+        rescue Exception => ex
+          puts Term::ANSIColor.red("Rut roh! The #{reference.name} addon failed to load.")
+          puts
+          puts ex.message
+          puts
+          puts "To uninstall this addon:"
+          puts
+          puts "   gem uninstall #{reference.require_as}"
+          puts
+          puts "Note: this did not stop yap from loading, but functionality from the addon will be missing."
         end
       end
 

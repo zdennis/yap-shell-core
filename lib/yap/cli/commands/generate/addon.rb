@@ -93,6 +93,7 @@ module Yap
           export_as = addon_name
           export_as = "'#{addon_name}'" if addon_name =~ /-/
           {
+            addon_dir: addon_dir,
             constant_name: constant_name,
             export_as: export_as
           }

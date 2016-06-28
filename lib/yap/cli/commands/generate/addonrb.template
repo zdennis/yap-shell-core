@@ -1,4 +1,5 @@
 require 'yap/addon'
+require '%{addon_dir}/version'
 
 module %{constant_name}
   class Addon < ::Yap::Addon::Base
