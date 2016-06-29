@@ -87,8 +87,14 @@ module Yap
 
     def initialize_addon(addon)
       return unless addon
-      addon.initialize_world(self)
-      (@addons_initialized ||= []) << addon
+      begin
+        addon.initialize_world(self)
+        (@addons_initialized ||= []) << addon
+      rescue Exception => ex
+        puts Term::ANSIColor.red(("The #{addon.addon_name} addon failed to initialize due to error:"))
+        puts ex.message
+        puts ex.backtrace[0..5]
+      end
     end
 
     class AddonHash < Hash
