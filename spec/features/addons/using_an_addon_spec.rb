@@ -145,7 +145,6 @@ describe 'Using an addon', type: :feature do
         }.to_yaml
       )
       reinitialize_shell
-      clear_all_output
     end
 
     it 'lists all addons found in the addon-paths' do

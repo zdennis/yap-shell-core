@@ -78,12 +78,13 @@ RSpec.configure do |config|
 
         # Use yap to tell us when it's done doing whatever is was doing.
         # This ensures we don'try to clean up before yap is done!
+        clear_all_output(console: true)
         type 'echo done with this test'
         enter
         expect { output }.to have_printed('done with this test')
       end
-      clear_all_output
     ensure
+      clear_all_output(console: false)
       Dir.chdir(tmp_dir) do
         # remove all files including hidden but not current directory and
         # parent directory

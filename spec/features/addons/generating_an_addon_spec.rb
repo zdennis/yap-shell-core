@@ -35,12 +35,21 @@ describe 'Generating an addon', type: :feature, repl: false do
       |Create directory: lib/yap-shell-addon-foo-bar done
       |Creating file: lib/yap-shell-addon-foo-bar/version.rb done
       |
+      |Creating file: .gitignore done
+      |git init . && git add . && git commit -m 'initial commit of foo-bar' done
+      |
       |Yap addon generated! A few helpful things to note:
       |
       |  * The foo-bar addon has been generated in yap-shell-addon-foo-bar/
       |  * It is a standard rubygem, has its own gemspec, and is named yap-shell-addon-foo-bar
       |  * Yap loads the YapShellAddonFooBar, found in lib/yap-shell-addon-foo-bar.rb (start there)
       |  * Share your addon with others by building a gem and pushing it to rubygems
-    TEXT
+
+      |For more information see https://github.com/zdennis/yap-shell/wiki/Addons
+      |
+      |Now, to get started:
+      |
+      |   cd yap-shell-addon-foo-bar
+      TEXT
   end
 end

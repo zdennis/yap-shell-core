@@ -35,8 +35,12 @@ describe 'Line editing', type: :feature do
     type 'echo hello world'
     6.times { type left_arrow }
     6.times { type delete }
+
+    expect { output }.to have_printed_lines('yap> echo hello')
+    clear_all_output(console: false)
+
     enter
-    expect { output }.to have_printed('hello')
+    expect { output }.to have_printed_lines('hello')
     expect { output }.to have_not_printed('world')
   end
 
@@ -141,6 +145,10 @@ describe 'Line editing', type: :feature do
       type ?\C-w
       type ?\C-w
       type 'nope'
+
+      expect { output }.to have_printed_line('yap> echo nope')
+      clear_all_output(console: false)
+
       enter
       expect { output }.to have_printed('nope')
       expect { output }.to have_not_printed('hello world')

@@ -63,3 +63,6 @@ RSpec::Matchers.define :have_printed_lines do |expected|
     true
   end
 end
+
+RSpec::Matchers.alias_matcher :have_printed_line, :have_printed_lines
+RSpec::Matchers.alias_matcher :have_line, :have_printed_lines

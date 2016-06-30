@@ -19,62 +19,62 @@ describe 'Grouping commands', type: :feature do
     it 'works with: (command1 && command2) || command3' do
       type '(./pass 1 && ./fail 2) || ./pass 3'
       enter
-      expect { output }.to have_printed(/pass 1.*fail 2.*pass 3/m)
+      expect { output }.to have_printed(/^pass 1$.*^fail 2$.*^pass 3$/m)
       clear_all_output
 
       type '(./fail 1 && ./pass 2) || ./pass 3'
       enter
-      expect { output }.to have_printed(/fail 1.*pass 3/m)
-      expect { output }.to have_not_printed(/pass 2/m)
+      expect { output }.to have_printed(/^fail 1$.*^pass 3$/m)
+      expect { output }.to have_not_printed(/^pass 2$/m)
     end
 
     it 'works with: (command1 && command2 && command3) || command4' do
       type '(./pass 1 && ./fail 2 && ./pass 3) || ./pass 4'
       enter
-      expect { output }.to have_printed(/pass 1.*fail 2.*pass 4/m)
-      expect { output }.to have_not_printed(/pass 1.*fail 2.*pass 3.*pass 4/m)
+      expect { output }.to have_printed(/^pass 1$.*^fail 2$.*^pass 4$/m)
+      expect { output }.to have_not_printed(/^pass 1$.*^fail 2$.*^pass 3$.*^pass 4$/m)
       clear_all_output
 
       type '(./fail 1 && ./pass 2 && ./pass 3) || ./pass 4'
       enter
-      expect { output }.to have_printed(/fail 1.*pass 4/m)
-      expect { output }.to have_not_printed(/pass 2.*pass 3/m)
+      expect { output }.to have_printed(/^fail 1$.*^pass 4$/m)
+      expect { output }.to have_not_printed(/^pass 2$.*^pass 3$/m)
     end
 
     it 'works with: (command1 || command2) && command4' do
       type '(./fail 1 || ./pass 2) && ./pass 3'
       enter
-      expect { output }.to have_printed(/fail 1.*pass 2.*pass 3/m)
+      expect { output }.to have_printed(/^fail 1$.*^pass 2$.*^pass 3$/m)
 
       type '(./pass 1 || ./fail 2) && ./pass 3'
       enter
-      expect { output }.to have_printed(/pass 1.*pass 3/m)
-      expect { output }.to have_not_printed(/fail 2/m)
+      expect { output }.to have_printed(/^pass 1$.*^pass 3$/m)
+      expect { output }.to have_not_printed(/^fail 2$/m)
     end
 
     it 'works with: (command1 && command2) && command4' do
       type '(./fail 1 && ./pass 2) && ./pass 3'
       enter
-      expect { output }.to have_printed(/fail 1/m)
-      expect { output }.to have_not_printed(/.*pass 2.*pass 3/m)
+      expect { output }.to have_printed(/^fail 1$/m)
+      expect { output }.to have_not_printed(/^pass 2$.*^pass 3$/m)
       clear_all_output
 
       type '(./pass 1 && ./fail 2) && ./pass 3'
       enter
-      expect { output }.to have_printed(/pass 1.*fail 2/m)
-      expect { output }.to have_not_printed(/pass 3/m)
+      expect { output }.to have_printed(/^pass 1$.*^fail 2$/m)
+      expect { output }.to have_not_printed(/^pass 3$/m)
     end
 
     it 'works with: (command1 || command2) || command4' do
       type '(./fail 1 || ./pass 2) || ./pass 3'
       enter
-      expect { output }.to have_printed(/fail 1.*pass 2/m)
-      expect { output }.to have_not_printed(/pass 3/m)
+      expect { output }.to have_printed(/^fail 1$.*^pass 2$/m)
+      expect { output }.to have_not_printed(/^pass 3$/m)
 
       type '(./pass 1 || ./fail 2) || ./pass 3'
       enter
-      expect { output }.to have_printed(/pass 1/m)
-      expect { output }.to have_not_printed(/fail 2.*pass 3/m)
+      expect { output }.to have_printed(/^pass 1$/m)
+      expect { output }.to have_not_printed(/^fail 2$.*^pass 3$/m)
     end
   end
 

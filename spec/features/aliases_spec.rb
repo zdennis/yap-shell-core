@@ -16,7 +16,7 @@ describe 'Aliases', type: :feature do
   it 'executes them' do
     type 'foo'
     enter
-    expect { output }.to have_printed(/bar\n/)
+    expect { output }.to have_printed(/^bar$/m)
   end
 
   it 'unsets them' do
@@ -41,14 +41,14 @@ describe 'Aliases', type: :feature do
     it 'supports logical AND: &&' do
       type "pass && pass"
       enter
-      expect { output }.to have_printed(/pass.*\n.*pass/m)
+      expect { output }.to have_printed(/^pass$.*^pass$/m)
     end
 
     it 'supports logical OR: &&' do
       type "fail || pass"
       enter
       expect { error_output }.to have_printed(/yap: command not found: non-existent-command/m)
-      expect { output }.to have_printed(/pass/m)
+      expect { output }.to have_printed(/^pass$/m)
       clear_all_output
 
       type "echo $?"
@@ -60,19 +60,19 @@ describe 'Aliases', type: :feature do
       type "(pass && fail) || pass"
       enter
       expect { error_output }.to have_printed(/yap: command not found: non-existent-command/m)
-      expect { output }.to have_printed(/pass.*\n.*pass/m)
+      expect { output }.to have_printed(/^pass$.*^pass$/m)
       clear_all_output
 
       type "(pass || fail) && pass"
       enter
       expect { error_output }.to have_not_printed(/yap: command not found: non-existent-command/m)
-      expect { output }.to have_printed(/pass.*\n.*pass/m)
+      expect { output }.to have_printed(/^pass$.*^pass$/m)
       clear_all_output
 
       type "(fail && pass) && pass"
       enter
       expect { error_output }.to have_printed(/yap: command not found: non-existent-command/m)
-      expect { output }.to have_not_printed(/pass.*\n.*pass/m)
+      expect { output }.to have_not_printed(/^pass$.*^pass$/m)
     end
   end
 end

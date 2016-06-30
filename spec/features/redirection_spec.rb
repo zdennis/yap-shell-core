@@ -47,15 +47,19 @@ describe 'I/O Redirection', type: :feature do
       before do
         type 'echo foo > output.txt'
         enter
+        clear_all_output
+
         type 'cat output.txt'
         enter
-        expect { output }.to have_printed(/foo/)
+        expect { output }.to have_printed_line('foo')
         clear_all_output
       end
 
       it 'appends with: >>' do
         type 'echo bar >> output.txt'
         enter
+        clear_all_output
+
         type 'cat output.txt'
         enter
         expect { output }.to have_printed(/foo.*\n.*bar/)
@@ -64,6 +68,8 @@ describe 'I/O Redirection', type: :feature do
       it 'appends with: 1>>' do
         type 'echo bar 1>> output.txt'
         enter
+        clear_all_output
+
         type 'cat output.txt'
         enter
         expect { output }.to have_printed(/foo.*\n.*bar/)
@@ -100,15 +106,18 @@ describe 'I/O Redirection', type: :feature do
       before do
         type './fail caz 2> error.txt'
         enter
+        clear_all_output
+
         type 'cat error.txt'
         enter
-        expect { output }.to have_printed(/fail caz/)
-        clear_all_output
+        expect { output }.to have_printed_line('fail caz')
       end
 
       it 'appends with: 2>>' do
         type './fail box 2>> error.txt'
         enter
+        clear_all_output
+
         type 'cat error.txt'
         enter
         expect { output }.to have_printed(/fail caz.*\n.*fail box/)

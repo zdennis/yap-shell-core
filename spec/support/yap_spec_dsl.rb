@@ -175,6 +175,7 @@ module Yap
 
       def reinitialize_shell
         initialize_shell
+        clear_all_output(console: false)        
       end
 
       def shell
@@ -200,7 +201,12 @@ module Yap
         shell.io.stdin.print "\r"
       end
 
-      def clear_all_output
+      def clear_all_output(console: true)
+        if console
+          type 'echo done'
+          enter
+          expect { output }.to have_printed_line('done')
+        end
         output_file.clear
         error_output_file.clear
       end
