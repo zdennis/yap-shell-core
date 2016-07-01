@@ -23,16 +23,17 @@ module Yap
         @export_as
       end
 
-      def self.debug_log(msg)
-        Treefell['addons'].puts "addon=#{addon_name} #{msg}"
+      def self.logger
+        calling_method = caller[1][/`.*'/][1..-2]
+        Treefell["addon:#{export_as}"]["#{name}##{calling_method}"]
       end
 
       def addon_name
         @addon_name ||= self.class.addon_name
       end
 
-      def debug_log(msg)
-        self.class.debug_log(msg)
+      def logger
+        self.class.logger
       end
 
       def export_as
