@@ -146,7 +146,7 @@ module Yap
     end
 
     def reload!
-      exec File.expand_path($0)
+      exec configuration.yap_binpath
     end
 
     def func(name, &blk)

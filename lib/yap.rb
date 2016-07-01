@@ -22,6 +22,8 @@ module Yap
     yap_options.parse(argv)
 
     if configuration.run_shell?
+      configuration.yap_binpath = File.expand_path($0)
+
       addons_loaded = []
       if configuration.use_addons?
         Treefell['shell'].puts "#{self}.#{__callee__} loading addons"

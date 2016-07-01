@@ -11,6 +11,7 @@ module Yap
     attr_accessor :addon_paths
     attr_accessor :rcfiles
     attr_accessor :yap_addons_configuration_path
+    attr_accessor :yap_binpath
 
     def self.option(name, type=nil, default: nil)
       reader_method = name.to_s
