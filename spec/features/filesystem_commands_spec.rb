@@ -55,7 +55,7 @@ describe 'Filesystem commands', type: :feature do
       type "(non-existent-command && echo foo) && echo bar"
       enter
       expect { error_output }.to have_printed(/yap: command not found: non-existent-command/m)
-      expect { output }.to have_not_printed(/foo.*\n.*bar/m)
+      expect { output }.to have_not_printed(/^foo$|^bar$/m)
     end
   end
 end

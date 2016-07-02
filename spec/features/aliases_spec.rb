@@ -23,6 +23,7 @@ describe 'Aliases', type: :feature do
     type 'unalias foo'
     enter
     expect { output }.to have_printed(/Removing alias foo done\n/)
+    clear_all_output
 
     type 'alias | grep foo'
     enter

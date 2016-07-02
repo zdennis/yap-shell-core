@@ -6,6 +6,7 @@ describe 'Shell expansions', type: :feature do
       type 'alias foo="echo bar"'
       enter
       expect { output }.to have_printed('Setting alias foo')
+      clear_all_output
     end
 
     it 'expands aliases found in command position' do
