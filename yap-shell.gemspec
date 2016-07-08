@@ -64,7 +64,18 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "pry-byebug", "~> 3.3"
+  # Be specific about these dependencies otherwise RubyGems may print
+  # following warning:
+  #
+  #    WARN: Unresolved specs during Gem::Specification.reset
+  #
+  # This warning is caused by RubyGems having multiple versions of a gem
+  # installed that could match requirements.
+  spec.add_dependency "tins", "~> 1.10.2"
+  spec.add_dependency "coderay", "~> 1.1.1"
+
+  # Normal dependencies
+  spec.add_dependency "pry-byebug", "~> 3.4.0"
   spec.add_dependency "yap-shell-parser", "~> 0.7.1"
   spec.add_dependency "term-ansicolor", "~> 1.3"
   spec.add_dependency "ruby-termios", "~> 0.9.6"
