@@ -8,13 +8,13 @@ Gem::Specification.new do |spec|
   spec.version       = Yap::Shell::VERSION
   spec.authors       = ["Zach Dennis"]
   spec.email         = ["zach.dennis@gmail.com"]
-  spec.summary       = %q{The Lagniappe "Yap" shell.}
-  spec.description   = %q{The Lagniappe "Yap" shell description.}
-  spec.homepage      = "https://github.com/zdennis/yap-shell"
+  spec.summary       = %q{The core of yap-shell.}
+  spec.description   = %q{The core of yap-shell.}
+  spec.homepage      = "https://github.com/zdennis/yap-shell-core"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  spec.executables   = []
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
@@ -37,13 +37,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "ruby-terminfo", "~> 0.1.1"
   spec.add_dependency "yap-rawline", "~> 0.7.0"
   spec.add_dependency "chronic", "~> 0.10.2"
-
-  # Default add-ons
-  spec.add_dependency "yap-shell-addon-history", "~> 0.1.0"
-  spec.add_dependency "yap-shell-addon-history-search", "~> 0.1.0"
-  spec.add_dependency "yap-shell-addon-keyboard-macros", "~> 0.1.0"
-  # spec.add_dependency "yap-shell-addon-right-prompt", "~> 0.1.0"
-  spec.add_dependency "yap-shell-addon-tab-completion", "~> 0.1.0"
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake", "~> 11"
