@@ -73,6 +73,7 @@ Gem::Specification.new do |spec|
   # installed that could match requirements.
   spec.add_dependency "tins", "~> 1.10.2"
   spec.add_dependency "coderay", "~> 1.1.1"
+  spec.add_dependency "treefell", "~> 0.3.1"
 
   # Normal dependencies
   spec.add_dependency "pry-byebug", "~> 3.4.0"
