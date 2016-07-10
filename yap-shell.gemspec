@@ -76,11 +76,11 @@ Gem::Specification.new do |spec|
 
   # Normal dependencies
   spec.add_dependency "pry-byebug", "~> 3.4.0"
-  spec.add_dependency "yap-shell-parser", "~> 0.7.1"
+  spec.add_dependency "yap-shell-parser", "~> 0.7.2"
   spec.add_dependency "term-ansicolor", "~> 1.3"
   spec.add_dependency "ruby-termios", "~> 0.9.6"
   spec.add_dependency "ruby-terminfo", "~> 0.1.1"
-  spec.add_dependency "yap-rawline", "~> 0.6.3"
+  spec.add_dependency "yap-rawline", "~> 0.7.0"
   spec.add_dependency "chronic", "~> 0.10.2"
 
   spec.add_development_dependency "bundler", "~> 1.6"
