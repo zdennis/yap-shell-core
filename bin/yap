@@ -1,0 +1,54 @@
+#!/usr/bin/env ruby
+
+ENV['PWD'] = Dir.pwd
+
+# Start YAP with a pristine environment
+env2keep = {
+  # DISPLAY needs to be inherited in order to launch GUI apps
+  'DISPLAY' => ENV['DISPLAY'],
+  'HOME' => ENV['HOME'],
+  'PATH' => ENV['PATH'],
+  'PWD' => ENV['PWD'],
+
+  # For Yap's sanity
+  'RUBYOPT' => '-rubygems -EUTF-8',
+
+  # Inherit the user's preferred shell
+  'SHELL' => ENV['SHELL'],
+
+  # Set the logged in user
+  'USER' => ENV['USER'],
+
+  # Necessary for ssh-agent
+  'SSH_AUTH_SOCK' => ENV['SSH_AUTH_SOCK'],
+
+  # DEBUG/TREEFELL_OUT are for debuging yap itself
+  'DEBUG' => ENV['DEBUG'],
+  'TREEFELL_OUT' => ENV['TREEFELL_OUT']
+}
+
+ENV.clear
+env_params = env2keep.each_with_object([]) do |(key,value),arr|
+  # next if value.nil?
+  arr << %|#{key}="#{value}"|
+  ENV[key] = value
+end.join(' ')
+
+file = __FILE__
+if File.symlink?(file)
+  file = File.readlink(file)
+end
+
+trap "SIGTSTP", "IGNORE"
+trap "SIGINT", "IGNORE"
+trap "SIGTTIN", "IGNORE"
+trap "SIGTTOU", "IGNORE"
+
+ENV['TERM'] ||= 'linux'
+
+require "yap-shell-core"
+
+STDOUT.sync = true
+STDERR.sync = true
+
+Yap.run_shell(ARGV)
