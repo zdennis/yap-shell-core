@@ -45,7 +45,7 @@ module Yap::Shell
 
   class BuiltinCommand < Command
     def self.===(other)
-      self.builtins.keys.include?(other.split(' ').first.to_sym) || super
+      self.builtins.keys.include?(other.split(' ').first.to_s.to_sym) || super
     end
 
     def self.builtins
