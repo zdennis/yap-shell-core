@@ -237,6 +237,9 @@ world.editor.bind(:ctrl_r) do
   world.addons[:'history-search'].prompt_user_to_search
 end
 
+world.editor.bind(:up_arrow) { world.addons[:'history'].back }
+world.editor.bind(:down_arrow) { world.addons[:'history'].forward }
+
 # Or, you can set the trigger key for a particular set of macros
 # by specifying it when you call .configure(...).
 world.addons[:'keyboard-macros'].configure(trigger_key: ?\C-g) do |macro|
