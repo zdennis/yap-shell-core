@@ -10,31 +10,7 @@ module Yap
       end
 
       def load_constant_from_path(path)
-        requiring_parts = []
-        path_parts = path.to_s.split('/')
-        requiring_path = nil
-        constant = path_parts.reduce(Object) do |constant, path_part|
-          requiring_parts << path_part
-          file2load = Yap.root.join('lib', requiring_parts.join('/') + "*.rb")
-          requiring_path = Dir[ file2load ].sort.first
-          if requiring_path
-            require requiring_path
-            path_part = File.basename(requiring_path).sub(/\.rb$/, '')
-            path_part = "yap" if path_part == "yap-shell-core"
-            requiring_parts.pop
-            requiring_parts.push path_part
-            constant_name = path_part.capitalize
-            if constant.const_defined?(constant_name)
-              constant = constant.const_get(constant_name)
-            else
-              fail "Couldn't find #{path_part} in #{constant}"
-            end
-          else
-            fail LoadError, "Couldn't load any file for #{file2load}"
-          end
-        end
-        Treefell['shell'].puts "#{inspect} loaded: #{constant}"
-        constant
+        ::Yap::Support::FileLoader.load_constant_from_path(path)
       end
 
       def load_relative_constant(path_str)

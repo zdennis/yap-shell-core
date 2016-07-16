@@ -9,6 +9,7 @@ module Yap
   require 'yap/cli/options'
   require 'yap/configuration'
   require 'yap/shell'
+  require 'yap/support'
   require 'yap/world'
 
   def self.root
