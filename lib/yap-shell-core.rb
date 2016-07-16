@@ -19,8 +19,8 @@ module Yap
   def self.run_shell(argv)
     Treefell['shell'].puts "#{self}.#{__callee__} booting shell"
 
-    yap_options = Yap::Cli::Options.new
-    yap_options.parse(argv)
+    main_options = Yap::Cli::Options::Main.new
+    main_options.parse(argv)
 
     if configuration.run_shell?
       configuration.yap_binpath = File.expand_path($0)
@@ -43,8 +43,8 @@ module Yap
       end
 
       Shell::Impl.new(addons: addons_loaded).repl
-    elsif yap_options.commands.any?
-      yap_options.commands.last.process
+    elsif main_options.commands.any?
+      main_options.commands.last.process
     else
       STDERR.puts "Honestly, I don't know what you're tring to do."
       exit 1

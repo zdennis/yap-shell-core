@@ -48,7 +48,7 @@ module Yap
           if constant.const_defined?(constant_name)
             constant.const_get(constant_name)
           else
-            fail ConstantNotFound, "Expected to find #{constant_name}, but did not. Is it defined?"
+            fail ConstantNotFound, "Expected to find #{constant_name} in #{path}, but did not. Is it defined?"
           end
         end
         Treefell['shell'].puts "#{inspect} loaded: #{constant}"
