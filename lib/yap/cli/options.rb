@@ -1,10 +1,8 @@
 require 'pathname'
-require 'yap/cli/options'
 
 module Yap
   module Cli
-    module OptionsLoader
-
+    class OptionsBase
       def load_command(path)
         load_constant_from_path Pathname.new('yap/cli/commands').join(path)
       end
@@ -20,9 +18,7 @@ module Yap
       end
     end
 
-    class Options
-      include OptionsLoader
-
+    class Options < OptionsBase
       attr_reader :options
 
       def initialize(options: {})
@@ -57,7 +53,6 @@ module Yap
 
           option_str = args.shift
           current_scope = scope + [option_str]
-
 
           begin
             options_class = load_relative_constant current_scope.join('/')

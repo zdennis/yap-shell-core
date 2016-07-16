@@ -1,8 +1,6 @@
 module Yap
   module Cli
-    class Options::Addon::List
-      include OptionsLoader
-
+    class Options::Addon::List < OptionsBase
       attr_reader :command, :options
 
       def initialize(options:)

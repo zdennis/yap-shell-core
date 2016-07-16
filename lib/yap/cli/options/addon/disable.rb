@@ -1,8 +1,6 @@
 module Yap
   module Cli
-    class Options::Addon::Disable
-      include OptionsLoader
-
+    class Options::Addon::Disable < OptionsBase
       attr_reader :command, :options
 
       def initialize(options:)

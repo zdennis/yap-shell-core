@@ -1,8 +1,6 @@
 module Yap
   module Cli
-    class Options::Generate
-      include OptionsLoader
-
+    class Options::Generate < OptionsBase
       attr_reader :command, :options
 
       def initialize(options:)
