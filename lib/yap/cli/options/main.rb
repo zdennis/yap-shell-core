@@ -9,10 +9,6 @@ module Yap
           @options_dir = options_dir
         end
 
-        def [](key)
-          @options[key]
-        end
-
         def commands
           @commands.dup.freeze
         end
