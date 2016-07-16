@@ -20,6 +20,7 @@ module Yap
           if requiring_path
             require requiring_path
             path_part = File.basename(requiring_path).sub(/\.rb$/, '')
+            path_part = "yap" if path_part == "yap-shell-core"
             requiring_parts.pop
             requiring_parts.push path_part
             constant_name = path_part.capitalize
