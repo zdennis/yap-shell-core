@@ -1,7 +1,7 @@
 module Yap
   module Cli
     module Commands
-      class Addon::Disable
+      class Addon::Disable < Base
         def initialize(addon_name)
           @addon_name = addon_name
         end
@@ -22,8 +22,8 @@ module Yap
 
           if found_addon_ref
             destination = configuration.yap_addons_configuration_path.to_s
-            FileUtils.mkdir_p File.dirname(destination)
-            File.write destination, addon_config_hsh.to_yaml
+            file_utils.mkdir_p file_utils.dirname(destination)
+            file_utils.write destination, addon_config_hsh.to_yaml
             puts "Addon #{found_addon_ref.name} has been disabled"
           else
             puts "Could not find addon with name #{@addon_name}"

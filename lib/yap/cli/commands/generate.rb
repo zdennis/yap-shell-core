@@ -4,7 +4,7 @@ require 'term/ansicolor'
 module Yap
   module Cli
     module Commands
-      class Generate
+      class Generate < Base
         def process
         end
       end

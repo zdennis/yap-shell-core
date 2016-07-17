@@ -1,7 +1,7 @@
 module Yap
   module Cli
     module Commands
-      class Addon::Search
+      class Addon::Search < Base
         attr_accessor :all, :local, :prerelease, :search_term, :version
         attr_accessor :show_gem_name
 

@@ -1,9 +1,12 @@
 require 'pathname'
+require 'yap/support/file_utils_helper'
 
 module Yap
   module Cli
     module Options
       class Base
+        include ::Yap::Support::FileUtilsHelper
+
         attr_reader :options
 
         def initialize(options:, stdout: $stdout, stderr: $stderr)
@@ -17,7 +20,7 @@ module Yap
         end
 
         def load_constant_from_path(path)
-          ::Yap::Support::FileLoader.load_constant_from_path(path)
+          file_loader.load_constant_from_path(path)
         end
 
         def load_relative_constant(path)

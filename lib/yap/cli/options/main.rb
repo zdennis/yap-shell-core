@@ -68,8 +68,8 @@ module Yap
             TEXT
             opts.on('-h', '--help', 'Prints this help') do
               puts opts
-              commands = Dir[ File.dirname(__FILE__) + '/commands/*.rb' ].map do |path|
-                command = File.basename(path).sub(/\.rb$/, '')
+              commands = Dir[ file_utils.dirname(__FILE__) + '/commands/*.rb' ].map do |path|
+                command = file_utils.basename(path).sub(/\.rb$/, '')
                 "#{command}: #{Colors.cyan(opts.program_name + ' ' + command + ' --help')}"
               end
               commands = %|  #{commands.join("\n  ")}|

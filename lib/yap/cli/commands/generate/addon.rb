@@ -4,7 +4,7 @@ require 'term/ansicolor'
 module Yap
   module Cli
     module Commands
-      class Generate::Addon
+      class Generate::Addon < Base
         attr_accessor :addon_name, :version, :use_git
 
         def initialize(addon_name)
@@ -67,12 +67,12 @@ module Yap
         private
 
         def mkdir(path)
-          doing("Create directory: #{path}"){ FileUtils.mkdir_p path }
+          doing("Create directory: #{path}"){ file_utils.mkdir_p path }
         end
 
         def write_file(path, contents)
           doing "Creating file: #{path}" do
-            File.write path, contents
+            file_utils.write path, contents
           end
         end
 
@@ -81,11 +81,11 @@ module Yap
         end
 
         def addonrb_path
-          File.join(lib_path, gem_safe_addon_name + '.rb')
+          file_utils.join(lib_path, gem_safe_addon_name + '.rb')
         end
 
         def addonrb_contents
-          contents = File.read(File.dirname(__FILE__) + '/addonrb.template')
+          contents = file_utils.read(file_utils.dirname(__FILE__) + '/addonrb.template')
           contents % addonrb_template_variables
         end
 
@@ -127,7 +127,7 @@ module Yap
         end
 
         def gemspec_contents
-          contents = File.read(File.dirname(__FILE__) + '/gemspec.template')
+          contents = file_utils.read(file_utils.dirname(__FILE__) + '/gemspec.template')
           contents % gemspec_template_variables
         end
 
@@ -177,15 +177,15 @@ module Yap
         end
 
         def lib_path
-          File.join('lib')
+          file_utils.join('lib')
         end
 
         def lib_addon_path
-          File.join(lib_path, addon_dir)
+          file_utils.join(lib_path, addon_dir)
         end
 
         def license_contents
-          contents = File.read(File.dirname(__FILE__) + '/license.template')
+          contents = file_utils.read(file_utils.dirname(__FILE__) + '/license.template')
           contents % license_template_variables
         end
 
@@ -206,11 +206,11 @@ module Yap
         end
 
         def rakefile_contents
-          File.read(File.dirname(__FILE__) + '/rakefile.template')
+          file_utils.read(file_utils.dirname(__FILE__) + '/rakefile.template')
         end
 
         def readme_contents
-          contents = File.read(File.dirname(__FILE__) + '/readme.template')
+          contents = file_utils.read(file_utils.dirname(__FILE__) + '/readme.template')
           contents % readme_template_variables
         end
 
@@ -237,7 +237,7 @@ module Yap
         end
 
         def version_path
-          File.join(lib_addon_path, 'version.rb')
+          file_utils.join(lib_addon_path, 'version.rb')
         end
 
         def version_contents

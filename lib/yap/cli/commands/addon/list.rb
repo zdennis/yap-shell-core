@@ -1,7 +1,7 @@
 module Yap
   module Cli
     module Commands
-      class Addon::List
+      class Addon::List < Base
         def filter=(filter_kind)
           @filter = filter_kind
         end

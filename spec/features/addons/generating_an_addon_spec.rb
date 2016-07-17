@@ -50,6 +50,6 @@ describe 'Generating an addon', type: :feature, repl: false do
       |Now, to get started:
       |
       |   cd yap-shell-addon-foo-bar
-      TEXT
+    TEXT
   end
 end

@@ -1,7 +1,7 @@
 module Yap
   module Cli
     module Commands
-      class Addon
+      class Addon < Base
         def initialize(addon_name)
           @addon_name = addon_name
         end
