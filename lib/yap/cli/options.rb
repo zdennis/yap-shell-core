@@ -6,8 +6,10 @@ module Yap
       class Base
         attr_reader :options
 
-        def initialize(options:)
+        def initialize(options:, stdout: $stdout, stderr: $stderr)
           @options = options
+          @stdout = stdout
+          @stderr = stderr
         end
 
         def load_command(path)
@@ -18,10 +20,16 @@ module Yap
           ::Yap::Support::FileLoader.load_constant_from_path(path)
         end
 
-        def load_relative_constant(path_str)
+        def load_relative_constant(path)
           base_path = self.class.name.downcase.gsub(/::/, '/')
           require_path = Pathname.new(base_path)
-          load_constant_from_path require_path.join(path_str).to_s
+          load_constant_from_path require_path.join(path).to_s
+        end
+
+        protected
+
+        def puts(*args)
+          stdout.puts *args
         end
       end
     end

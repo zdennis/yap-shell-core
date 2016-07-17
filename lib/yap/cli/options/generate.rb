@@ -5,7 +5,7 @@ module Yap
         def parse(args)
           if args.empty?
             args.unshift '--help'
-            STDERR.puts "generate must be called with a component type!"
+            stderr.puts "generate must be called with a component type!"
             @exit_status = 1
             puts
           end

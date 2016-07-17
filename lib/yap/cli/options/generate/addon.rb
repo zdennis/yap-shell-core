@@ -6,7 +6,7 @@ module Yap
           @addon_name = args.shift unless args.first =~ /^-/
           unless @addon_name
             args.unshift '--help'
-            STDERR.puts "Missing addon-name!"
+            stderr.puts "Missing addon-name!"
             @exit_status = 1
             puts
           end
