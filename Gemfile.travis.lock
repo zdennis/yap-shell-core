@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/zdennis/rawline.git
-  revision: 73c8961ac124853d8f80921582c3cc849f50b801
+  revision: 4f4a37d9d00ae760dcee18c091995941d10f7055
   specs:
     yap-rawline (0.7.0)
       ansi_string (~> 0.1)
@@ -62,10 +62,10 @@ GEM
     chronic (0.10.2)
     coderay (1.1.1)
     diff-lcs (1.2.5)
-    ffi (1.9.13)
+    ffi (1.9.14)
     highline (1.7.8)
     method_source (0.8.2)
-    pry (0.10.3)
+    pry (0.10.4)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
