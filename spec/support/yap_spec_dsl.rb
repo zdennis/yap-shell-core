@@ -43,6 +43,14 @@ module Yap
         @stderr = stderr
       end
 
+      def exit_code
+        @childprocess.exit_code
+      end
+
+      def exited?
+        @childprocess.exited?
+      end
+
       def io
         @childprocess.io if @childprocess
       end
@@ -175,7 +183,7 @@ module Yap
 
       def reinitialize_shell
         initialize_shell
-        clear_all_output(console: false)        
+        clear_all_output(console: false)
       end
 
       def shell
