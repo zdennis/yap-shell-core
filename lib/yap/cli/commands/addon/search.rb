@@ -85,10 +85,10 @@ module Yap
           output = output.join("\n")
 
           highlighted_output = output.gsub(/(#{Regexp.escape(search_term)})/) do
-            Term::ANSIColor.cyan($1)
+            Colors.cyan($1)
           end
 
-          puts Term::ANSIColor.bright_black(
+          puts Colors.bright_black(
             sprintf("#{format_string}", *longest.keys.map { |key| headers[key] })
           )
           puts highlighted_output

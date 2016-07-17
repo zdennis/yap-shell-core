@@ -16,11 +16,11 @@ module Yap
         def doing(text, &block)
           print "#{text}"
           block.call
-          puts " #{Term::ANSIColor.green('done')}"
+          puts " #{Colors.green('done')}"
         end
 
         def process
-          puts "Creating addon #{Term::ANSIColor.yellow(addon_name)} in #{addon_dir}/"
+          puts "Creating addon #{Colors.yellow(addon_name)} in #{addon_dir}/"
           puts
 
           mkdir addon_dir
@@ -42,7 +42,7 @@ module Yap
                 `git init . && git add . && git commit -m 'initial commit of #{addon_name} addon for yap'`
               end
             else
-              puts "Git initialization #{Term::ANSIColor.cyan('skipped')}"
+              puts "Git initialization #{Colors.cyan('skipped')}"
             end
           end
 
@@ -50,9 +50,9 @@ module Yap
           puts "Yap addon generated! A few helpful things to note:"
           puts
           puts <<-TEXT.gsub(/^\s*\|/, '')
-            |  * The #{Term::ANSIColor.yellow(addon_name)} addon has been generated in #{addon_dir}/
-            |  * It is a standard rubygem, has its own gemspec, and is named #{Term::ANSIColor.yellow(gem_safe_addon_name)}
-            |  * Yap loads the #{Term::ANSIColor.yellow(constant_name)}, found in #{addonrb_path} (start there)
+            |  * The #{Colors.yellow(addon_name)} addon has been generated in #{addon_dir}/
+            |  * It is a standard rubygem, has its own gemspec, and is named #{Colors.yellow(gem_safe_addon_name)}
+            |  * Yap loads the #{Colors.yellow(constant_name)}, found in #{addonrb_path} (start there)
             |  * Share your addon with others by building a gem and pushing it to rubygems
             |
             |For more information see https://github.com/zdennis/yap-shell/wiki/Addons

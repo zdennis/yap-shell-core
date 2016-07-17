@@ -32,7 +32,7 @@ module Yap
             opts.banner = <<-TEXT.gsub(/^\s*\|/, '')
               |Usage: #{opts.program_name} addon disable [addon-name] [options]
               |
-              |#{Term::ANSIColor.cyan('yap addon disable')} can be used to disable yap addons.
+              |#{Colors.cyan('yap addon disable')} can be used to disable yap addons.
               |
               |Addon disable options:
             TEXT

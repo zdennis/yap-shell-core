@@ -25,12 +25,12 @@ module Yap
             opts.banner = <<-TEXT.gsub(/^\s*\|/, '')
               |Usage: #{opts.program_name} addon [command] [addon-name] [options]
               |
-              |#{Term::ANSIColor.cyan('yap addon')} can be used to control yap addons
+              |#{Colors.cyan('yap addon')} can be used to control yap addons
               |
               |Generate commands:
               |
-              |  #{Term::ANSIColor.yellow('enable')} - enables a yap addon
-              |  #{Term::ANSIColor.yellow('disable')} - disables a yap addon
+              |  #{Colors.yellow('enable')} - enables a yap addon
+              |  #{Colors.yellow('disable')} - disables a yap addon
               |
               |Generate options:
             TEXT

@@ -28,11 +28,11 @@ module Yap
             opts.banner = <<-TEXT.gsub(/^\s*\|/, '')
               |Usage: #{opts.program_name} generate [component-type] [options]
               |
-              |#{Term::ANSIColor.cyan('yap generate')} can be used to generate yap components, like an addon.
+              |#{Colors.cyan('yap generate')} can be used to generate yap components, like an addon.
               |
               |Generate commands:
               |
-              |  #{Term::ANSIColor.yellow('addon')} - generates a yap addon skeleton
+              |  #{Colors.yellow('addon')} - generates a yap addon skeleton
               |
               |Generate options:
             TEXT

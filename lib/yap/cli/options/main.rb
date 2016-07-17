@@ -70,7 +70,7 @@ module Yap
               puts opts
               commands = Dir[ File.dirname(__FILE__) + '/commands/*.rb' ].map do |path|
                 command = File.basename(path).sub(/\.rb$/, '')
-                "#{command}: #{Term::ANSIColor.cyan(opts.program_name + ' ' + command + ' --help')}"
+                "#{command}: #{Colors.cyan(opts.program_name + ' ' + command + ' --help')}"
               end
               commands = %|  #{commands.join("\n  ")}|
               puts <<-TEXT.gsub(/^\s*\|/, '')

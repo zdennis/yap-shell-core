@@ -26,7 +26,7 @@ module Yap
             opts.banner = <<-TEXT.gsub(/^\s*\|/, '')
               |Usage: #{opts.program_name} addon search [options] [addon-name]
               |
-              |#{Term::ANSIColor.cyan('yap addon search')} can be used to search for yap addons.
+              |#{Colors.cyan('yap addon search')} can be used to search for yap addons.
               |
               |Addon search options:
             TEXT

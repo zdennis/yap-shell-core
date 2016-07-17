@@ -32,7 +32,7 @@ module Yap
             opts.banner = <<-TEXT.gsub(/^\s*\|/, '')
               |Usage: #{opts.program_name} generate addon [addon-name] [options]
               |
-              |#{Term::ANSIColor.cyan('yap addon')} can be used to generate a yap addon skeleton provided an addon name.
+              |#{Colors.cyan('yap addon')} can be used to generate a yap addon skeleton provided an addon name.
               |
               |Generate addon options:
             TEXT
