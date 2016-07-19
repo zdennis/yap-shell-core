@@ -156,6 +156,10 @@ module Yap
         yap_dir.join('tmp/specroot').expand_path
       end
 
+      def addons_path
+        tmp_dir.join('addons/')
+      end
+
       def yap_command
         @yap_command ||= 'yap-dev'
       end
@@ -200,6 +204,7 @@ module Yap
       end
 
       def yap(argstring)
+        clear_all_output console: false
         args = argstring.shellsplit
         set_yap_command_line_arguments args
         reinitialize_shell
@@ -229,6 +234,7 @@ module Yap
       end
 
       def clear_all_output(console: true)
+        return unless shell
         if console
           type 'echo done'
           enter

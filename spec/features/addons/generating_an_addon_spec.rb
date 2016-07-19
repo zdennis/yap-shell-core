@@ -7,7 +7,7 @@ describe 'Generating an addon', type: :feature, repl: false do
 
   it 'generates an addon in the current working directory' do
     # foo-addon is a shell function added by the foo-addon defined above;
-    expect { output }.to have_printed_lines <<-TEXT.gsub(/^\s*\|/, '')
+    expect { output }.to have_printed_lines <<-TEXT.strip_heredoc
       |Creating addon foo-bar in yap-shell-addon-foo-bar/
       |
       |Create directory: yap-shell-addon-foo-bar done

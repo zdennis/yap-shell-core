@@ -1,48 +1,37 @@
 require 'spec_helper'
 
 describe 'Using an addon', type: :feature do
-  let(:addons_path) { tmp_dir.join('addons/') }
   let(:yaprc_path) { tmp_dir.join('yaprc') }
   let(:yaprc_contents) { '' }
 
-  let(:foo_addon_path) { addons_path.join('yap-shell-addon-foo-0.1.0') }
-  let(:foo_lib_addon_path) { foo_addon_path.join('lib') }
-  let(:foo_addon_rb_path) { foo_lib_addon_path.join('yap-shell-addon-foo.rb') }
   let(:create_foo_addon) do
-    mkdir_p foo_lib_addon_path.to_s
-    write_file foo_addon_rb_path.to_s, <<-RUBY.strip_heredoc
-      |module YapShellAddonFoo
-      |  class Addon < ::Yap::Addon::Base
-      |    self.export_as :foo
-      |
-      |    def initialize_world(world)
-      |      world.func('foo-addon') do |args:, stdout:|
-      |        stdout.puts \"You passed \#\{args.inspect\} to foo-addon\"
-      |      end
-      |    end
-      |  end
-      |end
-    RUBY
+    YapAddonFactory.create(
+      dir: addons_path,
+      name: 'foo',
+      version: '0.1.0',
+      contents: {
+        initialize_world: <<-RUBY.strip_heredoc
+          |world.func('foo-addon') do |args:, stdout:|
+          |  stdout.puts \"You passed \#\{args.inspect\} to foo-addon\"
+          |end
+        RUBY
+      }
+    )
   end
 
-  let(:bar_addon_path) { addons_path.join('yap-shell-addon-bar-0.1.0') }
-  let(:bar_lib_addon_path) { bar_addon_path.join('lib') }
-  let(:bar_addon_rb_path) { bar_lib_addon_path.join('yap-shell-addon-bar.rb') }
   let(:create_bar_addon) do
-    mkdir_p bar_lib_addon_path.to_s
-    write_file bar_addon_rb_path.to_s, <<-RUBY.strip_heredoc
-      |module YapShellAddonBar
-      |  class Addon < ::Yap::Addon::Base
-      |    self.export_as :bar
-      |
-      |    def initialize_world(world)
-      |      world.func('bar-addon') do |args:, stdout:|
-      |        stdout.puts \"You passed \#\{args.inspect\} to bar-addon\"
-      |      end
-      |    end
-      |  end
-      |end
-    RUBY
+    YapAddonFactory.create(
+      dir: addons_path,
+      name: 'bar',
+      version: '0.1.0',
+      contents: {
+        initialize_world: <<-RUBY.strip_heredoc
+          |world.func('bar-addon') do |args:, stdout:|
+          |  stdout.puts \"You passed \#\{args.inspect\} to bar-addon\"
+          |end
+        RUBY
+      }
+    )
   end
 
   let(:create_yaprc_file) do
@@ -124,59 +113,6 @@ describe 'Using an addon', type: :feature do
 
       addons_config_hsh = YAML.load_file(tmp_dir.join('.yap/addons.yml'))
       expect(addons_config_hsh[:foo]).to include(disabled: false)
-    end
-  end
-
-  describe 'listing addons', repl: false do
-    let(:yap_cli_args) do
-      [
-        '--addon-paths', addons_path.to_s,
-        'addon', 'list'
-      ]
-    end
-
-    before do
-      mkdir tmp_dir.join('.yap')
-      write_file(
-        tmp_dir.join('.yap/addons.yml'),
-        {
-          bar: { disabled: true },
-          foo: { disabled: false }
-        }.to_yaml
-      )
-      reinitialize_shell
-    end
-
-    it 'lists all addons found in the addon-paths' do
-      expect { output }.to have_printed(/bar.*foo/m)
-    end
-
-    describe 'enabled' do
-      let(:yap_cli_args) do
-        [
-          '--addon-paths', addons_path.to_s,
-          'addon', 'list', '--enabled'
-        ]
-      end
-
-      it 'lists enabled addons' do
-        expect { output }.to have_printed(/foo/m)
-        expect { output }.to have_not_printed(/bar/m)
-      end
-    end
-
-    describe 'disabled' do
-      let(:yap_cli_args) do
-        [
-          '--addon-paths', addons_path.to_s,
-          'addon', 'list', '--disabled'
-        ]
-      end
-
-      it 'lists disabled addons' do
-        expect { output }.to have_printed(/bar/m)
-        expect { output }.to have_not_printed(/foo/m)
-      end
     end
   end
 end
