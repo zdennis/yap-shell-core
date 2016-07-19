@@ -25,7 +25,7 @@ describe 'Listing addons', type: :feature, repl: false do
   end
 
   it 'lists addons, and exits successfully' do
-    yap "--addon-paths #{addons_path.to_s} addon list"
+    yap "addon list"
 
     expect { output }.to have_printed_lines <<-TEXT.strip_heredoc.chomp
       |bar (enabled)
@@ -35,19 +35,19 @@ describe 'Listing addons', type: :feature, repl: false do
   end
 
   it 'can list disabled addons only' do
-    yap "--addon-paths #{addons_path.to_s} addon disable foo"
+    yap "addon disable foo"
     expect { output }.to have_printed_line 'Addon foo has been disabled'
 
-    yap "--addon-paths #{addons_path.to_s} addon list --disabled"
+    yap "addon list --disabled"
     expect { output }.to have_printed_line 'foo'
     expect { output }.to_not have_printed_line 'bar'
   end
 
   it 'can list enabled addons only' do
-    yap "--addon-paths #{addons_path.to_s} addon disable foo"
+    yap "addon disable foo"
     expect { output }.to have_printed_line 'Addon foo has been disabled'
 
-    yap "--addon-paths #{addons_path.to_s} addon list --enabled"
+    yap "addon list --enabled"
     expect { output }.to have_printed_line 'bar'
     expect { output }.to_not have_printed_line 'foo'
   end

@@ -204,8 +204,9 @@ module Yap
       end
 
       def yap(argstring)
+        defaults = "--addon-paths #{addons_path.to_s} "
         clear_all_output console: false
-        args = argstring.shellsplit
+        args = (defaults + argstring).shellsplit
         set_yap_command_line_arguments args
         reinitialize_shell
       end
