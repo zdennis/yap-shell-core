@@ -12,7 +12,7 @@ module Yap
           addon_refs = ::Yap::Addon::Path.
             find_for_configuration(configuration)
           if addon_refs.empty?
-            puts <<-MSG.strip_heredoc
+            puts <<-MSG.gsub(/^\s*\|/, '')
               |No addons found searching paths:
               |  - #{configuration.addon_paths.join("\n  -")}
             MSG
