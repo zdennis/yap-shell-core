@@ -31,6 +31,8 @@ module Yap
 
         protected
 
+        attr_reader :stdout, :stderr
+
         def puts(*args)
           stdout.puts *args
         end
