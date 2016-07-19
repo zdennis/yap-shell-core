@@ -1,7 +1,8 @@
 require 'fileutils'
 require 'pathname'
-require 'timeout'
 require 'ostruct'
+require 'shellwords'
+require 'timeout'
 
 module Yap
   module Spec
@@ -155,6 +156,18 @@ module Yap
         yap_dir.join('tmp/specroot').expand_path
       end
 
+      def yap_command
+        @yap_command ||= 'yap-dev'
+      end
+
+      def set_yap_command(command)
+        @yap_command = command
+      end
+
+      def yap_command_path
+        yap_dir.join('bin', yap_command).to_s
+      end
+
       def yap_dir
         Pathname.new File.dirname(__FILE__) + '/../../'
       end
@@ -174,7 +187,7 @@ module Yap
 
       def initialize_shell
         Shell.new(
-          dir: yap_dir.join('bin/yap-dev').to_s,
+          dir: yap_command_path,
           args: yap_command_line_arguments,
           stdout: stdout,
           stderr: stderr
@@ -184,6 +197,12 @@ module Yap
       def reinitialize_shell
         initialize_shell
         clear_all_output(console: false)
+      end
+
+      def yap(argstring)
+        args = argstring.shellsplit
+        set_yap_command_line_arguments args
+        reinitialize_shell
       end
 
       def shell

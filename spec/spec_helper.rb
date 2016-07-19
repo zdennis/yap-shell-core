@@ -39,25 +39,23 @@ RSpec.configure do |config|
     mkdir tmp_dir
     Dir.chdir tmp_dir
 
-    set_yap_command_line_arguments \
-      '--no-history', '--no-addons', '--no-rcfiles', '--skip-first-time'
-
-    turn_on_debug_log(debug: 'editor')
-    initialize_shell
-
     if self.class.metadata[:repl] == false
-      # no-op if the test specificaly says it doesn't use a repl
+      # no-op if the test specifically says it doesn't use a repl
       # This is likely when we're expecting yap to print information
       # and exit immediately
     else
+      set_yap_command_line_arguments \
+        '--no-history', '--no-addons', '--no-rcfiles', '--skip-first-time'
+
+      initialize_shell
       type "cd #{tmp_dir}"
       enter
 
       type "pwd"
       enter
       expect { output }.to have_printed(File.expand_path(tmp_dir))
+      clear_all_output
     end
-    clear_all_output
   end
 
   config.after(:all, type: :feature) do

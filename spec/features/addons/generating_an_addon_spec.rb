@@ -1,22 +1,8 @@
 require 'spec_helper'
 
 describe 'Generating an addon', type: :feature, repl: false do
-  let(:addons_path) { tmp_dir.join('addons/') }
-  let(:yaprc_path) { tmp_dir.join('yaprc') }
-  let(:yaprc_contents) { '' }
-
-  let(:yap_cli_args) do
-    [
-      'generate', 'addon', 'foo-bar'
-    ]
-  end
-
   before do
-    set_yap_command_line_arguments yap_cli_args
-
-    turn_on_debug_log(debug: 'editor')
-
-    reinitialize_shell
+    yap 'generate addon foo-bar'
   end
 
   it 'generates an addon in the current working directory' do
