@@ -2,10 +2,6 @@ module Yap
   module Cli
     module Options
       class Addon::List < Base
-        def initialize(options:)
-          @options = options
-        end
-
         def parse(args)
           option_parser.order!(args)
         end
