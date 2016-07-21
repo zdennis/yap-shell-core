@@ -27,10 +27,10 @@ describe 'Listing addons', type: :feature, repl: false do
   it 'lists addons, and exits successfully' do
     yap "addon list"
 
-    expect { output }.to have_printed_lines <<-TEXT.strip_heredoc.chomp
-      |bar (enabled)
-      |foo (enabled)
-    TEXT
+    expect { output }.to have_printed_lines [
+      "bar  enabled  (0.1.0)  \n",
+      "foo  enabled  (0.1.0)  "
+    ]
     expect { shell }.to have_exit_code(0)
   end
 

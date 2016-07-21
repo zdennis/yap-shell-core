@@ -36,7 +36,8 @@ RSpec::Matchers.define :have_printed_lines do |expected|
 
   match do |block|
     begin
-      expected.lines.each do |line|
+      expected_lines = expected.is_a?(String) ? expected.lines : expected # assume array
+      expected_lines.each do |line|
         current_line = line
         regex = /#{Regexp.escape(line)}/m
         very_soon do

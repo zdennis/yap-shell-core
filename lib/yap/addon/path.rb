@@ -29,8 +29,8 @@ module Yap
           Dir["#{path}/*"].map do |directory|
             next unless File.directory?(directory)
 
-            if File.basename(directory) =~ /(yap-shell-addon-(.*))-\d+\.\d+\.\d+/
-              require_as, name = $1, $2
+            if File.basename(directory) =~ /(yap-shell-addon-(.*))-(\d+\.\d+\.\d+)/
+              require_as, name, version = $1, $2, $3
 
               addonrb_path = directory + "/lib/" + require_as + ".rb"
               export_as = ExportAs.find_in_file(addonrb_path)
@@ -45,7 +45,8 @@ module Yap
                 name: name,
                 require_as: require_as,
                 path: File.expand_path(directory),
-                enabled: enabled
+                enabled: enabled,
+                version: version
               )
             end
           end
